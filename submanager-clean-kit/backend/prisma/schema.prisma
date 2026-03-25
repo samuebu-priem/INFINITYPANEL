@@ -1,0 +1,323 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String         @id @default(cuid())
+  email               String         @unique
+  username            String         @unique
+  passwordHash        String
+  role                Role
+  discordId           String?        @unique
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  adminProfile        AdminProfile?
+  adminMatches        Match[]        @relation("MatchAdmin")
+  playerOneMatches    Match[]        @relation("MatchPlayerOne")
+  playerTwoMatches    Match[]        @relation("MatchPlayerTwo")
+  wonMatches          Match[]        @relation("MatchWinner")
+  playerProfile       PlayerProfile?
+  acceptedQueues      Queue[]        @relation("AcceptedQueues")
+  createdQueues       Queue[]        @relation("CreatedQueues")
+  rankings            Ranking[]
+  transactionsAsAdmin Transaction[]  @relation("TransactionAdmin")
+  transactionsAsPayer Transaction[]  @relation("TransactionPayer")
+}
+
+model AdminProfile {
+  id                        String               @id @default(cuid())
+  userId                    String               @unique
+  isActive                  Boolean              @default(false)
+  weeklyFee                 Decimal              @db.Decimal(10, 2)
+  totalEarnings             Decimal              @default(0) @db.Decimal(12, 2)
+  totalMatchesIntermediated Int                  @default(0)
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  user                      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  checkoutSessions          CheckoutSession[]
+  paymentTransactions       PaymentTransaction[]
+  subscriptions             Subscription[]
+}
+
+model PlayerProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  nickname      String
+  totalMatches  Int      @default(0)
+  totalWins     Int      @default(0)
+  rankingPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Queue {
+  id           String      @id @default(cuid())
+  createdById  String
+  acceptedById String?
+  type         QueueType
+  amount       Decimal     @db.Decimal(10, 2)
+  status       QueueStatus @default(OPEN)
+  notes        String?
+  createdAt    DateTime    @default(now())
+  acceptedAt   DateTime?
+  expiresAt    DateTime?
+  match        Match?
+  acceptedBy   User?       @relation("AcceptedQueues", fields: [acceptedById], references: [id])
+  createdBy    User        @relation("CreatedQueues", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([status, type, createdAt])
+}
+
+model Match {
+  id            String        @id @default(cuid())
+  queueId       String        @unique
+  player1Id     String
+  player2Id     String
+  adminId       String
+  mode          QueueType
+  amount        Decimal       @db.Decimal(10, 2)
+  adminFee      Decimal       @db.Decimal(10, 2)
+  status        MatchStatus   @default(PENDING_PAYMENT)
+  paymentStatus PaymentStatus @default(WAITING)
+  winnerId      String?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  admin         User          @relation("MatchAdmin", fields: [adminId], references: [id], onDelete: Cascade)
+  player1       User          @relation("MatchPlayerOne", fields: [player1Id], references: [id], onDelete: Cascade)
+  player2       User          @relation("MatchPlayerTwo", fields: [player2Id], references: [id], onDelete: Cascade)
+  queue         Queue         @relation(fields: [queueId], references: [id], onDelete: Cascade)
+  winner        User?         @relation("MatchWinner", fields: [winnerId], references: [id])
+  transactions  Transaction[]
+
+  @@index([adminId, status])
+  @@index([player1Id, player2Id])
+  @@index([createdAt])
+}
+
+model Transaction {
+  id        String            @id @default(cuid())
+  matchId   String?
+  adminId   String?
+  payerId   String?
+  amount    Decimal           @db.Decimal(12, 2)
+  type      TransactionType
+  status    TransactionStatus @default(PENDING)
+  createdAt DateTime          @default(now())
+  admin     User?             @relation("TransactionAdmin", fields: [adminId], references: [id])
+  match     Match?            @relation(fields: [matchId], references: [id])
+  payer     User?             @relation("TransactionPayer", fields: [payerId], references: [id])
+
+  @@index([type, status, createdAt])
+}
+
+model SubscriptionPlan {
+  id               String            @id @default(cuid())
+  name             String
+  description      String?
+  amount           Decimal           @db.Decimal(10, 2)
+  currency         String            @default("BRL")
+  billingCycle     BillingCycle
+  isActive         Boolean           @default(true)
+  metadata         Json?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  checkoutSessions CheckoutSession[]
+  subscriptions    Subscription[]
+
+  @@index([isActive, billingCycle])
+}
+
+model Subscription {
+  id                  String               @id @default(cuid())
+  adminId             String
+  startsAt            DateTime?
+  endsAt              DateTime?
+  createdAt           DateTime             @default(now())
+  approvedAt          DateTime?
+  cancelledAt         DateTime?
+  metadata            Json?
+  planId              String
+  updatedAt           DateTime             @updatedAt
+  status              SubscriptionState    @default(PENDING)
+  checkoutSessions    CheckoutSession[]
+  paymentTransactions PaymentTransaction[]
+  admin               AdminProfile         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  plan                SubscriptionPlan     @relation(fields: [planId], references: [id])
+
+  @@index([adminId, status])
+  @@index([status, endsAt])
+}
+
+model CheckoutSession {
+  id                  String                @id @default(cuid())
+  adminId             String
+  planId              String
+  subscriptionId      String?
+  provider            PaymentProvider       @default(MERCADO_PAGO)
+  status              CheckoutSessionStatus @default(PENDING)
+  providerPublicKey   String?
+  providerAccessToken String?
+  externalCheckoutId  String?
+  checkoutUrl         String?
+  qrCode              String?
+  qrCodeBase64        String?
+  paymentMethod       String?
+  amount              Decimal               @db.Decimal(10, 2)
+  currency            String                @default("BRL")
+  expiresAt           DateTime?
+  metadata            Json?
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  admin               AdminProfile          @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  plan                SubscriptionPlan      @relation(fields: [planId], references: [id])
+  subscription        Subscription?         @relation(fields: [subscriptionId], references: [id])
+  paymentTransactions PaymentTransaction[]
+
+  @@index([adminId, status, createdAt])
+  @@index([externalCheckoutId])
+}
+
+model PaymentTransaction {
+  id                  String                   @id @default(cuid())
+  adminId             String
+  subscriptionId      String?
+  checkoutSessionId   String?
+  provider            PaymentProvider          @default(MERCADO_PAGO)
+  status              PaymentTransactionStatus @default(PENDING)
+  providerPublicKey   String?
+  providerAccessToken String?
+  externalPaymentId   String?
+  externalCheckoutId  String?
+  amount              Decimal                  @db.Decimal(12, 2)
+  currency            String                   @default("BRL")
+  paymentMethod       String?
+  approvedAt          DateTime?
+  metadata            Json?
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+  admin               AdminProfile             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  checkoutSession     CheckoutSession?         @relation(fields: [checkoutSessionId], references: [id])
+  subscription        Subscription?            @relation(fields: [subscriptionId], references: [id])
+
+  @@index([adminId, status, createdAt])
+  @@index([externalPaymentId])
+  @@index([externalCheckoutId])
+}
+
+model Ranking {
+  id            String       @id @default(cuid())
+  userId        String
+  scope         RankingScope
+  weekKey       String
+  matchesPlayed Int          @default(0)
+  wins          Int          @default(0)
+  earnings      Decimal      @default(0) @db.Decimal(12, 2)
+  points        Int          @default(0)
+  updatedAt     DateTime     @updatedAt
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scope, weekKey])
+  @@index([scope, weekKey, points])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  PLAYER
+}
+
+enum QueueType {
+  ONE_VS_ONE
+  TWO_VS_TWO
+  FOUR_VS_FOUR
+}
+
+enum QueueStatus {
+  OPEN
+  ACCEPTED
+  CANCELLED
+  EXPIRED
+}
+
+enum MatchStatus {
+  PENDING_PAYMENT
+  READY
+  LIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  WAITING
+  CONFIRMED
+  RELEASED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum TransactionType {
+  SUBSCRIPTION_PAYMENT
+  MATCH_ESCROW
+  ADMIN_FEE
+  PAYOUT
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+  CANCELLED
+}
+
+enum BillingCycle {
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum PaymentProvider {
+  MERCADO_PAGO
+}
+
+enum PaymentTransactionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+enum CheckoutSessionStatus {
+  PENDING
+  OPEN
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum SubscriptionState {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum RankingScope {
+  PLAYER_WEEKLY
+  ADMIN_WEEKLY
+}

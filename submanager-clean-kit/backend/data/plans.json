@@ -1,0 +1,20 @@
+[
+  {
+    "id": "plan-basic",
+    "name": "Básico",
+    "price": 29.9,
+    "duration_days": 30,
+    "is_active": true,
+    "description": "Ideal para começar com acesso básico.",
+    "features": ["Acesso principal", "Suporte por e-mail", "Renovação mensal"]
+  },
+  {
+    "id": "plan-pro",
+    "name": "Pro",
+    "price": 59.9,
+    "duration_days": 30,
+    "is_active": true,
+    "description": "Plano com mais benefícios e prioridade.",
+    "features": ["Tudo do Básico", "Acesso prioritário", "Suporte rápido"]
+  }
+]

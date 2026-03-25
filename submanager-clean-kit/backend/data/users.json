@@ -1,0 +1,16 @@
+[
+  {
+    "id": "admin-1",
+    "full_name": "Administrador",
+    "email": "admin@local.test",
+    "role": "admin",
+    "password": "123456"
+  },
+  {
+    "id": "user-1",
+    "full_name": "Cliente Teste",
+    "email": "cliente@local.test",
+    "role": "client",
+    "password": "123456"
+  }
+]
