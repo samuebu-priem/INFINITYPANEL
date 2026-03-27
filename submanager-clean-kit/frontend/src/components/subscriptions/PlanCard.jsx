@@ -3,6 +3,8 @@ import { formatCurrency } from "@/utils";
 
 export default function PlanCard({ plan, isPopular = false, onSelect, onEdit, canEdit = false }) {
   const amount = Number(plan?.price ?? plan?.amount ?? 0);
+  const stock = Number(plan?.stock ?? 0);
+  const unavailable = Number.isFinite(stock) && stock <= 0;
   const billingLabel = plan?.duration_days ? `a cada ${plan.duration_days} dias` : plan?.billingCycle ?? "";
   const features = Array.isArray(plan?.features) ? plan.features : [];
   const hasPlanName = Boolean(plan?.name?.trim());
@@ -24,6 +26,9 @@ export default function PlanCard({ plan, isPopular = false, onSelect, onEdit, ca
       <div className="mt-6">
         <p className="text-3xl font-extrabold text-white">{formatCurrency(amount)}</p>
         <p className="text-sm text-slate-500">{billingLabel}</p>
+        <p className={`mt-2 text-sm font-semibold ${unavailable ? "text-rose-400" : "text-emerald-400"}`}>
+          {unavailable ? "Indisponível" : `Estoque: ${stock}`}
+        </p>
       </div>
 
       <div className="mt-6 space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
@@ -42,9 +47,10 @@ export default function PlanCard({ plan, isPopular = false, onSelect, onEdit, ca
       <div className="mt-6 grid grid-cols-1 gap-3">
         <button
           onClick={() => onSelect?.(plan)}
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-500"
+          disabled={unavailable}
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
         >
-          Assinar agora
+          {unavailable ? "Indisponível" : "Assinar agora"}
         </button>
 
         {canEdit && (

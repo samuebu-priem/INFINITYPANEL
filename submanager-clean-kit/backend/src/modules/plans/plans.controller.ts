@@ -16,6 +16,7 @@ export const plansController = {
         name: true,
         description: true,
         amount: true,
+        stock: true,
         currency: true,
         billingCycle: true,
         isActive: true,
@@ -29,10 +30,11 @@ export const plansController = {
   },
 
   create: async (req: Request, res: Response) => {
-    const { name, description, amount, billingCycle, currency, metadata } = req.body as {
+    const { name, description, amount, stock, billingCycle, currency, metadata } = req.body as {
       name?: string;
       description?: string | null;
       amount?: number;
+      stock?: number;
       billingCycle?: string;
       currency?: string;
       metadata?: unknown;
@@ -56,6 +58,7 @@ export const plansController = {
         name: name.trim(),
         description: typeof description === "string" ? description : description ?? null,
         amount,
+        stock: typeof stock === "number" && Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : 0,
         billingCycle: cycle as any,
         currency: curr,
         isActive: true,
@@ -66,6 +69,7 @@ export const plansController = {
         name: true,
         description: true,
         amount: true,
+        stock: true,
         currency: true,
         billingCycle: true,
         isActive: true,
@@ -87,10 +91,11 @@ export const plansController = {
       return;
     }
 
-    const { name, description, amount, billingCycle, currency, metadata } = req.body as {
+    const { name, description, amount, stock, billingCycle, currency, metadata } = req.body as {
       name?: string;
       description?: string | null;
       amount?: number;
+      stock?: number;
       billingCycle?: string;
       currency?: string;
       metadata?: unknown;
@@ -106,6 +111,7 @@ export const plansController = {
     if (typeof name === "string") data.name = name.trim();
     if (typeof description === "string" || description === null) data.description = description;
     if (typeof amount === "number" && Number.isFinite(amount) && amount >= 0) data.amount = amount;
+    if (typeof stock === "number" && Number.isFinite(stock) && stock >= 0) data.stock = Math.floor(stock);
     if (typeof billingCycle === "string") data.billingCycle = billingCycle;
     if (typeof currency === "string") data.currency = currency;
     if (typeof metadata !== "undefined") data.metadata = metadata;
@@ -123,6 +129,7 @@ export const plansController = {
         name: true,
         description: true,
         amount: true,
+        stock: true,
         currency: true,
         billingCycle: true,
         isActive: true,

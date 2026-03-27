@@ -11,6 +11,7 @@ import { deletePlan } from "@/lib/adminAction";
 function mapPlan(plan) {
   const amount = Number(plan?.amount ?? plan?.price ?? 0);
   const durationDays = Number(plan?.metadata?.duration_days ?? plan?.duration_days ?? 30);
+  const stock = Number.isFinite(Number(plan?.stock ?? 0)) ? Number(plan.stock ?? 0) : 0;
 
   return {
     id: plan.id,
@@ -20,6 +21,7 @@ function mapPlan(plan) {
     amount: Number.isFinite(amount) ? amount : 0,
     billingCycle: plan.billingCycle ?? plan.billing_cycle ?? "MONTHLY",
     duration_days: Number.isFinite(durationDays) ? durationDays : 30,
+    stock,
     isActive: plan.isActive ?? plan.is_active ?? true,
     features: Array.isArray(plan?.metadata?.features) ? plan.metadata.features : [],
     currency: plan.currency ?? "BRL",
@@ -33,6 +35,7 @@ function emptyForm() {
     name: "",
     description: "",
     amount: "",
+    stock: "0",
     billingCycle: "MONTHLY",
     currency: "BRL",
     duration_days: "30",
@@ -89,6 +92,7 @@ export default function Plans() {
       name: plan.name ?? "",
       description: plan.description ?? "",
       amount: String(plan.amount ?? plan.price ?? ""),
+      stock: String(plan.stock ?? 0),
       billingCycle: plan.billingCycle ?? "MONTHLY",
       currency: plan.currency ?? "BRL",
       duration_days: String(plan.duration_days ?? 30),
@@ -110,6 +114,7 @@ export default function Plans() {
       name: editingPlan.name.trim(),
       description: editingPlan.description.trim(),
       amount: Number(editingPlan.amount),
+      stock: Math.max(0, Number(editingPlan.stock) || 0),
       billingCycle: editingPlan.billingCycle,
       currency: editingPlan.currency || "BRL",
       metadata: {

@@ -123,6 +123,7 @@ model SubscriptionPlan {
   name             String
   description      String?
   amount           Decimal           @db.Decimal(10, 2)
+  stock            Int               @default(0)
   currency         String            @default("BRL")
   billingCycle     BillingCycle
   isActive         Boolean           @default(true)
