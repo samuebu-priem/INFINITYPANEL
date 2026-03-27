@@ -1,30 +1,20 @@
 import { Router } from "express";
-
+import {
+  createPlan,
+  deletePlan,
+  getPlanById,
+  listPlans,
+  updatePlan,
+} from "./plans.controller.js";
 import { requireAuth } from "../../middlewares/auth.middleware.js";
 import { requireRole } from "../../middlewares/role.middleware.js";
-import { asyncHandler } from "../../shared/utils/asyncHandler.js";
-import { plansController } from "./plans.controller.js";
 
-export const plansRouter = Router();
+const router = Router();
 
-plansRouter.get("/", requireAuth, requireRole("ADMIN", "OWNER", "PLAYER"), asyncHandler(plansController.list));
-plansRouter.post("/", requireAuth, requireRole("ADMIN", "OWNER"), asyncHandler(plansController.create));
-plansRouter.patch(
-  "/:id/status",
-  requireAuth,
-  requireRole("ADMIN", "OWNER"),
-  asyncHandler(plansController.updateStatus),
-);
+router.get("/", listPlans);
+router.get("/:id", getPlanById);
+router.post("/", requireAuth, requireRole("ADMIN", "OWNER"), createPlan);
+router.patch("/:id", requireAuth, requireRole("ADMIN", "OWNER"), updatePlan);
+router.delete("/:id", requireAuth, requireRole("ADMIN", "OWNER"), deletePlan);
 
-plansRouter.patch(
-  "/:id",
-  requireAuth,
-  requireRole("ADMIN", "OWNER"),
-  asyncHandler(plansController.update),
-);
-plansRouter.delete(
-  "/:id",
-  requireAuth,
-  requireRole("ADMIN", "OWNER"),
-  asyncHandler(plansController.remove),
-);
+export { router as plansRouter };

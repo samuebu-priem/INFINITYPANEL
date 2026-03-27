@@ -1,210 +1,153 @@
-import { Request, Response } from "express";
+import type { Request, Response } from "express";
 
 import { prisma } from "../../config/prisma.js";
+import { asyncHandler } from "../../shared/utils/asyncHandler.js";
+import { ApiError } from "../../shared/utils/ApiError.js";
 
-/**
- * Plans are owned by the system (organization) and represent admin subscription tiers.
- * Provider-specific data is intentionally not exposed here.
- */
-export const plansController = {
-  list: async (_req: Request, res: Response) => {
-    // Admin/Owner management view: return both active and inactive plans.
-    const plans = await prisma.subscriptionPlan.findMany({
-      orderBy: [{ amount: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        amount: true,
-        currency: true,
-        billingCycle: true,
-        isActive: true,
-        metadata: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    res.json({ plans });
-  },
-
-  create: async (req: Request, res: Response) => {
-    const { name, description, amount, billingCycle, currency, metadata } = req.body as {
-      name?: string;
-      description?: string | null;
-      amount?: number;
-      billingCycle?: string;
-      currency?: string;
-      metadata?: unknown;
-    };
-
-    if (typeof name !== "string" || name.trim().length < 2) {
-      res.status(400).json({ message: "`name` is required" });
-      return;
-    }
-
-    if (typeof amount !== "number" || !Number.isFinite(amount) || amount < 0) {
-      res.status(400).json({ message: "`amount` must be a valid number" });
-      return;
-    }
-
-    const cycle = typeof billingCycle === "string" ? billingCycle : "MONTHLY";
-    const curr = typeof currency === "string" && currency.trim() ? currency.trim() : "BRL";
-
-    const plan = await prisma.subscriptionPlan.create({
-      data: {
-        name: name.trim(),
-        description: typeof description === "string" ? description : description ?? null,
-        amount,
-        billingCycle: cycle as any,
-        currency: curr,
-        isActive: true,
-        ...(typeof metadata !== "undefined" ? { metadata: metadata as any } : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        amount: true,
-        currency: true,
-        billingCycle: true,
-        isActive: true,
-        metadata: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    res.status(201).json({ plan });
-  },
-
-  update: async (req: Request, res: Response) => {
-    const idParam = req.params.id;
-    const id = Array.isArray(idParam) ? idParam[0] : idParam;
-
-    if (!id) {
-      res.status(400).json({ message: "Missing plan id" });
-      return;
-    }
-
-    const { name, description, amount, billingCycle, currency, metadata } = req.body as {
-      name?: string;
-      description?: string | null;
-      amount?: number;
-      billingCycle?: string;
-      currency?: string;
-      metadata?: unknown;
-    };
-
-    const existing = await prisma.subscriptionPlan.findUnique({ where: { id } });
-    if (!existing) {
-      res.status(404).json({ message: "Plan not found" });
-      return;
-    }
-
-    const data: Record<string, unknown> = {};
-    if (typeof name === "string") data.name = name.trim();
-    if (typeof description === "string" || description === null) data.description = description;
-    if (typeof amount === "number" && Number.isFinite(amount) && amount >= 0) data.amount = amount;
-    if (typeof billingCycle === "string") data.billingCycle = billingCycle;
-    if (typeof currency === "string") data.currency = currency;
-    if (typeof metadata !== "undefined") data.metadata = metadata;
-
-    if (Object.keys(data).length === 0) {
-      res.status(400).json({ message: "No valid fields to update" });
-      return;
-    }
-
-    const plan = await prisma.subscriptionPlan.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        amount: true,
-        currency: true,
-        billingCycle: true,
-        isActive: true,
-        metadata: true,
-        updatedAt: true,
-      },
-    });
-
-    res.json({ plan });
-  },
-
-  updateStatus: async (req: Request, res: Response) => {
-    const idParam = req.params.id;
-    const id = Array.isArray(idParam) ? idParam[0] : idParam;
-    const { isActive } = req.body as { isActive?: boolean };
-
-    if (!id) {
-      res.status(400).json({ message: "Missing plan id" });
-      return;
-    }
-
-    if (typeof isActive !== "boolean") {
-      res.status(400).json({ message: "`isActive` must be a boolean" });
-      return;
-    }
-
-    const existing = await prisma.subscriptionPlan.findUnique({ where: { id } });
-    if (!existing) {
-      res.status(404).json({ message: "Plan not found" });
-      return;
-    }
-
-    const plan = await prisma.subscriptionPlan.update({
-      where: { id },
-      data: { isActive },
-      select: {
-        id: true,
-        name: true,
-        description: true,
-        amount: true,
-        currency: true,
-        billingCycle: true,
-        isActive: true,
-        updatedAt: true,
-      },
-    });
-
-    res.json({ plan });
-  },
-
-  remove: async (req: Request, res: Response) => {
-    const idParam = req.params.id;
-    const id = Array.isArray(idParam) ? idParam[0] : idParam;
-
-    if (!id) {
-      res.status(400).json({ message: "Missing plan id" });
-      return;
-    }
-
-    const existing = await prisma.subscriptionPlan.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-    if (!existing) {
-      res.status(404).json({ message: "Plan not found" });
-      return;
-    }
-
-    const linkedSubscriptions = await prisma.subscription.count({ where: { planId: id } });
-
-    // Safe behavior: if already linked to any subscription, do a soft-delete by deactivating.
-    if (linkedSubscriptions > 0) {
-      await prisma.subscriptionPlan.update({ where: { id }, data: { isActive: false } });
-      res.status(200).json({
-        deleted: false,
-        deactivated: true,
-        message: "Plan is linked to subscriptions and cannot be deleted. It was deactivated instead.",
-      });
-      return;
-    }
-
-    await prisma.subscriptionPlan.delete({ where: { id } });
-    res.status(200).json({ deleted: true });
-  },
+type PlanLike = {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  durationDays: number;
+  status: string;
+  ownerId: string | null;
+  stock?: number | null;
+  quantity?: number | null;
+  availableSlots?: number | null;
+  createdAt: Date;
+  updatedAt: Date;
 };
+
+function mapPlan(plan: PlanLike) {
+  const availableSlots = Number(plan.stock ?? plan.quantity ?? plan.availableSlots ?? 0);
+
+  return {
+    id: plan.id,
+    name: plan.name,
+    description: plan.description,
+    price: plan.price,
+    durationDays: plan.durationDays,
+    status: plan.status,
+    isActive: plan.status === "ACTIVE",
+    stock: availableSlots,
+    quantity: availableSlots,
+    availableSlots,
+    ownerId: plan.ownerId,
+    createdAt: plan.createdAt,
+    updatedAt: plan.updatedAt,
+  };
+}
+
+export const listPlans = asyncHandler(async (_req: Request, res: Response) => {
+  const plans = await prisma.plan.findMany({
+    orderBy: { createdAt: "desc" },
+  });
+
+  res.json({ plans: plans.map(mapPlan) });
+});
+
+export const getPlanById = asyncHandler(async (req: Request, res: Response) => {
+  const plan = await prisma.plan.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!plan) {
+    throw new ApiError(404, "Plano não encontrado.");
+  }
+
+  res.json({ plan: mapPlan(plan) });
+});
+
+export const createPlan = asyncHandler(async (req: Request, res: Response) => {
+  const {
+    name,
+    description = null,
+    price,
+    durationDays,
+    stock,
+    quantity,
+    availableSlots,
+    status = "ACTIVE",
+  } = req.body ?? {};
+
+  const parsedStock = Number(stock ?? quantity ?? availableSlots ?? 0);
+
+  if (!name || !Number.isFinite(Number(price)) || !Number.isInteger(Number(durationDays))) {
+    throw new ApiError(400, "Dados inválidos.");
+  }
+
+  const plan = await prisma.plan.create({
+    data: {
+      name,
+      description,
+      price: Number(price),
+      durationDays: Number(durationDays),
+      status: status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+      stock: parsedStock,
+      quantity: parsedStock,
+      availableSlots: parsedStock,
+    },
+  });
+
+  res.status(201).json({ plan: mapPlan(plan) });
+});
+
+export const updatePlan = asyncHandler(async (req: Request, res: Response) => {
+  const plan = await prisma.plan.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!plan) {
+    throw new ApiError(404, "Plano não encontrado.");
+  }
+
+  const {
+    name,
+    description,
+    price,
+    durationDays,
+    stock,
+    quantity,
+    availableSlots,
+    status,
+  } = req.body ?? {};
+
+  const parsedStock = stock ?? quantity ?? availableSlots;
+
+  const updated = await prisma.plan.update({
+    where: { id: plan.id },
+    data: {
+      name: name ?? plan.name,
+      description: description ?? plan.description,
+      price: price !== undefined ? Number(price) : plan.price,
+      durationDays: durationDays !== undefined ? Number(durationDays) : plan.durationDays,
+      status: status === "INACTIVE" ? "INACTIVE" : status === "ACTIVE" ? "ACTIVE" : plan.status,
+      ...(parsedStock !== undefined
+        ? {
+            stock: Number(parsedStock),
+            quantity: Number(parsedStock),
+            availableSlots: Number(parsedStock),
+          }
+        : {}),
+    },
+  });
+
+  res.json({ plan: mapPlan(updated) });
+});
+
+export const deletePlan = asyncHandler(async (req: Request, res: Response) => {
+  const plan = await prisma.plan.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!plan) {
+    throw new ApiError(404, "Plano não encontrado.");
+  }
+
+  await prisma.plan.delete({
+    where: { id: plan.id },
+  });
+
+  res.status(204).send();
+});

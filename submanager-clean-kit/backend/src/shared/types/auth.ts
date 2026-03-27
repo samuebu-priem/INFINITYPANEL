@@ -1,6 +1,4 @@
-import type { User } from "@prisma/client";
-
-export type Role = User["role"];
+export type Role = "USER" | "ADMIN" | "OWNER";
 
 export type JwtPayload = {
   sub: string;

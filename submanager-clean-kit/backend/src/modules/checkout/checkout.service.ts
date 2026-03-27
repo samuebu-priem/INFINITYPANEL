@@ -49,8 +49,6 @@ export const checkoutService = {
       throw new ApiError(404, "Admin profile not found");
     }
 
-    // Idempotency: if there is an existing usable session for this admin+plan, reuse it.
-    // BUT: if the existing session doesn't have MP artifacts yet (checkoutUrl/qr), recreate it.
     const existing = await prisma.checkoutSession.findFirst({
       where: {
         adminId: admin.id,
@@ -142,8 +140,7 @@ export const checkoutService = {
       },
     });
 
-    // Create a PaymentTransaction record to track payment lifecycle (still PENDING at this stage).
-    const txData: Parameters<typeof prisma.paymentTransaction.create>[0]["data"] = {
+    const txData = {
       adminId: admin.id,
       checkoutSessionId: updated.id,
       provider: updated.provider,
@@ -155,9 +152,9 @@ export const checkoutService = {
       currency: updated.currency,
       paymentMethod: updated.paymentMethod ?? null,
       ...(providerResponse.raw ? { metadata: { providerRaw: providerResponse.raw } } : {}),
-    };
+    } as const;
 
-    const tx = await prisma.paymentTransaction.create({ data: txData });
+    const tx = await prisma.paymentTransaction.create({ data: txData as never });
 
     return {
       checkoutSessionId: updated.id,
