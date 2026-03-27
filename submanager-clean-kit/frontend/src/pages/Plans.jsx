@@ -39,7 +39,7 @@ export default function Plans() {
     if (!silent) setLoading(true);
     setRefreshing(true);
     try {
-      const data = await api.get("/api/plans", { auth: true });
+      const data = await api.get("/plans", { auth: true });
       const rows = Array.isArray(data?.plans) ? data.plans.map(mapPlan) : [];
       setPlans(rows);
     } catch (error) {

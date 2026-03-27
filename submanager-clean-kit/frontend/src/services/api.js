@@ -1,11 +1,12 @@
 import { getToken } from "../lib/storage";
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
+const API_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 
 function normalizePath(path) {
   if (!path) return "/";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  return path.startsWith("/") ? path : `/${path}`;
+  const cleanPath = path.startsWith("/api/") ? path.slice(4) : path === "/api" ? "/" : path;
+  return cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
 }
 
 function buildUrl(path) {

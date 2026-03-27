@@ -35,9 +35,9 @@ export default function AdminDashboard() {
 
   async function loadDashboard() {
     const [plansData, paymentsData, subscriptionsData] = await Promise.all([
-      api.get("/api/plans", { auth: true }),
-      api.get("/api/payments/me", { auth: true }).catch(() => ({ payments: [] })),
-      api.get("/api/subscriptions/me", { auth: true }).catch(() => ({ subscription: null })),
+      api.get("/plans", { auth: true }),
+      api.get("/payments/me", { auth: true }).catch(() => ({ payments: [] })),
+      api.get("/subscriptions/me", { auth: true }).catch(() => ({ subscription: null })),
     ]);
 
     setPlans(Array.isArray(plansData?.plans) ? plansData.plans : []);

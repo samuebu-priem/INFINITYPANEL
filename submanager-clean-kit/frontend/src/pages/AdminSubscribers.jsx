@@ -6,7 +6,7 @@ export default function AdminSubscribers() {
   const [subscribers, setSubscribers] = useState([]);
 
   useEffect(() => {
-    api.get("/api/subscribers", { auth: true }).then((data) => {
+    api.get("/subscribers", { auth: true }).then((data) => {
       setSubscribers(Array.isArray(data?.subscribers) ? data.subscribers : []);
     });
   }, []);

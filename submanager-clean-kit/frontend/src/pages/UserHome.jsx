@@ -67,8 +67,8 @@ export default function UserHome() {
       setLoading(true);
       try {
         const [plansData, subscriptionData] = await Promise.all([
-          api.get("/api/plans", { auth: true }),
-          api.get("/api/subscriptions/me", { auth: true }).catch(() => ({ subscription: null })),
+          api.get("/plans", { auth: true }),
+          api.get("/subscriptions/me", { auth: true }).catch(() => ({ subscription: null })),
         ]);
 
         if (!alive) return;
@@ -108,7 +108,7 @@ export default function UserHome() {
     setIsProcessing(true);
     try {
       const checkout = await api.post(
-        "/api/checkout/create",
+        "/checkout/create",
         {
           planId: selectedPlan.id,
           paymentMethod,
