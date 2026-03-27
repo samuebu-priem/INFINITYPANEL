@@ -1,72 +1,81 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+import { api } from "../../services/api.js";
+import { CheckoutModal } from "./CheckoutModal.jsx";
 
-function getQuantity(plan) {
-  if (typeof plan?.quantity === "number") return plan.quantity;
-  if (typeof plan?.stock === "number") return plan.stock;
-  if (typeof plan?.availableSlots === "number") return plan.availableSlots;
-  if (typeof plan?.metadata?.stock === "number") return plan.metadata.stock;
-  return 0;
+function formatPrice(value) {
+  const numeric = Number(value || 0);
+  return numeric.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-export default function PlanCard({ plan, onSubscribe, canManage, onEdit, onDelete, deleting }) {
-  const quantity = getQuantity(plan);
-  const isAvailable = quantity > 0;
-  const amount = Number(plan?.amount ?? 0);
+export function PlanCard({ plan, user }) {
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const availableSlots = useMemo(() => Number(plan?.availableSlots ?? plan?.quantity ?? plan?.stock ?? 0), [plan]);
+  const isUnavailable = availableSlots <= 0 || plan?.isActive === false;
+
+  const handleBuy = async () => {
+    if (isUnavailable || submitting) return;
+
+    if (!user) {
+      toast.error("Entre para continuar.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await api.post("/checkout", { planId: plan.id });
+      toast.success("Pedido iniciado.");
+      setCheckoutOpen(true);
+    } catch (error) {
+      toast.error(error?.message || "Não foi possível iniciar a compra.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h3 className="text-2xl font-bold text-white">{plan?.name}</h3>
-          {plan?.description ? <p className="mt-2 text-sm text-slate-400">{plan.description}</p> : null}
+    <>
+      <div className="flex h-full flex-col rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm text-slate-400">Plano</p>
+            <h3 className="mt-1 text-2xl font-bold text-white">{plan?.name}</h3>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isUnavailable ? "bg-slate-800 text-slate-300" : "bg-emerald-500/20 text-emerald-300"}`}>
+            {isUnavailable ? "Indisponível" : "Disponível"}
+          </span>
         </div>
-        <div className="rounded-2xl border border-slate-700 bg-slate-800 px-3 py-2 text-right">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{plan?.billingCycle}</p>
-          <p className="text-lg font-semibold text-white">R$ {amount.toFixed(2)}</p>
+
+        <div className="mt-5 space-y-3">
+          <div className="text-3xl font-black text-white">{formatPrice(plan?.price)}</div>
+          <p className="text-sm text-slate-400">{plan?.description || "Plano disponível na plataforma."}</p>
+          <p className="text-sm font-medium text-slate-300">
+            {isUnavailable ? "Indisponível" : `Vagas disponíveis: ${availableSlots}`}
+          </p>
+        </div>
+
+        <div className="mt-6 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleBuy}
+            disabled={isUnavailable || submitting}
+            className="inline-flex flex-1 items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "Processando..." : "Assinar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setCheckoutOpen(true)}
+            className="rounded-2xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
+          >
+            Ver
+          </button>
         </div>
       </div>
 
-      <div className="mt-5 flex items-center justify-between gap-3 text-sm">
-        <span className={isAvailable ? "text-emerald-400" : "text-rose-400"}>
-          {isAvailable ? `Vagas disponíveis: ${quantity}` : "Indisponível"}
-        </span>
-        <span className={plan?.isActive === false ? "text-slate-500" : "text-slate-300"}>
-          {plan?.isActive === false ? "Inativo" : "Ativo"}
-        </span>
-      </div>
-
-      <div className="mt-6 flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={onSubscribe}
-          disabled={!isAvailable}
-          className="rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
-        >
-          Assinar agora
-        </button>
-
-        {canManage && (
-          <>
-            <button
-              type="button"
-              onClick={onEdit}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 font-semibold text-white transition hover:border-slate-600 hover:bg-slate-700"
-            >
-              <Pencil className="h-4 w-4" />
-              Editar
-            </button>
-            <button
-              type="button"
-              onClick={onDelete}
-              disabled={deleting}
-              className="inline-flex items-center gap-2 rounded-2xl border border-rose-900/60 bg-rose-950/40 px-4 py-3 font-semibold text-rose-200 transition hover:border-rose-700 hover:bg-rose-900/40 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Trash2 className="h-4 w-4" />
-              Excluir
-            </button>
-          </>
-        )}
-      </div>
-    </div>
+      <CheckoutModal isOpen={checkoutOpen} onClose={() => setCheckoutOpen(false)} plan={plan} user={user} />
+    </>
   );
 }

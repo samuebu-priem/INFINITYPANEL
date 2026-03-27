@@ -1,27 +1,13 @@
 import { X } from "lucide-react";
 
-export default function TermsModal({ open, title, content, onClose }) {
-  if (!open) return null;
+export function TermsModal({ isOpen, onClose, title, content }) {
+  if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="terms-modal-title"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-3xl overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl shadow-black/40"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
-          <div>
-            <h2 id="terms-modal-title" className="text-2xl font-bold text-white">
-              {title}
-            </h2>
-          </div>
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm">
+      <div className="w-full max-w-2xl rounded-[2rem] border border-slate-800 bg-slate-900 shadow-2xl shadow-black/40">
+        <div className="flex items-center justify-between gap-4 border-b border-slate-800 px-6 py-5">
+          <h2 className="text-xl font-bold text-white">{title}</h2>
           <button
             type="button"
             onClick={onClose}

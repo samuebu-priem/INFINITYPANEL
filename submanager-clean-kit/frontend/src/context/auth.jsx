@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-
-import { api } from "@/services/api";
-import { clearToken, getToken, setToken } from "@/lib/storage";
+import { api } from "../services/api.js";
+import { clearToken, getToken, setToken } from "../lib/storage.js";
 
 const AuthContext = createContext(null);
 
@@ -16,9 +15,9 @@ export function AuthProvider({ children }) {
       return null;
     }
 
-    const data = await api.get("/auth/me", { auth: true });
-    setUser(data?.user ?? null);
-    return data?.user ?? null;
+    const response = await api.get("/auth/me");
+    setUser(response?.user ?? null);
+    return response?.user ?? null;
   }
 
   useEffect(() => {
@@ -35,25 +34,25 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function login({ emailOrUsername, password }) {
-    const data = await api.post("/auth/login", { emailOrUsername, password }, { auth: false });
+    const response = await api.post("/auth/login", { emailOrUsername, password }, { auth: false });
 
-    if (data?.accessToken) setToken(data.accessToken);
-    setUser(data?.user ?? null);
+    if (response?.accessToken) setToken(response.accessToken);
+    setUser(response?.user ?? null);
 
-    return data;
+    return response;
   }
 
   async function register({ email, username, password, role, nickname, acceptPrivacyTerms, acceptFinancialTerms }) {
-    const data = await api.post(
+    const response = await api.post(
       "/auth/register",
       { email, username, password, role, nickname, acceptPrivacyTerms, acceptFinancialTerms },
       { auth: false },
     );
 
-    if (data?.accessToken) setToken(data.accessToken);
-    setUser(data?.user ?? null);
+    if (response?.accessToken) setToken(response.accessToken);
+    setUser(response?.user ?? null);
 
-    return data;
+    return response;
   }
 
   function logout() {

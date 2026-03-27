@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
-import { Home, LayoutDashboard, LogOut, Menu, ShieldCheck } from "lucide-react";
-import { useAuth } from "@/context/auth";
+import { Home, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
+import { useAuth } from "../context/auth.jsx";
 
 export default function AppShell({ children }) {
   const { user, logout } = useAuth();
 
   const links = [
     ...(user?.role === "ADMIN" ? [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard }] : []),
-    ...(user?.role ? [{ to: "/home", label: "Início", icon: Home }] : []),
+    ...(user?.role ? [{ to: "/dashboard", label: "Início", icon: Home }] : []),
     ...(["ADMIN", "OWNER"].includes(user?.role) ? [{ to: "/plans", label: "Planos", icon: LayoutDashboard }] : []),
   ];
 
@@ -20,7 +20,7 @@ export default function AppShell({ children }) {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-400">Infinity Painel</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-400">InfinityPainel</p>
               <h1 className="text-lg font-bold text-white">Painel de Assinaturas</h1>
             </div>
           </div>

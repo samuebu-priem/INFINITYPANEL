@@ -52,6 +52,16 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+      <Route
+        path="*"
+        element={
+          <AppShell>
+            <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-8 text-white">
+              Página não encontrada.
+            </div>
+          </AppShell>
+        }
+      />
     </Routes>
   );
 }
