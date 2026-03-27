@@ -7,7 +7,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(16),
   JWT_EXPIRES_IN: z.string().default("7d"),
-  CORS_ORIGIN: z.string().default("*"),
+  CORS_ORIGIN: z.string().optional(),
   WS_PATH: z.string().default("/ws"),
   DISCORD_BOT_TOKEN: z.string().optional(),
   DISCORD_GUILD_ID: z.string().optional(),
@@ -28,4 +28,5 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
-export const env: Env = envSchema.parse(process.env);
+const parsedEnv = envSchema.parse(process.env);
+export const env: Env = parsedEnv;

@@ -1,9 +1,9 @@
 export default function StatCard({ label, value, help }) {
   return (
-    <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-      <p className="text-slate-400 text-sm">{label}</p>
-      <h3 className="text-3xl font-bold mt-2">{value}</h3>
-      {help ? <p className="text-slate-500 text-sm mt-2">{help}</p> : null}
+    <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
+      <p className="text-sm text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-bold text-white">{value}</p>
+      {help ? <p className="mt-2 text-sm text-slate-500">{help}</p> : null}
     </div>
   );
 }

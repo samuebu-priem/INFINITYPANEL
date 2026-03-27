@@ -1,15 +1,17 @@
-import { storage } from "../lib/storage";
+import { getToken } from "../lib/storage";
 
-const API_URL = (import.meta.env.VITE_API_URL || "http://vps65431.publiccloud.com.br/").replace(
-  /\/$/,
-  "",
-);
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:3001/api").replace(/\/$/, "");
 
-// Se o caller já passar "/api/..." não duplicar.
-// Ex.: api.get("/api/plans") continua funcionando, e api.get("/plans") também.
-function withApiPrefix(path) {
-  if (!path) return "/api";
-  return path.startsWith("/api") ? path : `/api${path.startsWith("/") ? "" : "/"}${path}`;
+function normalizePath(path) {
+  if (!path) return "/";
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  return path.startsWith("/") ? path : `/${path}`;
+}
+
+function buildUrl(path) {
+  const normalizedPath = normalizePath(path);
+  if (!API_URL) return normalizedPath;
+  return `${API_URL}${normalizedPath}`;
 }
 
 async function parseError(res) {
@@ -18,9 +20,6 @@ async function parseError(res) {
   if (ct.includes("application/json")) {
     try {
       const data = await res.json();
-
-      // Backend standard error middleware returns:
-      // { error: { message: string, code: string, details?: ... } }
       const msg =
         data?.message ||
         data?.error?.message ||
@@ -39,73 +38,49 @@ async function parseError(res) {
   }
 }
 
+async function request(path, { method = "GET", body, auth = true } = {}) {
+  const headers = {};
+  const token = auth ? getToken() : null;
+
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(buildUrl(path), {
+    method,
+    headers: Object.keys(headers).length ? headers : undefined,
+    body: body !== undefined ? JSON.stringify(body ?? {}) : undefined,
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseError(res));
+  }
+
+  if (res.status === 204) return null;
+
+  const ct = res.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) return null;
+
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export const api = {
-  async get(path, { auth = true } = {}) {
-    const token = auth ? storage.getAccessToken() : null;
-
-    const res = await fetch(`${API_URL}${withApiPrefix(path)}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-
-    if (!res.ok) throw new Error(await parseError(res));
-    return res.json();
+  get(path, { auth = true } = {}) {
+    return request(path, { method: "GET", auth });
   },
 
-  async post(path, body, { auth = true } = {}) {
-    const token = auth ? storage.getAccessToken() : null;
-
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await fetch(`${API_URL}${withApiPrefix(path)}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body ?? {}),
-    });
-
-    if (!res.ok) throw new Error(await parseError(res));
-    return res.json();
+  post(path, body, { auth = true } = {}) {
+    return request(path, { method: "POST", body, auth });
   },
 
-  async patch(path, body, { auth = true } = {}) {
-    const token = auth ? storage.getAccessToken() : null;
-
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await fetch(`${API_URL}${withApiPrefix(path)}`, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify(body ?? {}),
-    });
-
-    if (!res.ok) throw new Error(await parseError(res));
-    return res.json();
+  patch(path, body, { auth = true } = {}) {
+    return request(path, { method: "PATCH", body, auth });
   },
 
-  async delete(path, { auth = true } = {}) {
-    const token = auth ? storage.getAccessToken() : null;
-
-    const headers = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
-
-    const res = await fetch(`${API_URL}${withApiPrefix(path)}`, {
-      method: "DELETE",
-      headers,
-    });
-
-    if (!res.ok) throw new Error(await parseError(res));
-
-    // Some endpoints may return 204 No Content or an empty body on success.
-    if (res.status === 204) return null;
-
-    const ct = res.headers.get("content-type") || "";
-    if (!ct.includes("application/json")) return null;
-
-    try {
-      return await res.json();
-    } catch {
-      return null;
-    }
+  delete(path, { auth = true } = {}) {
+    return request(path, { method: "DELETE", auth });
   },
 };

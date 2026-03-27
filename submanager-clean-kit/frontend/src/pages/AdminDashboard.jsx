@@ -1,64 +1,112 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { deletePayment, deletePlan, deactivatePlan } from "@/lib/adminAction";
+
 import AppShell from "@/layouts/AppShell";
 import RevenueChart from "@/components/admin/RevenueChart";
 import StatCard from "@/components/admin/StatCard";
-import { getPayments, getPlans, getSubscriptions } from "@/lib/storage";
+import { api } from "@/services/api";
 import { formatCurrency, formatDate } from "@/utils";
+
+function mapPayment(payment) {
+  return {
+    id: payment.id,
+    user_email: payment.user_email ?? payment.userEmail ?? "—",
+    plan_name: payment.plan_name ?? payment.planName ?? "Plano",
+    payment_method: payment.payment_method ?? payment.paymentMethod ?? "—",
+    amount: Number(payment.amount ?? payment.totalAmount ?? 0),
+    created_date: payment.created_date ?? payment.createdAt ?? payment.createdAt ?? null,
+  };
+}
+
+function mapSubscription(subscription) {
+  return {
+    id: subscription.id,
+    status: subscription.status ?? "active",
+    startsAt: subscription.startsAt ?? subscription.startDate ?? null,
+    endsAt: subscription.endsAt ?? subscription.endDate ?? null,
+  };
+}
 
 export default function AdminDashboard() {
   const [refresh, setRefresh] = useState(0);
+  const [plans, setPlans] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
 
-  const plans = getPlans();
-  const payments = getPayments();
-  const subscriptions = getSubscriptions();
+  async function loadDashboard() {
+    const [plansData, paymentsData, subscriptionsData] = await Promise.all([
+      api.get("/api/plans", { auth: true }),
+      api.get("/api/payments/me", { auth: true }).catch(() => ({ payments: [] })),
+      api.get("/api/subscriptions/me", { auth: true }).catch(() => ({ subscription: null })),
+    ]);
 
-  const totalRevenue = useMemo(() => payments.reduce((sum, item) => sum + Number(item.amount || 0), 0), [payments, refresh]);
+    setPlans(Array.isArray(plansData?.plans) ? plansData.plans : []);
+    setPayments(Array.isArray(paymentsData?.payments) ? paymentsData.payments.map(mapPayment) : []);
+    setSubscriptions(subscriptionsData?.subscription ? [mapSubscription(subscriptionsData.subscription)] : []);
+  }
+
+  useEffect(() => {
+    loadDashboard().catch(() => {
+      setPlans([]);
+      setPayments([]);
+      setSubscriptions([]);
+    });
+  }, [refresh]);
+
+  const totalRevenue = useMemo(
+    () => payments.reduce((sum, item) => sum + Number(item.amount || 0), 0),
+    [payments],
+  );
 
   const forceRefresh = () => setRefresh((prev) => prev + 1);
 
-  function handleDeletePayment(paymentId) {
-    const ok = window.confirm("Excluir este pagamento? Ele será removido do gráfico e do histórico local.");
-    if (!ok) return;
-    deletePayment(paymentId);
-    forceRefresh();
-  }
-
   return (
     <AppShell>
-      <div className="max-w-6xl mx-auto px-4 py-10 space-y-8">
-        <section>
-          <h2 className="text-3xl font-bold">Dashboard Admin</h2>
-          <p className="text-slate-400 mt-2">Visão geral dos dados locais do projeto limpo.</p>
+      <div className="space-y-6">
+        <section className="rounded-[2rem] border border-slate-800 bg-slate-900/80 p-6 shadow-lg shadow-black/20">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-400">Painel administrativo</p>
+              <h2 className="mt-2 text-3xl font-bold text-white">Dashboard Admin</h2>
+              <p className="mt-2 text-slate-400">Visão geral dos dados da API com acabamento visual mais consistente.</p>
+            </div>
+            <button
+              type="button"
+              onClick={forceRefresh}
+              className="rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
+            >
+              Atualizar dados
+            </button>
+          </div>
         </section>
 
-        <section className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Planos" value={plans.length} help="Quantidade total cadastrada" />
-          <StatCard label="Assinaturas" value={subscriptions.length} help="Histórico salvo localmente" />
-          <StatCard label="Pagamentos" value={payments.length} help="Checkout ainda simulado" />
-          <StatCard label="Receita" value={formatCurrency(totalRevenue)} help="Somatório local" />
+          <StatCard label="Assinaturas" value={subscriptions.length} help="Histórico da API" />
+          <StatCard label="Pagamentos" value={payments.length} help="Dados da API" />
+          <StatCard label="Receita" value={formatCurrency(totalRevenue)} help="Somatório da API" />
         </section>
 
-        <section className="grid lg:grid-cols-2 gap-6">
+        <section className="grid gap-6 lg:grid-cols-2">
           <div className="lg:col-span-2">
-            <RevenueChart payments={payments} onDeletePayment={handleDeletePayment} />
+            <RevenueChart payments={payments} />
           </div>
 
-          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
+          <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
             <div className="flex items-center justify-between gap-4">
-              <h3 className="text-xl font-semibold">Assinantes</h3>
+              <h3 className="text-xl font-semibold text-white">Assinantes</h3>
               <Link
                 to="/admin/subscribers"
-                className="rounded-xl bg-slate-950 border border-slate-800 hover:border-sky-500 px-3 py-2 text-sm font-semibold"
+                className="rounded-2xl border border-slate-800 bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-800"
               >
                 Gerenciar
               </Link>
             </div>
-            <p className="text-slate-400 text-sm mt-2">Abra a aba de assinantes para ter controle total.</p>
+            <p className="mt-2 text-sm text-slate-400">Abra a aba de assinantes para ter controle total.</p>
           </div>
-          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-            <h3 className="text-xl font-semibold mb-4">Últimos pagamentos</h3>
+
+          <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
+            <h3 className="mb-4 text-xl font-semibold text-white">Últimos pagamentos</h3>
             <div className="space-y-3">
               {payments.length === 0 ? (
                 <p className="text-slate-500">Nenhum pagamento salvo ainda.</p>
@@ -70,16 +118,16 @@ export default function AdminDashboard() {
                   .map((payment) => (
                     <div
                       key={payment.id}
-                      className="rounded-2xl border border-slate-800 p-4 flex items-center justify-between gap-4"
+                      className="flex items-center justify-between gap-4 rounded-2xl border border-slate-800 p-4"
                     >
                       <div>
-                        <p className="font-medium">{payment.user_email}</p>
+                        <p className="font-medium text-white">{payment.user_email}</p>
                         <p className="text-sm text-slate-400">
                           {payment.plan_name} • {payment.payment_method}
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">{formatCurrency(payment.amount)}</p>
+                        <p className="font-semibold text-white">{formatCurrency(payment.amount)}</p>
                         <p className="text-sm text-slate-500">{formatDate(payment.created_date)}</p>
                       </div>
                     </div>
@@ -89,52 +137,25 @@ export default function AdminDashboard() {
           </div>
         </section>
 
-        <section className="rounded-3xl border border-slate-800 bg-slate-900 p-6">
-          <h3 className="text-xl font-semibold mb-4">Gerenciar planos</h3>
+        <section className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
+          <h3 className="mb-4 text-xl font-semibold text-white">Gerenciar planos</h3>
           <div className="space-y-3">
             {plans.length === 0 ? (
               <p className="text-slate-500">Nenhum plano cadastrado.</p>
             ) : (
               plans.map((plan) => (
-                <div
-                  key={plan.id}
-                  className="rounded-2xl border border-slate-800 p-4"
-                >
+                <div key={plan.id} className="rounded-2xl border border-slate-800 p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div>
-                      <p className="font-medium">{plan.name}</p>
+                      <p className="font-medium text-white">{plan.name}</p>
                       <p className="text-sm text-slate-400">
-                        {formatCurrency(plan.price)} • {plan.duration_days} dias
+                        {formatCurrency(Number(plan.amount ?? plan.price ?? 0))} • {plan.billingCycle ?? "MONTHLY"}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">
-                        {plan.is_active ? "Ativo" : "Desativado"}
-                      </p>
+                      <p className="font-semibold text-white">{plan.isActive ? "Ativo" : "Desativado"}</p>
                     </div>
                   </div>
-
-                  <div className="flex gap-2 mt-4">
-  <button
-    onClick={() => {
-      deactivatePlan(plan.id);
-      window.location.reload();
-    }}
-    className="bg-yellow-500 hover:bg-yellow-600 px-3 py-2 rounded-lg text-sm text-black font-medium"
-  >
-    Desativar
-  </button>
-
-  <button
-    onClick={() => {
-      deletePlan(plan.id);
-      window.location.reload();
-    }}
-    className="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-sm"
-  >
-    Excluir
-  </button>
-</div>
                 </div>
               ))
             )}

@@ -1,29 +1,11 @@
-import express from "express";
-import cors from "cors";
-import dotenv from "dotenv";
-import authRoutes from "./routes/authRoutes.js";
-import plansRoutes from "./routes/plansRoutes.js";
-import subscriptionsRoutes from "./routes/subscriptionsRoutes.js";
-import paymentsRoutes from "./routes/paymentsRoutes.js";
+import http from "http";
 
-dotenv.config();
+import { env } from "./src/config/env.js";
+import { app } from "./src/app.js";
 
-const app = express();
-const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const server = http.createServer(app);
 
-app.use(cors({ origin: FRONTEND_URL }));
-app.use(express.json());
-
-app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "submanager-backend" });
-});
-
-app.use(authRoutes);
-app.use("/plans", plansRoutes);
-app.use("/subscriptions", subscriptionsRoutes);
-app.use(paymentsRoutes);
-
-app.listen(PORT, () => {
-  console.log(`Backend rodando em http://localhost:${PORT}`);
+server.listen(env.PORT, () => {
+  // eslint-disable-next-line no-console
+  console.log(`API listening on http://localhost:${env.PORT}`);
 });

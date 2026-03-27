@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 import { api } from "@/services/api";
-import { clearAccessToken, getAccessToken, logout as storageLogout, setAccessToken } from "@/lib/storage";
+import { clearToken, getToken, setToken } from "@/lib/storage";
 
 const AuthContext = createContext(null);
 
@@ -10,14 +10,15 @@ export function AuthProvider({ children }) {
   const [booting, setBooting] = useState(true);
 
   async function refreshMe() {
-    const token = getAccessToken();
+    const token = getToken();
     if (!token) {
       setUser(null);
-      return;
+      return null;
     }
 
     const data = await api.get("/api/auth/me", { auth: true });
-    setUser(data.user);
+    setUser(data?.user ?? null);
+    return data?.user ?? null;
   }
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export function AuthProvider({ children }) {
       try {
         await refreshMe();
       } catch {
-        clearAccessToken();
+        clearToken();
         setUser(null);
       } finally {
         setBooting(false);
@@ -36,28 +37,28 @@ export function AuthProvider({ children }) {
   async function login({ emailOrUsername, password }) {
     const data = await api.post("/api/auth/login", { emailOrUsername, password }, { auth: false });
 
-    if (data?.accessToken) setAccessToken(data.accessToken);
+    if (data?.accessToken) setToken(data.accessToken);
     setUser(data?.user ?? null);
 
     return data;
   }
 
-  async function register({ email, username, password, role, nickname }) {
+  async function register({ email, username, password, role, nickname, acceptPrivacyTerms, acceptFinancialTerms }) {
     const data = await api.post(
       "/api/auth/register",
-      { email, username, password, role, nickname },
+      { email, username, password, role, nickname, acceptPrivacyTerms, acceptFinancialTerms },
       { auth: false },
     );
 
-    if (data?.accessToken) setAccessToken(data.accessToken);
+    if (data?.accessToken) setToken(data.accessToken);
     setUser(data?.user ?? null);
 
     return data;
   }
 
   function logout() {
-    storageLogout(); // removes persisted accessToken + current_user from storage
-    setUser(null); // clears in-memory authenticated user
+    clearToken();
+    setUser(null);
   }
 
   const value = useMemo(
