@@ -11,6 +11,7 @@ import { deletePlan } from "@/lib/adminAction";
 function mapPlan(plan) {
   const amount = Number(plan?.amount ?? plan?.price ?? 0);
   const durationDays = Number(plan?.metadata?.duration_days ?? plan?.duration_days ?? 30);
+  const features = Array.isArray(plan?.metadata?.features) ? plan.metadata.features : [];
 
   return {
     id: plan.id,
@@ -21,7 +22,7 @@ function mapPlan(plan) {
     billingCycle: plan.billingCycle ?? plan.billing_cycle ?? "MONTHLY",
     duration_days: Number.isFinite(durationDays) ? durationDays : 30,
     isActive: plan.isActive ?? plan.is_active ?? true,
-    features: Array.isArray(plan?.metadata?.features) ? plan.metadata.features : [],
+    features,
     currency: plan.currency ?? "BRL",
     metadata: plan.metadata ?? {},
   };
@@ -36,6 +37,7 @@ function emptyForm() {
     billingCycle: "MONTHLY",
     currency: "BRL",
     duration_days: "30",
+    features: "",
     isActive: true,
   };
 }
@@ -92,6 +94,7 @@ export default function Plans() {
       billingCycle: plan.billingCycle ?? "MONTHLY",
       currency: plan.currency ?? "BRL",
       duration_days: String(plan.duration_days ?? 30),
+      features: Array.isArray(plan.features) ? plan.features.join(", ") : "",
       isActive: plan.isActive !== false,
     });
     setFormOpen(true);
@@ -106,6 +109,11 @@ export default function Plans() {
     event.preventDefault();
     if (!canManagePlans) return;
 
+    const features = editingPlan.features
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+
     const payload = {
       name: editingPlan.name.trim(),
       description: editingPlan.description.trim(),
@@ -114,6 +122,7 @@ export default function Plans() {
       currency: editingPlan.currency || "BRL",
       metadata: {
         duration_days: Number(editingPlan.duration_days) || 30,
+        features,
       },
     };
 
@@ -346,6 +355,16 @@ export default function Plans() {
                     value={editingPlan.currency}
                     onChange={(e) => setEditingPlan((prev) => ({ ...prev, currency: e.target.value }))}
                     placeholder="BRL"
+                  />
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-slate-300">Features</label>
+                  <textarea
+                    className="field min-h-28"
+                    value={editingPlan.features}
+                    onChange={(e) => setEditingPlan((prev) => ({ ...prev, features: e.target.value }))}
+                    placeholder="Separe as features por vírgula"
                   />
                 </div>
               </div>
