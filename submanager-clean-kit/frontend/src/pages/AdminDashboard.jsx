@@ -68,7 +68,7 @@ export default function AdminDashboard() {
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-400">Painel administrativo</p>
               <h2 className="mt-2 text-3xl font-bold text-white">Dashboard Admin</h2>
-              <p className="mt-2 text-slate-400">Visão geral dos dados da API com acabamento visual mais consistente.</p>
+              <p className="mt-2 text-slate-400">Visão geral dos dados com acabamento visual mais consistente.</p>
             </div>
             <button
               type="button"
@@ -82,9 +82,9 @@ export default function AdminDashboard() {
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard label="Planos" value={plans.length} help="Quantidade total cadastrada" />
-          <StatCard label="Assinaturas" value={subscriptions.length} help="Histórico da API" />
-          <StatCard label="Pagamentos" value={payments.length} help="Dados da API" />
-          <StatCard label="Receita" value={formatCurrency(totalRevenue)} help="Somatório da API" />
+          <StatCard label="Assinaturas" value={subscriptions.length} help="Histórico recente" />
+          <StatCard label="Pagamentos" value={payments.length} help="Dados recentes" />
+          <StatCard label="Receita" value={formatCurrency(totalRevenue)} help="Somatório total" />
         </section>
 
         <section className="grid gap-6 lg:grid-cols-2">

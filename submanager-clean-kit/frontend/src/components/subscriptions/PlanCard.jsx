@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 import { formatCurrency } from "@/utils";
 
-export default function PlanCard({ plan, isPopular = false, onSelect }) {
+export default function PlanCard({ plan, isPopular = false, onSelect, onEdit, canEdit = false }) {
   const amount = Number(plan?.price ?? plan?.amount ?? 0);
   const billingLabel = plan?.duration_days ? `a cada ${plan.duration_days} dias` : plan?.billingCycle ?? "";
   const features = Array.isArray(plan?.features) ? plan.features : [];
@@ -39,12 +39,24 @@ export default function PlanCard({ plan, isPopular = false, onSelect }) {
         )}
       </div>
 
-      <button
-        onClick={() => onSelect?.(plan)}
-        className="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-500"
-      >
-        Assinar agora
-      </button>
+      <div className="mt-6 grid grid-cols-1 gap-3">
+        <button
+          onClick={() => onSelect?.(plan)}
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-500"
+        >
+          Assinar agora
+        </button>
+
+        {canEdit && (
+          <button
+            type="button"
+            onClick={() => onEdit?.(plan)}
+            className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 font-semibold text-slate-200 transition hover:bg-slate-800"
+          >
+            Editar
+          </button>
+        )}
+      </div>
     </div>
   );
 }
