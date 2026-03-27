@@ -126,6 +126,7 @@ model SubscriptionPlan {
   currency         String            @default("BRL")
   billingCycle     BillingCycle
   isActive         Boolean           @default(true)
+  quantity         Int               @default(0)
   metadata         Json?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt

@@ -17,8 +17,7 @@ export default function TermsModal({ open, title, content, onClose }) {
       >
         <div className="flex items-start justify-between gap-4 border-b border-slate-800 px-6 py-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-400">Termos e condições</p>
-            <h2 id="terms-modal-title" className="mt-2 text-2xl font-bold text-white">
+            <h2 id="terms-modal-title" className="text-2xl font-bold text-white">
               {title}
             </h2>
           </div>

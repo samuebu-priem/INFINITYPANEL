@@ -1,60 +1,70 @@
-import { Check } from "lucide-react";
-import { formatCurrency } from "@/utils";
+import { Pencil, Trash2 } from "lucide-react";
 
-export default function PlanCard({ plan, isPopular = false, onSelect, onEdit, canEdit = false }) {
-  const amount = Number(plan?.price ?? plan?.amount ?? 0);
-  const billingLabel = plan?.duration_days ? `a cada ${plan.duration_days} dias` : plan?.billingCycle ?? "";
-  const features = Array.isArray(plan?.features) ? plan.features : [];
-  const hasPlanName = Boolean(plan?.name?.trim());
+function getQuantity(plan) {
+  if (typeof plan?.quantity === "number") return plan.quantity;
+  if (typeof plan?.stock === "number") return plan.stock;
+  if (typeof plan?.availableSlots === "number") return plan.availableSlots;
+  if (typeof plan?.metadata?.stock === "number") return plan.metadata.stock;
+  return 0;
+}
+
+export default function PlanCard({ plan, onSubscribe, canManage, onEdit, onDelete, deleting }) {
+  const quantity = getQuantity(plan);
+  const isAvailable = quantity > 0;
+  const amount = Number(plan?.amount ?? 0);
 
   return (
-    <div
-      className={`rounded-[2rem] border ${isPopular ? "border-sky-500/80" : "border-slate-800"} bg-slate-900 p-6 shadow-lg shadow-black/20 transition duration-200 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/25`}
-    >
-      {isPopular && (
-        <span className="mb-4 inline-flex rounded-full bg-sky-500/10 px-3 py-1 text-xs font-semibold text-sky-300">
-          Mais escolhido
+    <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-2xl font-bold text-white">{plan?.name}</h3>
+          {plan?.description ? <p className="mt-2 text-sm text-slate-400">{plan.description}</p> : null}
+        </div>
+        <div className="rounded-2xl border border-slate-700 bg-slate-800 px-3 py-2 text-right">
+          <p className="text-xs uppercase tracking-[0.2em] text-slate-400">{plan?.billingCycle}</p>
+          <p className="text-lg font-semibold text-white">R$ {amount.toFixed(2)}</p>
+        </div>
+      </div>
+
+      <div className="mt-5 flex items-center justify-between gap-3 text-sm">
+        <span className={isAvailable ? "text-emerald-400" : "text-rose-400"}>
+          {isAvailable ? `Vagas disponíveis: ${quantity}` : "Indisponível"}
         </span>
-      )}
-      <div className="space-y-3">
-        <h3 className="text-2xl font-bold text-white">{hasPlanName ? plan.name : "Plano"}</h3>
-        <p className="min-h-12 text-slate-400">{plan?.description ?? "Detalhes do plano disponíveis na seleção."}</p>
+        <span className={plan?.isActive === false ? "text-slate-500" : "text-slate-300"}>
+          {plan?.isActive === false ? "Inativo" : "Ativo"}
+        </span>
       </div>
 
-      <div className="mt-6">
-        <p className="text-3xl font-extrabold text-white">{formatCurrency(amount)}</p>
-        <p className="text-sm text-slate-500">{billingLabel}</p>
-      </div>
-
-      <div className="mt-6 space-y-3 rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
-        {features.length === 0 ? (
-          <p className="text-sm text-slate-500">Recursos exibidos no checkout.</p>
-        ) : (
-          features.map((feature) => (
-            <div key={feature} className="flex items-start gap-2 text-sm leading-6 text-slate-300">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-              <span>{feature}</span>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="mt-6 grid grid-cols-1 gap-3">
+      <div className="mt-6 flex flex-wrap gap-3">
         <button
-          onClick={() => onSelect?.(plan)}
-          className="inline-flex w-full items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-500"
+          type="button"
+          onClick={onSubscribe}
+          disabled={!isAvailable}
+          className="rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
         >
           Assinar agora
         </button>
 
-        {canEdit && (
-          <button
-            type="button"
-            onClick={() => onEdit?.(plan)}
-            className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 font-semibold text-slate-200 transition hover:bg-slate-800"
-          >
-            Editar
-          </button>
+        {canManage && (
+          <>
+            <button
+              type="button"
+              onClick={onEdit}
+              className="inline-flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-800 px-4 py-3 font-semibold text-white transition hover:border-slate-600 hover:bg-slate-700"
+            >
+              <Pencil className="h-4 w-4" />
+              Editar
+            </button>
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={deleting}
+              className="inline-flex items-center gap-2 rounded-2xl border border-rose-900/60 bg-rose-950/40 px-4 py-3 font-semibold text-rose-200 transition hover:border-rose-700 hover:bg-rose-900/40 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 className="h-4 w-4" />
+              Excluir
+            </button>
+          </>
         )}
       </div>
     </div>

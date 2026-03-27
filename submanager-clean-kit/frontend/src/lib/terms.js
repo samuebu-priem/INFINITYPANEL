@@ -1,27 +1,27 @@
 export const privacyTerms = [
   {
-    title: "1. Finalidade do cadastro",
-    body: "Ao criar uma conta, o usuário fornece dados cadastrais para acesso à plataforma, autenticação, suporte, comunicação operacional e gestão da assinatura.",
+    title: "1. Cadastro",
+    body: "Ao criar uma conta, o usuário informa dados para acesso à plataforma, suporte e gestão da assinatura.",
   },
   {
     title: "2. Uso dos dados",
-    body: "Os dados informados podem ser utilizados para identificação do usuário, controle de acesso, cobrança, atendimento, prevenção a fraudes e cumprimento de obrigações legais ou regulatórias.",
+    body: "Os dados podem ser usados para identificação, autenticação, cobrança, atendimento, prevenção a fraudes e cumprimento de obrigações legais.",
   },
   {
     title: "3. Compartilhamento",
-    body: "As informações poderão ser compartilhadas apenas com prestadores necessários à operação da plataforma, como serviços de autenticação, pagamento, suporte técnico e infraestrutura, sempre que indispensável para a execução do serviço.",
+    body: "As informações podem ser compartilhadas apenas com serviços necessários à operação da plataforma, como autenticação, pagamento, suporte e infraestrutura.",
   },
   {
     title: "4. Segurança",
-    body: "A plataforma adota medidas técnicas e administrativas razoáveis para proteger os dados contra acesso não autorizado, uso indevido, perda ou alteração indevida.",
+    body: "A plataforma adota medidas técnicas e administrativas para proteger os dados contra acesso não autorizado, uso indevido, perda ou alteração.",
   },
   {
-    title: "5. Responsabilidades do usuário",
+    title: "5. Responsabilidade do usuário",
     body: "O usuário é responsável pela veracidade das informações fornecidas, pela guarda de suas credenciais e pelo uso adequado da conta.",
   },
   {
-    title: "6. Consentimento e alteração",
-    body: "O aceite destes termos autoriza o tratamento dos dados conforme descrito. Estes termos poderão ser atualizados para refletir melhorias operacionais, legais ou de segurança.",
+    title: "6. Atualizações",
+    body: "Estes termos podem ser atualizados para refletir mudanças operacionais, legais ou de segurança.",
   },
 ];
 
@@ -32,11 +32,11 @@ export const financialTerms = [
   },
   {
     title: "2. Forma de pagamento",
-    body: "Os pagamentos podem ser processados por intermediadores de pagamento e estão sujeitos à validação, disponibilidade do meio de pagamento e regras do provedor financeiro utilizado.",
+    body: "Os pagamentos podem ser processados por intermediadores e estão sujeitos à validação, disponibilidade do meio de pagamento e regras do provedor utilizado.",
   },
   {
     title: "3. Renovação e cancelamento",
-    body: "Quando aplicável, a renovação da assinatura ocorrerá automaticamente até solicitação de cancelamento, observadas as regras do plano e do meio de pagamento contratado.",
+    body: "Quando aplicável, a renovação da assinatura ocorre automaticamente até solicitação de cancelamento, observadas as regras do plano e do meio de pagamento contratado.",
   },
   {
     title: "4. Inadimplência e falhas de pagamento",
@@ -44,7 +44,7 @@ export const financialTerms = [
   },
   {
     title: "5. Reembolsos e estornos",
-    body: "Pedidos de reembolso, quando cabíveis, seguirão a política vigente da plataforma e as regras do meio de pagamento utilizado, respeitando prazos e critérios aplicáveis.",
+    body: "Pedidos de reembolso, quando cabíveis, seguem a política vigente da plataforma e as regras do meio de pagamento utilizado, respeitando prazos e critérios aplicáveis.",
   },
   {
     title: "6. Concordância financeira",
