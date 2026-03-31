@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   async function login({ emailOrUsername, password }) {
-    const response = await api.post("/auth/login", { emailOrUsername, password }, { auth: false });
+    const response = await api.post("/api/auth/login", { emailOrUsername, password }, { auth: false });
 
     if (response?.accessToken) setToken(response.accessToken);
     setUser(response?.user ?? null);
@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
 
   async function register({ email, username, password, role, nickname, acceptPrivacyTerms, acceptFinancialTerms }) {
     const response = await api.post(
-      "/auth/register",
+      "/api/auth/register",
       { email, username, password, role, nickname, acceptPrivacyTerms, acceptFinancialTerms },
       { auth: false },
     );
