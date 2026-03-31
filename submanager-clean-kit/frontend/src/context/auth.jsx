@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
       return null;
     }
 
-    const response = await api.get("/auth/me");
+    const response = await api.get("/auth/me", { auth: true });
     setUser(response?.user ?? null);
     return response?.user ?? null;
   }
