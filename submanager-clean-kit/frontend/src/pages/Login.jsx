@@ -15,7 +15,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await api.post("/auth/login", form);
+      const response = await api.post("/auth/login", form, { auth: false });
+      if (response?.accessToken) {
+        localStorage.setItem("token", response.accessToken);
+      }
       await refreshAuth?.();
       toast.success("Login realizado.");
       navigate("/dashboard");
