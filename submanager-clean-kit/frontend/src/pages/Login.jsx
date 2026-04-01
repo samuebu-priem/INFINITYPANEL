@@ -14,9 +14,9 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await login({ emailOrUsername: form.email, password: form.password });
+      const response = await login({ emailOrUsername: form.email, password: form.password });
       toast.success("Login realizado.");
-      navigate("/dashboard");
+      navigate(response?.user?.role === "ADMIN" ? "/admin" : "/dashboard");
     } catch (error) {
       toast.error(error?.response?.data?.message || "Não foi possível entrar.");
     } finally {

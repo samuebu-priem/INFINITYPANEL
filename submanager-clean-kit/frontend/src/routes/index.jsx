@@ -6,33 +6,39 @@ import Plans from "../pages/Plans.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import AdminSubscribers from "../pages/AdminSubscribers.jsx";
 import UserHome from "../pages/UserHome.jsx";
+import { useAuth } from "../context/auth.jsx";
+
+function AdminOnlyRoute({ children }) {
+  const { user, booting } = useAuth();
+
+  if (booting) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user?.role !== "ADMIN") return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
+function DefaultRedirect() {
+  const { user, booting } = useAuth();
+
+  if (booting) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
+}
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route
-        path="/"
-        element={
-          <AppShell>
-            <Navigate to="/dashboard" replace />
-          </AppShell>
-        }
-      />
-      <Route
-        path="/dashboard"
-        element={
-          <AppShell>
-            <UserHome />
-          </AppShell>
-        }
-      />
+      <Route path="/" element={<AppShell><DefaultRedirect /></AppShell>} />
+      <Route path="/dashboard" element={<AppShell><UserHome /></AppShell>} />
       <Route
         path="/plans"
         element={
           <AppShell>
-            <Plans />
+            <AdminOnlyRoute>
+              <Plans />
+            </AdminOnlyRoute>
           </AppShell>
         }
       />
@@ -40,7 +46,9 @@ export default function AppRoutes() {
         path="/admin"
         element={
           <AppShell>
-            <AdminDashboard />
+            <AdminOnlyRoute>
+              <AdminDashboard />
+            </AdminOnlyRoute>
           </AppShell>
         }
       />
@@ -48,7 +56,9 @@ export default function AppRoutes() {
         path="/admin/subscribers"
         element={
           <AppShell>
-            <AdminSubscribers />
+            <AdminOnlyRoute>
+              <AdminSubscribers />
+            </AdminOnlyRoute>
           </AppShell>
         }
       />

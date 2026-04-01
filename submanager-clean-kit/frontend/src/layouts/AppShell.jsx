@@ -1,14 +1,17 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Home, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/auth.jsx";
 
 export default function AppShell({ children }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
+
+  const isAdmin = user?.role === "ADMIN";
 
   const links = [
-    ...(user?.role === "ADMIN" ? [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard }] : []),
+    ...(isAdmin ? [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard }] : []),
     ...(user?.role ? [{ to: "/dashboard", label: "Início", icon: Home }] : []),
-    ...(["ADMIN", "OWNER"].includes(user?.role) ? [{ to: "/plans", label: "Planos", icon: LayoutDashboard }] : []),
+    ...(isAdmin ? [{ to: "/plans", label: "Planos", icon: LayoutDashboard }] : []),
   ];
 
   return (
@@ -28,11 +31,16 @@ export default function AppShell({ children }) {
           <nav className="flex items-center gap-2">
             {links.map((link) => {
               const Icon = link.icon;
+              const active = location.pathname === link.to || location.pathname.startsWith(`${link.to}/`);
               return (
                 <Link
                   key={link.to}
                   to={link.to}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-800 px-3 py-2 text-sm text-slate-100 transition hover:border-slate-700 hover:bg-slate-700"
+                  className={`inline-flex items-center gap-2 rounded-2xl border px-3 py-2 text-sm transition ${
+                    active
+                      ? "border-sky-500 bg-sky-500/10 text-sky-300"
+                      : "border-slate-800 bg-slate-800 text-slate-100 hover:border-slate-700 hover:bg-slate-700"
+                  }`}
                 >
                   <Icon className="h-4 w-4" />
                   {link.label}

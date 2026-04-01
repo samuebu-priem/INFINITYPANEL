@@ -65,6 +65,8 @@ export function AuthProvider({ children }) {
       user,
       booting,
       isAuthenticated: Boolean(user),
+      isAdmin: user?.role === "ADMIN",
+      isPlayer: user?.role === "PLAYER",
       login,
       register,
       logout,
