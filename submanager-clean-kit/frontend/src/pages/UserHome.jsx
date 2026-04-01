@@ -4,7 +4,7 @@ import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
 
 export default function UserHome() {
-  const { user, refreshMe } = useAuth();
+  const { user } = useAuth();
   const [plans, setPlans] = useState([]);
   const [subscription, setSubscription] = useState(null);
   const [loadingPlans, setLoadingPlans] = useState(true);

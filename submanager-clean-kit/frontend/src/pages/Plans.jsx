@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
-import { deactivatePlan, deletePlan } from "../lib/adminAction.js";
+import { activatePlan, deactivatePlan, deletePlan } from "../lib/adminAction.js";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-BR", {
@@ -142,14 +142,19 @@ export default function Plans() {
     }
   };
 
-  const handleDeactivate = async (planId) => {
+  const handleToggleStatus = async (planId, isActive) => {
     setMessage("");
     try {
-      await deactivatePlan(planId);
-      setMessage("Plano desativado com sucesso.");
+      if (isActive) {
+        await deactivatePlan(planId);
+        setMessage("Plano desativado com sucesso.");
+      } else {
+        await activatePlan(planId);
+        setMessage("Plano ativado com sucesso.");
+      }
       await loadPlans();
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Não foi possível desativar o plano.");
+      setMessage(error instanceof Error ? error.message : "Não foi possível alterar o status do plano.");
     }
   };
 
@@ -365,10 +370,14 @@ export default function Plans() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeactivate(plan.id)}
-                      className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/20"
+                      onClick={() => handleToggleStatus(plan.id, plan.isActive !== false)}
+                      className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
+                        plan.isActive !== false
+                          ? "border border-rose-500/30 bg-rose-500/10 text-rose-200 hover:bg-rose-500/20"
+                          : "border border-emerald-500/30 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20"
+                      }`}
                     >
-                      Desativar
+                      {plan.isActive !== false ? "Desativar" : "Ativar"}
                     </button>
                     <button
                       type="button"

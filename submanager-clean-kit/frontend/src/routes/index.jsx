@@ -25,6 +25,14 @@ function DefaultRedirect() {
   return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
 }
 
+function LogoutRedirect() {
+  const { user, booting } = useAuth();
+
+  if (booting) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
+}
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -62,6 +70,7 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+      <Route path="/logout" element={<LogoutRedirect />} />
       <Route
         path="*"
         element={

@@ -1,9 +1,10 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
 import { useAuth } from "../context/auth.jsx";
 
 export default function AppShell({ children }) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const isAdmin = user?.role === "ADMIN";
@@ -49,7 +50,10 @@ export default function AppShell({ children }) {
             })}
             <button
               type="button"
-              onClick={logout}
+              onClick={() => {
+                logout();
+                navigate("/login", { replace: true });
+              }}
               className="inline-flex items-center gap-2 rounded-2xl bg-rose-600/90 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-500"
             >
               <LogOut className="h-4 w-4" />
