@@ -15,7 +15,7 @@ export function AuthProvider({ children }) {
       return null;
     }
 
-    const response = await api.get("/auth/me", { auth: true });
+    const response = await api.get("/api/auth/me", { auth: true });
     setUser(response?.user ?? null);
     return response?.user ?? null;
   }
@@ -36,7 +36,7 @@ export function AuthProvider({ children }) {
   async function login({ emailOrUsername, password }) {
     const response = await api.post("/api/auth/login", { emailOrUsername, password }, { auth: false });
 
-    if (response?.accessToken) setToken(response.accessToken);
+    setToken(response?.accessToken ?? null);
     setUser(response?.user ?? null);
 
     return response;
@@ -49,7 +49,7 @@ export function AuthProvider({ children }) {
       { auth: false },
     );
 
-    if (response?.accessToken) setToken(response.accessToken);
+    setToken(response?.accessToken ?? null);
     setUser(response?.user ?? null);
 
     return response;

@@ -2,11 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useAuth } from "../context/auth.jsx";
-import { api } from "../services/api.js";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { refreshAuth } = useAuth();
+  const { login } = useAuth();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -15,11 +14,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await api.post("/api/auth/login", form, { auth: false });
-      if (response?.accessToken) {
-        localStorage.setItem("token", response.accessToken);
-      }
-      await refreshAuth?.();
+      await login({ emailOrUsername: form.email, password: form.password });
       toast.success("Login realizado.");
       navigate("/dashboard");
     } catch (error) {
