@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
-import { deactivatePlan, revokeSubscription } from "../lib/adminAction.js";
+import { deletePayment, updatePayment, deactivatePlan, revokeSubscription } from "../lib/adminAction.js";
 import RevenueChart from "../components/admin/RevenueChart.jsx";
 import StatCard from "../components/admin/StatCard.jsx";
 
@@ -109,8 +109,6 @@ export default function AdminDashboard() {
     [payments],
   );
 
-  const latestSubscribers = useMemo(() => subscriptions.slice(0, 6), [subscriptions]);
-
   const handleRevoke = async (subscriptionId) => {
     setActionMessage("");
     try {
@@ -130,6 +128,37 @@ export default function AdminDashboard() {
       await loadData();
     } catch (error) {
       setActionMessage(error instanceof Error ? error.message : "Não foi possível desativar o plano.");
+    }
+  };
+
+  const handleDeletePayment = async (paymentId) => {
+    setActionMessage("");
+    try {
+      await deletePayment(paymentId);
+      setPayments((current) => current.filter((payment) => payment.id !== paymentId));
+      setActionMessage("Receita excluída com sucesso.");
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "Não foi possível excluir a receita.");
+    }
+  };
+
+  const handleEditPayment = async (payment) => {
+    setActionMessage("");
+    try {
+      const nextAmount = Number(window.prompt("Novo valor da receita:", String(payment?.amount ?? 0)));
+      if (Number.isNaN(nextAmount)) return;
+
+      const payload = {
+        amount: nextAmount,
+      };
+
+      await updatePayment(payment.id, payload);
+      setPayments((current) =>
+        current.map((item) => (item.id === payment.id ? { ...item, amount: nextAmount } : item)),
+      );
+      setActionMessage("Receita atualizada com sucesso.");
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "Não foi possível editar a receita.");
     }
   };
 
@@ -236,6 +265,50 @@ export default function AdminDashboard() {
           </div>
         </section>
       </div>
+
+      <section className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm text-slate-400">Receitas</p>
+            <h2 className="mt-1 text-xl font-semibold text-white">Controle manual</h2>
+          </div>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {payments.length === 0 ? (
+            <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-400">Nenhuma receita encontrada.</div>
+          ) : (
+            payments.map((payment) => (
+              <div key={payment.id} className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="font-semibold text-white">{formatCurrency(payment.amount)}</p>
+                    <p className="text-sm text-slate-400">
+                      {payment.status || "status não informado"} • {payment.createdAt ? new Date(payment.createdAt).toLocaleString("pt-BR") : "data não informada"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleEditPayment(payment)}
+                      className="rounded-xl border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-sm font-semibold text-sky-200 transition hover:bg-sky-500/20"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePayment(payment.id)}
+                      className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-200 transition hover:bg-rose-500/20"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
 
       {actionMessage ? (
         <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-5 text-sm text-slate-300">

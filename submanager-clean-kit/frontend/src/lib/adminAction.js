@@ -15,3 +15,11 @@ export async function deletePlan(planId) {
 export async function revokeSubscription(subscriptionId) {
   return api.patch(`/subscriptions/${subscriptionId}/revoke`);
 }
+
+export async function deletePayment(paymentId) {
+  return api.delete(`/payments/${paymentId}`);
+}
+
+export async function updatePayment(paymentId, payload) {
+  return api.patch(`/payments/${paymentId}`, payload);
+}
