@@ -1,81 +1,107 @@
-import { useMemo, useState } from "react";
-import { toast } from "sonner";
-import { api } from "../../services/api.js";
-import { CheckoutModal } from "./CheckoutModal.jsx";
+function normalizeFeatures(plan) {
+  const raw =
+    plan?.features ||
+    plan?.metadata?.features ||
+    plan?.metadata?.items ||
+    plan?.metadata?.benefits ||
+    [];
 
-function formatPrice(value) {
-  const numeric = Number(value || 0);
-  return numeric.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  if (Array.isArray(raw)) return raw.filter(Boolean).map(String);
+  if (typeof raw === "string" && raw.trim()) return [raw.trim()];
+  return [];
+}
+
+function normalizeDays(plan) {
+  const days =
+    Number(plan?.quantity) ||
+    Number(plan?.days) ||
+    Number(plan?.durationDays) ||
+    Number(plan?.validityDays) ||
+    Number(plan?.metadata?.days) ||
+    Number(plan?.metadata?.durationDays) ||
+    Number(plan?.metadata?.validityDays) ||
+    0;
+
+  return Number.isFinite(days) && days > 0 ? Math.floor(days) : 0;
+}
+
+function normalizeStock(plan) {
+  const stock =
+    Number(plan?.stock) ||
+    Number(plan?.metadata?.stock) ||
+    Number(plan?.metadata?.inventory) ||
+    Number(plan?.quantityAvailable) ||
+    0;
+
+  return Number.isFinite(stock) && stock > 0 ? Math.floor(stock) : 0;
 }
 
 export function PlanCard({ plan, user }) {
-  const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-
-  const availableSlots = useMemo(() => Number(plan?.availableSlots ?? plan?.quantity ?? plan?.stock ?? 0), [plan]);
-  const isUnavailable = availableSlots <= 0 || plan?.isActive === false;
-
-  const handleBuy = async () => {
-    if (isUnavailable || submitting) return;
-
-    if (!user) {
-      toast.error("Entre para continuar.");
-      return;
-    }
-
-    try {
-      setSubmitting(true);
-      await api.post("/checkout", { planId: plan.id });
-      toast.success("Pedido iniciado.");
-      setCheckoutOpen(true);
-    } catch (error) {
-      toast.error(error?.message || "Não foi possível iniciar a compra.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  const isActive = plan?.isActive !== false;
+  const days = normalizeDays(plan);
+  const features = normalizeFeatures(plan);
+  const stock = normalizeStock(plan);
 
   return (
-    <>
-      <div className="flex h-full flex-col rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm text-slate-400">Plano</p>
-            <h3 className="mt-1 text-2xl font-bold text-white">{plan?.name}</h3>
-          </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${isUnavailable ? "bg-slate-800 text-slate-300" : "bg-emerald-500/20 text-emerald-300"}`}>
-            {isUnavailable ? "Indisponível" : "Disponível"}
-          </span>
+    <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-lg font-semibold text-white">{plan?.name || "Plano"}</p>
+          <p className="mt-1 text-sm text-slate-400">{plan?.description || "Acesso simples e direto."}</p>
         </div>
+        <span
+          className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+            isActive ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300" : "border-slate-700 bg-slate-800 text-slate-400"
+          }`}
+        >
+          {isActive ? "Disponível" : "Indisponível"}
+        </span>
+      </div>
 
-        <div className="mt-5 space-y-3">
-          <div className="text-3xl font-black text-white">{formatPrice(plan?.price)}</div>
-          <p className="text-sm text-slate-400">{plan?.description || "Plano disponível na plataforma."}</p>
-          <p className="text-sm font-medium text-slate-300">
-            {isUnavailable ? "Indisponível" : `Vagas disponíveis: ${availableSlots}`}
+      <div className="mt-5 flex items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-slate-400">Preço</p>
+          <p className="text-3xl font-bold text-white">
+            {new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: plan?.currency || "BRL",
+            }).format(Number(plan?.amount || 0))}
           </p>
-        </div>
-
-        <div className="mt-6 flex items-center gap-3">
-          <button
-            type="button"
-            onClick={handleBuy}
-            disabled={isUnavailable || submitting}
-            className="inline-flex flex-1 items-center justify-center rounded-2xl bg-sky-600 px-4 py-3 font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {submitting ? "Processando..." : "Assinar"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setCheckoutOpen(true)}
-            className="rounded-2xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-200 transition hover:border-slate-600 hover:bg-slate-800"
-          >
-            Ver
-          </button>
         </div>
       </div>
 
-      <CheckoutModal isOpen={checkoutOpen} onClose={() => setCheckoutOpen(false)} plan={plan} user={user} />
-    </>
+      <div className="mt-5 space-y-2">
+        <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3">
+          <span className="text-sm text-slate-400">Dias disponíveis</span>
+          <span className="text-sm font-semibold text-white">{days > 0 ? `${days} dias` : "Não informado"}</span>
+        </div>
+
+        <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3">
+          <span className="text-sm text-slate-400">Estoque</span>
+          <span className="text-sm font-semibold text-white">{stock > 0 ? `${stock} unidades` : "Sem limite definido"}</span>
+        </div>
+      </div>
+
+      {features.length > 0 ? (
+        <div className="mt-5">
+          <p className="text-sm text-slate-400">Features</p>
+          <ul className="mt-3 space-y-2">
+            {features.slice(0, 5).map((feature, index) => (
+              <li key={`${feature}-${index}`} className="flex items-start gap-2 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-slate-300">
+                <span className="mt-1 h-2 w-2 rounded-full bg-sky-400" />
+                <span>{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      <button
+        type="button"
+        className="mt-6 flex w-full items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-500"
+      >
+        {user?.role === "ADMIN" ? "Gerenciar" : "Assinar plano"}
+      </button>
+    </div>
   );
 }
