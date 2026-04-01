@@ -21,7 +21,7 @@ export default function CheckoutModal({ plan, open, onClose, onSuccess }) {
     setMessage("");
 
     try {
-      const response = await api.post("/checkout", {
+      const response = await api.post("/checkout/create", {
         planId: plan.id,
         paymentMethod: "PIX",
       });
