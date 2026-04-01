@@ -7,8 +7,8 @@ export default function UserHome() {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await api.get("/auth/me");
-        setUser(response.data?.user || null);
+        const response = await api.get("/api/auth/me");
+        setUser(response?.user || null);
       } catch {
         setUser(null);
       }

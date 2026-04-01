@@ -1,11 +1,11 @@
-import { getToken } from "../lib/storage";
+import { getToken } from "../lib/storage.js";
 
 const API_URL = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 
 function normalizePath(path) {
   if (!path) return "/";
   if (path.startsWith("http://") || path.startsWith("https://")) return path;
-  const cleanPath = path.startsWith("/api/") ? path.slice(4) : path === "/api" ? "/" : path;
+  const cleanPath = path.startsWith("/api/") ? path : path === "/api" ? "/" : path;
   return cleanPath.startsWith("/") ? cleanPath : `/${cleanPath}`;
 }
 
