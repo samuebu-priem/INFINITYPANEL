@@ -11,7 +11,7 @@ export default function Plans() {
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const response = await api.get("/api/plans");
+        const response = await api.get("/plans");
         const list = Array.isArray(response?.plans) ? response.plans : Array.isArray(response) ? response : [];
         setPlans(list);
       } catch {
