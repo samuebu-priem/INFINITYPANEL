@@ -12,13 +12,9 @@ export default function AdminDashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await api.get("/admin/dashboard");
-        setStats({
-          plans: response.data?.plans ?? 0,
-          activePlans: response.data?.activePlans ?? 0,
-          subscriptions: response.data?.subscriptions ?? 0,
-          revenue: response.data?.revenue ?? 0,
-        });
+       const plans = await api.get("/plans");
+const subscriptions = await api.get("/subscriptions");
+const payments = await api.get("/payments");
       } catch {
         setStats({ plans: 0, activePlans: 0, subscriptions: 0, revenue: 0 });
       }
