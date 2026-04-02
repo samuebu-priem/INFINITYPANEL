@@ -16,7 +16,6 @@ function normalizeFeatures(plan) {
 
 function normalizeDays(plan) {
   const days =
-    Number(plan?.quantity) ||
     Number(plan?.days) ||
     Number(plan?.durationDays) ||
     Number(plan?.validityDays) ||
@@ -30,6 +29,7 @@ function normalizeDays(plan) {
 
 function normalizeStock(plan) {
   const stock =
+    Number(plan?.quantity) ||
     Number(plan?.stock) ||
     Number(plan?.metadata?.stock) ||
     Number(plan?.metadata?.inventory) ||
@@ -103,7 +103,7 @@ export function PlanCard({ plan, user, showCheckout = true }) {
 
         <div className="mt-5 space-y-2">
           <div className="flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3">
-            <span className="text-sm text-slate-400">Dias disponíveis</span>
+            <span className="text-sm text-slate-400">Validade</span>
             <span className="text-sm font-semibold text-white">{days > 0 ? `${days} dias` : "Não informado"}</span>
           </div>
 

@@ -34,7 +34,7 @@ export default function Plans() {
     amount: "",
     billingCycle: "MONTHLY",
     currency: "BRL",
-    quantity: "30",
+    quantity: "",
     metadata: "",
     originalAmount: "",
   });
@@ -78,7 +78,7 @@ export default function Plans() {
       amount: "",
       billingCycle: "MONTHLY",
       currency: "BRL",
-      quantity: "30",
+      quantity: "",
       metadata: "",
       originalAmount: "",
     });
@@ -99,7 +99,7 @@ export default function Plans() {
       amount: String(plan.amount ?? ""),
       billingCycle: plan.billingCycle || "MONTHLY",
       currency: plan.currency || "BRL",
-      quantity: String(plan.quantity ?? 30),
+      quantity: String(plan.quantity ?? ""),
       metadata,
       originalAmount: String(
         plan.originalAmount ??
@@ -401,15 +401,13 @@ export default function Plans() {
                       <p className="text-lg font-semibold text-white">{plan.name}</p>
                       <p className="mt-1 text-sm text-slate-400">{plan.description || "Sem descrição"}</p>
                       <div className="mt-3 flex items-center gap-2 text-sm">
-                        {plan.originalAmount ? (
-                          <span className="text-slate-500 line-through">{formatCurrency(plan.originalAmount)}</span>
+                        {plan.metadata?.originalAmount ? (
+                          <span className="text-slate-500 line-through">{formatCurrency(plan.metadata.originalAmount)}</span>
                         ) : null}
                         <span className="font-semibold text-white">{formatCurrency(plan.amount)}</span>
                       </div>
                       <p className="mt-2 text-sm text-slate-500">{plan.quantity ?? 0} dias</p>
-                      <p className="mt-2 text-xs text-slate-500">
-                        Estoque: {plan.stock ?? plan.quantity ?? 0}
-                      </p>
+                      <p className="mt-2 text-xs text-slate-500">Estoque: {plan.quantity ?? 0}</p>
                       <p className="mt-2 text-xs text-slate-500">
                         Criado por: {plan.ownerEmail || plan.creatorEmail || plan.createdByEmail || "não informado pela API"}
                       </p>

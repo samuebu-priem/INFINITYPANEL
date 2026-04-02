@@ -22,12 +22,7 @@ export default function AdminDashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [plansRes, subscriptionsRes, paymentsRes, usersRes] = await Promise.allSettled([
-        api.get("/plans"),
-        api.get("/subscriptions/me"),
-        api.get("/payments/me"),
-        api.get("/users"),
-      ]);
+      const [plansRes, usersRes] = await Promise.allSettled([api.get("/plans"), api.get("/users")]);
 
       const plansList = plansRes.status === "fulfilled"
         ? Array.isArray(plansRes.value?.plans)
@@ -37,27 +32,11 @@ export default function AdminDashboard() {
             : []
         : [];
 
-      const subscriptionList = subscriptionsRes.status === "fulfilled"
-        ? Array.isArray(subscriptionsRes.value?.subscriptions)
-          ? subscriptionsRes.value.subscriptions
-          : subscriptionsRes.value?.subscription
-            ? [subscriptionsRes.value.subscription]
-            : []
-        : [];
-
-      const paymentList = paymentsRes.status === "fulfilled"
-        ? Array.isArray(paymentsRes.value?.payments)
-          ? paymentsRes.value.payments
-          : Array.isArray(paymentsRes.value)
-            ? paymentsRes.value
-            : []
-        : [];
-
       const userList = usersRes.status === "fulfilled" ? usersRes.value?.users || [] : [];
 
       setPlans(plansList);
-      setSubscriptions(subscriptionList.length > 0 ? subscriptionList : userList);
-      setPayments(paymentList);
+      setSubscriptions(userList);
+      setPayments([]);
     } catch {
       setPlans([]);
       setSubscriptions([]);
@@ -73,10 +52,7 @@ export default function AdminDashboard() {
 
   const activePlans = useMemo(() => plans.filter((plan) => plan?.isActive !== false), [plans]);
 
-  const totalRevenue = useMemo(
-    () => payments.reduce((sum, item) => sum + Number(item?.amount || 0), 0),
-    [payments],
-  );
+  const totalRevenue = useMemo(() => 0, []);
 
   const searchableSubscribers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -100,14 +76,7 @@ export default function AdminDashboard() {
     });
   }, [search, subscriptions]);
 
-  const revenuePoints = useMemo(
-    () =>
-      payments.slice(0, 6).map((payment) => ({
-        label: payment?.createdAt ? new Date(payment.createdAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : "—",
-        value: Number(payment?.amount || 0),
-      })),
-    [payments],
-  );
+  const revenuePoints = useMemo(() => [], []);
 
   const handleRevoke = async (subscriptionId) => {
     setActionMessage("");
@@ -179,7 +148,7 @@ export default function AdminDashboard() {
         <StatCard label="Lucro / pagamentos" value={loading ? "..." : formatCurrency(totalRevenue)} help="Somatório dos pagamentos retornados" />
       </div>
 
-      <RevenueChart payments={payments} />
+      <RevenueChart payments={[]} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6">
@@ -201,7 +170,12 @@ export default function AdminDashboard() {
                       <p className="font-semibold text-white">{plan.name}</p>
                       <p className="text-sm text-slate-400">{plan.description || "Sem descrição"}</p>
                       <p className="mt-2 text-sm text-slate-500">
-                        {formatCurrency(plan.amount)} • {plan.billingCycle} • validade {plan.quantity ?? 0} dias
+                        {formatCurrency(plan.amount)}
+                        {plan.metadata?.originalAmount ? (
+                          <span className="ml-2 text-slate-500 line-through">{formatCurrency(plan.metadata.originalAmount)}</span>
+                        ) : null}
+                        <span className="ml-2">• validade {plan.quantity ?? 0} dias</span>
+                        <span className="ml-2">• estoque {plan.quantity ?? 0}</span>
                       </p>
                     </div>
                     <button
