@@ -13,7 +13,7 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await api.post("/auth/register", form, { auth: false });
+      await api.post("/auth/register", { name: form.name, email: form.email, password: form.password }, { auth: false });
       toast.success("Conta criada.");
       navigate("/login");
     } catch (error) {
