@@ -11,6 +11,15 @@ function formatCurrency(value) {
   }).format(Number(value || 0));
 }
 
+function parseMetadata(input) {
+  if (!input) return undefined;
+  try {
+    return JSON.parse(input);
+  } catch {
+    return input;
+  }
+}
+
 export default function Plans() {
   const { user } = useAuth();
   const isAdmin = user?.role === "ADMIN";
@@ -27,6 +36,7 @@ export default function Plans() {
     currency: "BRL",
     quantity: "30",
     metadata: "",
+    originalAmount: "",
   });
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -70,6 +80,7 @@ export default function Plans() {
       currency: "BRL",
       quantity: "30",
       metadata: "",
+      originalAmount: "",
     });
   };
 
@@ -79,6 +90,8 @@ export default function Plans() {
   };
 
   const startEdit = (plan) => {
+    const metadata = typeof plan.metadata === "string" ? plan.metadata : plan.metadata ? JSON.stringify(plan.metadata) : "";
+    const normalizedMetadata = typeof plan.metadata === "object" && plan.metadata ? plan.metadata : {};
     setForm({
       id: plan.id,
       name: plan.name || "",
@@ -87,7 +100,15 @@ export default function Plans() {
       billingCycle: plan.billingCycle || "MONTHLY",
       currency: plan.currency || "BRL",
       quantity: String(plan.quantity ?? 30),
-      metadata: typeof plan.metadata === "string" ? plan.metadata : plan.metadata ? JSON.stringify(plan.metadata) : "",
+      metadata,
+      originalAmount: String(
+        plan.originalAmount ??
+          plan.oldAmount ??
+          normalizedMetadata.originalAmount ??
+          normalizedMetadata.oldAmount ??
+          normalizedMetadata.promotionalPrice ??
+          ""
+      ),
     });
     setTab("editor");
   };
@@ -97,6 +118,9 @@ export default function Plans() {
     setSaving(true);
     setMessage("");
 
+    const metadata = parseMetadata(form.metadata);
+    const parsedOriginalAmount = Number(form.originalAmount);
+
     const payload = {
       name: form.name,
       description: form.description || null,
@@ -104,13 +128,15 @@ export default function Plans() {
       billingCycle: form.billingCycle,
       currency: form.currency,
       quantity: Number(form.quantity || 0),
-      metadata: form.metadata ? (() => {
-        try {
-          return JSON.parse(form.metadata);
-        } catch {
-          return form.metadata;
-        }
-      })() : undefined,
+      metadata:
+        typeof metadata === "undefined"
+          ? undefined
+          : {
+              ...(metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata : {}),
+              ...(Number.isFinite(parsedOriginalAmount) && parsedOriginalAmount > 0
+                ? { originalAmount: parsedOriginalAmount }
+                : {}),
+            },
     };
 
     try {
@@ -185,7 +211,7 @@ export default function Plans() {
           </button>
           <button
             type="button"
-            onClick={() => setTab("editor")}
+            onClick={startCreate}
             className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition ${
               tab === "editor"
                 ? "border-sky-500 bg-sky-500/10 text-sky-300"
@@ -249,7 +275,30 @@ export default function Plans() {
             </label>
 
             <label className="block">
+              <span className="mb-2 block text-sm text-slate-300">Preço promocional / original</span>
+              <input
+                type="number"
+                step="0.01"
+                className="field"
+                value={form.originalAmount}
+                onChange={(event) => setForm((current) => ({ ...current, originalAmount: event.target.value }))}
+                placeholder="0.00"
+              />
+            </label>
+
+            <label className="block">
               <span className="mb-2 block text-sm text-slate-300">Validade em dias</span>
+              <input
+                type="number"
+                className="field"
+                value={form.quantity}
+                onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))}
+                placeholder="30"
+              />
+            </label>
+
+            <label className="block">
+              <span className="mb-2 block text-sm text-slate-300">Estoque</span>
               <input
                 type="number"
                 className="field"
@@ -351,8 +400,15 @@ export default function Plans() {
                     <div>
                       <p className="text-lg font-semibold text-white">{plan.name}</p>
                       <p className="mt-1 text-sm text-slate-400">{plan.description || "Sem descrição"}</p>
-                      <p className="mt-3 text-sm text-slate-500">
-                        {formatCurrency(plan.amount)} • {plan.billingCycle} • {plan.quantity ?? 0} dias
+                      <div className="mt-3 flex items-center gap-2 text-sm">
+                        {plan.originalAmount ? (
+                          <span className="text-slate-500 line-through">{formatCurrency(plan.originalAmount)}</span>
+                        ) : null}
+                        <span className="font-semibold text-white">{formatCurrency(plan.amount)}</span>
+                      </div>
+                      <p className="mt-2 text-sm text-slate-500">{plan.quantity ?? 0} dias</p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Estoque: {plan.stock ?? plan.quantity ?? 0}
                       </p>
                       <p className="mt-2 text-xs text-slate-500">
                         Criado por: {plan.ownerEmail || plan.creatorEmail || plan.createdByEmail || "não informado pela API"}

@@ -39,12 +39,26 @@ function normalizeStock(plan) {
   return Number.isFinite(stock) && stock > 0 ? Math.floor(stock) : 0;
 }
 
+function normalizeOriginalAmount(plan) {
+  const raw =
+    plan?.originalAmount ??
+    plan?.oldAmount ??
+    plan?.metadata?.originalAmount ??
+    plan?.metadata?.oldAmount ??
+    plan?.metadata?.promotionalPrice ??
+    plan?.metadata?.originalPrice;
+
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
 export function PlanCard({ plan, user, showCheckout = true }) {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const isActive = plan?.isActive !== false;
   const days = normalizeDays(plan);
   const features = normalizeFeatures(plan);
   const stock = normalizeStock(plan);
+  const originalAmount = normalizeOriginalAmount(plan);
 
   return (
     <>
@@ -68,12 +82,22 @@ export function PlanCard({ plan, user, showCheckout = true }) {
         <div className="mt-5 flex items-end justify-between gap-4">
           <div>
             <p className="text-sm text-slate-400">Preço</p>
-            <p className="text-3xl font-bold text-white">
-              {new Intl.NumberFormat("pt-BR", {
-                style: "currency",
-                currency: plan?.currency || "BRL",
-              }).format(Number(plan?.amount || 0))}
-            </p>
+            <div className="mt-1 flex items-end gap-2">
+              {originalAmount > 0 ? (
+                <span className="text-sm text-slate-500 line-through">
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: plan?.currency || "BRL",
+                  }).format(originalAmount)}
+                </span>
+              ) : null}
+              <span className="text-3xl font-bold text-white">
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: plan?.currency || "BRL",
+                }).format(Number(plan?.amount || 0))}
+              </span>
+            </div>
           </div>
         </div>
 
