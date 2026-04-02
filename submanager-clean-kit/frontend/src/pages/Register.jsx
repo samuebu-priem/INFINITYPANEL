@@ -5,7 +5,7 @@ import { api } from "../services/api.js";
 
 export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ username: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event) => {
@@ -13,7 +13,7 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await api.post("/auth/register", { name: form.name, email: form.email, password: form.password }, { auth: false });
+      await api.post("/auth/register", { username: form.username, email: form.email, password: form.password }, { auth: false });
       toast.success("Conta criada.");
       navigate("/login");
     } catch (error) {
@@ -53,9 +53,9 @@ export default function Register() {
                     type="text"
                     required
                     className="field"
-                    value={form.name}
-                    onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-                    placeholder="Seu nome"
+                    value={form.username}
+                    onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
+                    placeholder="Seu username"
                   />
                 </label>
 
