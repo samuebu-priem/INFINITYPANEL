@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
+import { UserHomeFooter } from "../components/layout/UserHomeFooter.jsx";
 
 export default function UserHome() {
   const { user } = useAuth();
@@ -53,10 +54,32 @@ export default function UserHome() {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6 shadow-lg shadow-black/20">
-        <p className="text-sm text-slate-400">Bem-vindo</p>
-        <h1 className="mt-1 text-3xl font-bold text-white">{user?.name || "InfinityPainel"}</h1>
-        <p className="mt-2 text-sm text-slate-400">Acompanhe sua assinatura e escolha um plano disponível.</p>
+      <div className="rounded-[2rem] border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 p-6 shadow-lg shadow-black/20 ring-1 ring-sky-500/10 sm:p-7">
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-3">
+            <div className="inline-flex items-center rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-sky-300">
+              InfinityPainel
+            </div>
+            <div>
+              <p className="text-sm text-slate-400">Bem vindo, <span className="font-semibold text-white">{user?.username || user?.name || "usuário"}</span></p>
+              <h1 className="mt-1 text-3xl font-bold text-white sm:text-4xl">Painel de assinatura</h1>
+            </div>
+            <p className="max-w-2xl text-sm leading-6 text-slate-400">
+              Acompanhe sua assinatura, veja os dias restantes e escolha um plano disponível com a mesma identidade visual da plataforma.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 sm:min-w-[220px]">
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Status</p>
+              <p className="mt-1 text-sm font-semibold text-white">{subscription ? "Ativa" : "Sem assinatura"}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/70 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Plano</p>
+              <p className="mt-1 text-sm font-semibold text-white">{subscription?.plan?.name || subscription?.planName || "—"}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
@@ -109,6 +132,11 @@ export default function UserHome() {
           </div>
         )}
       </div>
+
+      <UserHomeFooter
+        discordUrl={import.meta.env.VITE_DISCORD_URL || "#"}
+        instagramUrl={import.meta.env.VITE_INSTAGRAM_URL || "#"}
+      />
     </div>
   );
 }
