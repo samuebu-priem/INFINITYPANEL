@@ -35,6 +35,7 @@ export default function Plans() {
     billingCycle: "MONTHLY",
     currency: "BRL",
     quantity: "",
+    durationDays: "",
     metadata: "",
     originalAmount: "",
   });
@@ -45,7 +46,12 @@ export default function Plans() {
     try {
       const response = await api.get("/plans");
       const list = Array.isArray(response?.plans) ? response.plans : Array.isArray(response) ? response : [];
-      setPlans(list);
+      setPlans(
+        list.map((plan) => ({
+          ...plan,
+          metadata: typeof plan.metadata === "string" ? parseMetadata(plan.metadata) : plan.metadata,
+        })),
+      );
     } catch {
       setPlans([]);
     } finally {
@@ -71,17 +77,18 @@ export default function Plans() {
   const visiblePlans = useMemo(() => plans.filter(Boolean), [plans]);
 
   const resetForm = () => {
-    setForm({
-      id: "",
-      name: "",
-      description: "",
-      amount: "",
-      billingCycle: "MONTHLY",
-      currency: "BRL",
-      quantity: "",
-      metadata: "",
-      originalAmount: "",
-    });
+      setForm({
+        id: "",
+        name: "",
+        description: "",
+        amount: "",
+        billingCycle: "MONTHLY",
+        currency: "BRL",
+        quantity: "",
+        durationDays: "",
+        metadata: "",
+        originalAmount: "",
+      });
   };
 
   const startCreate = () => {
@@ -90,7 +97,6 @@ export default function Plans() {
   };
 
   const startEdit = (plan) => {
-    const metadata = typeof plan.metadata === "string" ? plan.metadata : plan.metadata ? JSON.stringify(plan.metadata) : "";
     const normalizedMetadata = typeof plan.metadata === "object" && plan.metadata ? plan.metadata : {};
     setForm({
       id: plan.id,
@@ -99,8 +105,13 @@ export default function Plans() {
       amount: String(plan.amount ?? ""),
       billingCycle: plan.billingCycle || "MONTHLY",
       currency: plan.currency || "BRL",
-      quantity: String(plan.quantity ?? ""),
-      metadata,
+      quantity: String(plan.quantity ?? normalizedMetadata.stock ?? ""),
+      durationDays: String(
+        normalizedMetadata.validityDays ??
+          normalizedMetadata.days ??
+          normalizedMetadata.durationDays ??
+          ""
+      ),
       originalAmount: String(
         plan.originalAmount ??
           plan.oldAmount ??
@@ -118,9 +129,8 @@ export default function Plans() {
     setSaving(true);
     setMessage("");
 
-    const metadata = parseMetadata(form.metadata);
     const parsedOriginalAmount = Number(form.originalAmount);
-
+    const parsedValidityDays = Number(form.durationDays);
     const payload = {
       name: form.name,
       description: form.description || null,
@@ -128,15 +138,10 @@ export default function Plans() {
       billingCycle: form.billingCycle,
       currency: form.currency,
       quantity: Number(form.quantity || 0),
-      metadata:
-        typeof metadata === "undefined"
-          ? undefined
-          : {
-              ...(metadata && typeof metadata === "object" && !Array.isArray(metadata) ? metadata : {}),
-              ...(Number.isFinite(parsedOriginalAmount) && parsedOriginalAmount > 0
-                ? { originalAmount: parsedOriginalAmount }
-                : {}),
-            },
+      metadata: {
+        ...(Number.isFinite(parsedValidityDays) && parsedValidityDays > 0 ? { validityDays: parsedValidityDays } : {}),
+        ...(Number.isFinite(parsedOriginalAmount) && parsedOriginalAmount > 0 ? { originalAmount: parsedOriginalAmount } : {}),
+      },
     };
 
     try {
@@ -291,8 +296,8 @@ export default function Plans() {
               <input
                 type="number"
                 className="field"
-                value={form.quantity}
-                onChange={(event) => setForm((current) => ({ ...current, quantity: event.target.value }))}
+                value={form.durationDays}
+                onChange={(event) => setForm((current) => ({ ...current, durationDays: event.target.value }))}
                 placeholder="30"
               />
             </label>
@@ -406,8 +411,12 @@ export default function Plans() {
                         ) : null}
                         <span className="font-semibold text-white">{formatCurrency(plan.amount)}</span>
                       </div>
-                      <p className="mt-2 text-sm text-slate-500">{plan.quantity ?? 0} dias</p>
-                      <p className="mt-2 text-xs text-slate-500">Estoque: {plan.quantity ?? 0}</p>
+                      <p className="mt-2 text-sm text-slate-500">
+                        Validade: {plan.metadata?.validityDays ?? plan.days ?? plan.durationDays ?? 0} dias
+                      </p>
+                      <p className="mt-2 text-xs text-slate-500">
+                        Estoque: {plan.quantity ?? plan.metadata?.stock ?? 0}
+                      </p>
                       <p className="mt-2 text-xs text-slate-500">
                         Criado por: {plan.ownerEmail || plan.creatorEmail || plan.createdByEmail || "não informado pela API"}
                       </p>

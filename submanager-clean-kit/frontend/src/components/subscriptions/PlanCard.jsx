@@ -19,9 +19,9 @@ function normalizeDays(plan) {
     Number(plan?.days) ||
     Number(plan?.durationDays) ||
     Number(plan?.validityDays) ||
+    Number(plan?.metadata?.validityDays) ||
     Number(plan?.metadata?.days) ||
     Number(plan?.metadata?.durationDays) ||
-    Number(plan?.metadata?.validityDays) ||
     0;
 
   return Number.isFinite(days) && days > 0 ? Math.floor(days) : 0;
