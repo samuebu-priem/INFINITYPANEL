@@ -1,6 +1,6 @@
 import { Client, GatewayIntentBits, Message, TextChannel } from 'discord.js';
 import { ApiClient } from '../integrations/api/apiClient';
-import { ParserService } from '../modules/supervisor/parser.service';
+import { ParserService, SupervisorLogData } from '../modules/supervisor/parser.service';
 import { ValidatorService } from '../modules/supervisor/validator.service';
 
 type SupervisorClientOptions = {
@@ -10,6 +10,7 @@ type SupervisorClientOptions = {
   apiClient: ApiClient;
   parserService: ParserService;
   validatorService: ValidatorService;
+  sendStartupMessage?: boolean;
 };
 
 const isEmbedLogMessage = (message: Message<boolean>): boolean => {
@@ -17,6 +18,16 @@ const isEmbedLogMessage = (message: Message<boolean>): boolean => {
   if (!embeds.length) return false;
   const title = embeds[0]?.title ?? '';
   return /Aposta Concluída/i.test(title);
+};
+
+const formatCurrencyBRL = (value: number): string =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+const calculateMediatorProfit = (log: SupervisorLogData): number => {
+  const playersCount = Array.isArray(log.players) ? log.players.length : 0;
+  const grossRevenue = Number.isFinite(log.mediatorRevenue) ? log.mediatorRevenue : 0;
+  const baseValue = Number.isFinite(log.initialValue) ? log.initialValue : 0;
+  return Math.max(0, grossRevenue || baseValue * Math.max(0, playersCount - 1));
 };
 
 export class DiscordSupervisorClient {
@@ -29,8 +40,27 @@ export class DiscordSupervisorClient {
   }
 
   async start(): Promise<void> {
-    this.client.once('ready', () => {
+    this.client.once('ready', async () => {
       console.log(`Discord supervisor logged in as ${this.client.user?.tag ?? 'unknown user'}`);
+
+      if (!this.options.sendStartupMessage) return;
+
+      try {
+        const alertChannel = await this.client.channels.fetch(this.options.alertChannelId);
+        if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) return;
+
+        const textChannel = alertChannel as TextChannel;
+        await textChannel.send({
+          content: [
+            '🟢 Bot supervisor online',
+            `User: ${this.client.user?.tag ?? 'unknown user'}`,
+            `Canal de logs: ${this.options.logChannelId}`,
+            `Canal de alertas: ${this.options.alertChannelId}`
+          ].join('\n')
+        });
+      } catch (error) {
+        console.error('Failed to send startup message:', error);
+      }
     });
 
     this.client.on('messageCreate', async (message) => {
@@ -45,18 +75,24 @@ export class DiscordSupervisorClient {
         const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
         const result = this.options.validatorService.validate(parsed, match);
 
-        if (result.ok) return;
+        if (result.ok) {
+          const profit = calculateMediatorProfit(parsed);
+          console.log(`[Supervisor] OK thread=${parsed.threadName} mediator=${parsed.mediator} profit=${formatCurrencyBRL(profit)}`);
+          return;
+        }
 
         const alertChannel = await this.client.channels.fetch(this.options.alertChannelId);
         if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) return;
 
         const textChannel = alertChannel as TextChannel;
+        const profit = calculateMediatorProfit(parsed);
         const lines = [
           '⚠️ Divergência detectada no bot supervisor',
           `Thread: ${parsed.threadName}`,
           `Jogo: ${parsed.game}`,
           `Modalidade: ${parsed.mode}`,
           `Vencedor: ${parsed.winner}`,
+          `Lucro do mediador: ${formatCurrencyBRL(profit)}`,
           `Erros:`,
           ...result.issues.map((issue) => `- ${issue.field}: ${issue.message}`)
         ];

@@ -23,6 +23,7 @@ const logChannelId = requiredEnv('DISCORD_LOG_CHANNEL_ID');
 const alertChannelId = requiredEnv('STAFF_ALERT_CHANNEL_ID');
 const apiBaseUrl = requiredEnv('API_BASE_URL');
 const apiToken = process.env.API_TOKEN?.trim() || undefined;
+const sendStartupMessage = process.env.SUPERVISOR_SEND_STARTUP_MESSAGE?.trim() === 'true';
 
 const apiClient = new ApiClient({ baseUrl: apiBaseUrl, token: apiToken });
 const parserService = new ParserService();
@@ -34,7 +35,8 @@ const client = new DiscordSupervisorClient({
   alertChannelId,
   apiClient,
   parserService,
-  validatorService
+  validatorService,
+  sendStartupMessage
 });
 
 const shutdown = async () => {
