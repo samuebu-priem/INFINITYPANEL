@@ -1,0 +1,76 @@
+import { Client, GatewayIntentBits, Message, TextChannel } from 'discord.js';
+import { ApiClient } from '../integrations/api/apiClient';
+import { ParserService } from '../modules/supervisor/parser.service';
+import { ValidatorService } from '../modules/supervisor/validator.service';
+
+type SupervisorClientOptions = {
+  token: string;
+  logChannelId: string;
+  alertChannelId: string;
+  apiClient: ApiClient;
+  parserService: ParserService;
+  validatorService: ValidatorService;
+};
+
+const isEmbedLogMessage = (message: Message<boolean>): boolean => {
+  const embeds = message.embeds ?? [];
+  if (!embeds.length) return false;
+  const title = embeds[0]?.title ?? '';
+  return /Aposta Concluída/i.test(title);
+};
+
+export class DiscordSupervisorClient {
+  private readonly client: Client;
+
+  constructor(private readonly options: SupervisorClientOptions) {
+    this.client = new Client({
+      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+    });
+  }
+
+  async start(): Promise<void> {
+    this.client.once('ready', () => {
+      console.log(`Discord supervisor logged in as ${this.client.user?.tag ?? 'unknown user'}`);
+    });
+
+    this.client.on('messageCreate', async (message) => {
+      try {
+        if (message.channelId !== this.options.logChannelId) return;
+        if (!isEmbedLogMessage(message)) return;
+
+        const embed = message.embeds[0]?.data ?? message.embeds[0];
+        const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
+        if (!parsed) return;
+
+        const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
+        const result = this.options.validatorService.validate(parsed, match);
+
+        if (result.ok) return;
+
+        const alertChannel = await this.client.channels.fetch(this.options.alertChannelId);
+        if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) return;
+
+        const textChannel = alertChannel as TextChannel;
+        const lines = [
+          '⚠️ Divergência detectada no bot supervisor',
+          `Thread: ${parsed.threadName}`,
+          `Jogo: ${parsed.game}`,
+          `Modalidade: ${parsed.mode}`,
+          `Vencedor: ${parsed.winner}`,
+          `Erros:`,
+          ...result.issues.map((issue) => `- ${issue.field}: ${issue.message}`)
+        ];
+
+        await textChannel.send({ content: lines.join('\n') });
+      } catch (error) {
+        console.error('Supervisor processing error:', error);
+      }
+    });
+
+    await this.client.login(this.options.token);
+  }
+
+  async stop(): Promise<void> {
+    await this.client.destroy();
+  }
+}
