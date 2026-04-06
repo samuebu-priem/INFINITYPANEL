@@ -1,7 +1,8 @@
-import { Client, GatewayIntentBits, Message, TextChannel } from 'discord.js';
+import { Client, Events, GatewayIntentBits, Message, TextChannel } from 'discord.js';
 import { ApiClient } from '../integrations/api/apiClient';
 import { ParserService, SupervisorLogData } from '../modules/supervisor/parser.service';
 import { ValidatorService } from '../modules/supervisor/validator.service';
+
 
 type SupervisorClientOptions = {
   token: string;
@@ -40,7 +41,7 @@ export class DiscordSupervisorClient {
   }
 
   async start(): Promise<void> {
-    this.client.once('ready', async () => {
+    this.client.once(Events.ClientReady, async () => {
       console.log(`Discord supervisor logged in as ${this.client.user?.tag ?? 'unknown user'}`);
 
       if (!this.options.sendStartupMessage) return;
