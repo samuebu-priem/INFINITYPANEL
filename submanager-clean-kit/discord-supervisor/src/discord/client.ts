@@ -65,44 +65,79 @@ export class DiscordSupervisorClient {
     });
 
     this.client.on('messageCreate', async (message) => {
-      try {
-        if (message.channelId !== this.options.logChannelId) return;
-        if (!isEmbedLogMessage(message)) return;
+  try {
+    console.log('--- MESSAGE_CREATE ---');
+    console.log('channelId recebido:', message.channelId);
+    console.log('channelId esperado:', this.options.logChannelId);
+    console.log('autor:', message.author?.tag ?? 'sem autor');
+    console.log('é bot:', message.author?.bot);
+    console.log('webhookId:', message.webhookId ?? 'sem webhook');
+    console.log('conteúdo:', message.content || '[sem conteúdo]');
+    console.log('embeds:', message.embeds.length);
+    console.log('titulo embed:', message.embeds[0]?.title ?? '[sem título]');
 
-        const embed = message.embeds[0]?.data ?? message.embeds[0];
-        const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
-        if (!parsed) return;
+    if (message.channelId !== this.options.logChannelId) {
+      console.log('ignorado: canal diferente');
+      return;
+    }
 
-        const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
-        const result = this.options.validatorService.validate(parsed, match);
+    console.log('canal de log confirmado');
 
-        if (result.ok) {
-          const profit = calculateMediatorProfit(parsed);
-          console.log(`[Supervisor] OK thread=${parsed.threadName} mediator=${parsed.mediator} profit=${formatCurrencyBRL(profit)}`);
-          return;
-        }
+    if (!isEmbedLogMessage(message)) {
+      console.log('ignorado: embed não passou no filtro');
+      return;
+    }
 
-        const alertChannel = await this.client.channels.fetch(this.options.alertChannelId);
-        if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) return;
+    console.log('embed de aposta concluída detectado');
 
-        const textChannel = alertChannel as TextChannel;
-        const profit = calculateMediatorProfit(parsed);
-        const lines = [
-          '⚠️ Divergência detectada no bot supervisor',
-          `Thread: ${parsed.threadName}`,
-          `Jogo: ${parsed.game}`,
-          `Modalidade: ${parsed.mode}`,
-          `Vencedor: ${parsed.winner}`,
-          `Lucro do mediador: ${formatCurrencyBRL(profit)}`,
-          `Erros:`,
-          ...result.issues.map((issue) => `- ${issue.field}: ${issue.message}`)
-        ];
+    const embed = message.embeds[0]?.data ?? message.embeds[0];
+    const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
 
-        await textChannel.send({ content: lines.join('\n') });
-      } catch (error) {
-        console.error('Supervisor processing error:', error);
-      }
-    });
+    console.log('resultado parser:', parsed);
+
+    if (!parsed) {
+      console.log('ignorado: parser retornou null');
+      return;
+    }
+
+    const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
+    console.log('match encontrado na API:', !!match);
+
+    const result = this.options.validatorService.validate(parsed, match);
+    console.log('resultado validação:', result);
+
+    const lucroMediador = parsed.mediatorRevenue ?? 0;
+    console.log('lucro mediador:', lucroMediador);
+
+    if (result.ok) {
+      console.log(`validação OK | thread=${parsed.threadName} | lucro=${lucroMediador}`);
+      return;
+    }
+
+    const alertChannel = await this.client.channels.fetch(this.options.alertChannelId);
+    if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) {
+      console.log('canal de alerta inválido');
+      return;
+    }
+
+    const textChannel = alertChannel as TextChannel;
+    const lines = [
+      '⚠️ Divergência detectada no bot supervisor',
+      `Thread: ${parsed.threadName}`,
+      `Jogo: ${parsed.game}`,
+      `Modalidade: ${parsed.mode}`,
+      `Vencedor: ${parsed.winner}`,
+      `Lucro do mediador: R$ ${Number(lucroMediador).toFixed(2)}`,
+      'Erros:',
+      ...result.issues.map((issue) => `- ${issue.field}: ${issue.message}`)
+    ];
+
+    await textChannel.send({ content: lines.join('\n') });
+    console.log('alerta enviado');
+  } catch (error) {
+    console.error('Supervisor processing error:', error);
+  }
+});
 
     await this.client.login(this.options.token);
   }
