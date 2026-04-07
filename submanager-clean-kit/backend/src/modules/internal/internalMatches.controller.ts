@@ -88,6 +88,7 @@ export const internalMatchesController = {
           { queue: { id: queueBase } },
           { queue: { notes: { contains: threadName, mode: "insensitive" } } },
           { queue: { notes: { contains: queueBase, mode: "insensitive" } } },
+          { queue: { notes: { contains: threadName.replace(/^\s*fila-?\s*/i, ""), mode: "insensitive" } } },
         ],
       },
       select: buildMatchSelect(),
