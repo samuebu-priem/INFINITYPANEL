@@ -65,80 +65,93 @@ export class DiscordSupervisorClient {
       }
     });
 
-    this.client.on('messageCreate', async (message) => {
-  try {
-    console.log('--- MESSAGE_CREATE ---');
-    console.log('channelId recebido:', message.channelId);
-    console.log('channelId esperado:', this.options.logChannelId);
-    console.log('autor:', message.author?.tag ?? 'sem autor');
-    console.log('é bot:', message.author?.bot);
-    console.log('webhookId:', message.webhookId ?? 'sem webhook');
-    console.log('conteúdo:', message.content || '[sem conteúdo]');
-    console.log('embeds:', message.embeds.length);
-    console.log('titulo embed:', message.embeds[0]?.title ?? '[sem título]');
+    this.client.on(Events.MessageCreate, async (message) => {
+      try {
+        const receivedChannelId = message.channelId;
+        const logChannelId = this.options.logChannelId;
+        const alertChannelId = this.options.alertChannelId;
 
-    if (message.channelId !== this.options.logChannelId) {
-      console.log('ignorado: canal diferente');
-      return;
-    }
+        const embedCount = message.embeds.length;
+        const embedTitle = message.embeds[0]?.title ?? '';
+        const isFromLogChannel = receivedChannelId === logChannelId;
+        const isFromAlertChannel = receivedChannelId === alertChannelId;
+        const isLogEmbed = isEmbedLogMessage(message);
 
-    console.log('canal de log confirmado');
+        console.log('--- MESSAGE_CREATE ---');
+        console.log('channelId recebido:', receivedChannelId);
+        console.log('autor:', message.author?.tag ?? 'sem autor');
+        console.log('é bot:', message.author?.bot);
+        console.log('conteúdo:', message.content || '[sem conteúdo]');
+        console.log('embeds:', embedCount);
+        console.log('titulo embed:', embedTitle);
+        console.log('isFromLogChannel:', isFromLogChannel);
+        console.log('isFromAlertChannel:', isFromAlertChannel);
+        console.log('isLogEmbed:', isLogEmbed);
 
-    if (!isEmbedLogMessage(message)) {
-      console.log('ignorado: embed não passou no filtro');
-      return;
-    }
+        if (isFromAlertChannel && message.author?.id === this.client.user?.id) {
+          console.log('ignorado: mensagem do próprio supervisor no canal de alertas');
+          return;
+        }
 
-    console.log('embed de aposta concluída detectado');
+        if (!isFromLogChannel) {
+          console.log('ignorado: mensagem fora do canal de logs');
+          return;
+        }
 
-    const embed = message.embeds[0]?.data ?? message.embeds[0];
-    const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
+        if (!isLogEmbed) {
+          console.log('ignorado: mensagem do canal de logs sem embed de aposta concluída');
+          return;
+        }
 
-    console.log('resultado parser:', parsed);
+        console.log('mensagem válida de aposta concluída detectada');
 
-    if (!parsed) {
-      console.log('ignorado: parser retornou null');
-      return;
-    }
+        const embed = message.embeds[0]?.data ?? message.embeds[0];
+        const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
 
-    const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
-    console.log('match encontrado na API:', !!match);
+        console.log('resultado parser:', parsed);
 
-    const result = this.options.validatorService.validate(parsed, match);
-    console.log('resultado validação:', result);
+        if (!parsed) {
+          console.log('ignorado: parser retornou null');
+          return;
+        }
 
-    const lucroMediador = parsed.mediatorRevenue ?? 0;
-    console.log('lucro mediador:', lucroMediador);
+        const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
+        console.log('match encontrado na API:', !!match);
 
-    if (result.ok) {
-      console.log(`validação OK | thread=${parsed.threadName} | lucro=${lucroMediador}`);
-      return;
-    }
+        const result = this.options.validatorService.validate(parsed, match);
+        console.log('resultado validação:', result);
 
-    const alertChannel = await this.client.channels.fetch(this.options.alertChannelId);
-    if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) {
-      console.log('canal de alerta inválido');
-      return;
-    }
+        const mediatorProfit = parsed.mediatorRevenue && parsed.mediatorRevenue > 0 ? parsed.mediatorRevenue : 0;
 
-    const textChannel = alertChannel as TextChannel;
-    const lines = [
-      '⚠️ Divergência detectada no bot supervisor',
-      `Thread: ${parsed.threadName}`,
-      `Jogo: ${parsed.game}`,
-      `Modalidade: ${parsed.mode}`,
-      `Vencedor: ${parsed.winner}`,
-      `Lucro do mediador: R$ ${Number(lucroMediador).toFixed(2)}`,
-      'Erros:',
-      ...result.issues.map((issue) => `- ${issue.field}: ${issue.message}`)
-    ];
+        if (result.ok) {
+          console.log(`validação OK | thread=${parsed.threadName} | lucro mediador=R$ ${mediatorProfit.toFixed(2)}`);
+          return;
+        }
 
-    await textChannel.send({ content: lines.join('\n') });
-    console.log('alerta enviado');
-  } catch (error) {
-    console.error('Supervisor processing error:', error);
-  }
-});
+        const alertChannel = await this.client.channels.fetch(alertChannelId);
+        if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) {
+          console.log('canal de alerta inválido');
+          return;
+        }
+
+        const textChannel = alertChannel as TextChannel;
+        const lines = [
+          '⚠️ Divergência detectada no bot supervisor',
+          `Thread: ${parsed.threadName}`,
+          `Jogo: ${parsed.game}`,
+          `Modalidade: ${parsed.mode}`,
+          `Vencedor: ${parsed.winner}`,
+          `Lucro do mediador: R$ ${mediatorProfit.toFixed(2)}`,
+          'Erros:',
+          ...result.issues.map((issue) => `- ${issue.field}: ${issue.message}`)
+        ];
+
+        await textChannel.send({ content: lines.join('\n') });
+        console.log('alerta enviado');
+      } catch (error) {
+        console.error('Supervisor processing error:', error);
+      }
+    });
 
     await this.client.login(this.options.token);
   }
