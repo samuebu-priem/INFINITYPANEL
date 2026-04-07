@@ -47,10 +47,9 @@ export class ApiClient {
   private async request(path: string): Promise<unknown> {
     const url = new URL(path, this.options.baseUrl).toString();
     const response = await fetch(url, {
-      headers: {
-        Accept: 'application/json',
-        ...(this.options.token ? { Authorization: `Bearer ${this.options.token}` } : {})
-      }
+     headers: {
+  Authorization: `Bearer ${process.env.INTERNAL_API_TOKEN}`,
+}
     });
 
     const contentType = response.headers.get('content-type') || '';
