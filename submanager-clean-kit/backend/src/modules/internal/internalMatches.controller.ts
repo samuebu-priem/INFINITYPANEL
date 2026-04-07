@@ -3,7 +3,17 @@ import { prisma } from "../../config/prisma.js";
 
 const normalizeThreadName = (value: unknown): string => {
   if (typeof value !== "string") return "";
-  return value.trim();
+  return value.trim().toLowerCase();
+};
+
+const normalizeQueueId = (value: unknown): string => {
+  if (typeof value !== "string") return "";
+  return value.trim().toLowerCase();
+};
+
+const extractQueueBase = (value: string): string => {
+  const normalized = normalizeThreadName(value);
+  return normalized.replace(/\s+/g, " ");
 };
 
 const buildMatchSelect = () => ({
@@ -64,6 +74,7 @@ const buildMatchSelect = () => ({
 export const internalMatchesController = {
   getByThreadName: async (req: Request, res: Response) => {
     const threadName = normalizeThreadName(req.query.threadName);
+    const queueBase = extractQueueBase(threadName);
 
     if (!threadName) {
       res.status(400).json({ message: "Missing threadName" });
@@ -74,7 +85,9 @@ export const internalMatchesController = {
       where: {
         OR: [
           { queue: { id: threadName } },
+          { queue: { id: queueBase } },
           { queue: { notes: { contains: threadName, mode: "insensitive" } } },
+          { queue: { notes: { contains: queueBase, mode: "insensitive" } } },
         ],
       },
       select: buildMatchSelect(),
