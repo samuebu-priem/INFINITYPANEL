@@ -50,7 +50,8 @@ const getValueFromField = (fields: AnyRecord[], nameMatchers: RegExp[]): string 
 };
 
 const extractFromDescription = (description: string, label: string): string => {
-  const match = description.match(new RegExp(`${label}:\\s*([^\\n]+)`, 'i'));
+  const escapedLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = description.match(new RegExp(`^${escapedLabel}\\s*:?\\s*(.+)$`, 'im'));
   return (match?.[1] ?? '').trim();
 };
 
@@ -61,11 +62,16 @@ const extractFooterText = (embed: AnyRecord): string => {
 
 const extractMediatorId = (embed: AnyRecord, description: string): string => {
   const footerText = extractFooterText(embed);
-  const footerMatch = footerText.match(/(?:id\\s*do\\s*mediador|mediator\\s*id|id)\\s*[:#-]?\\s*([\\w-]+)/i);
+  const footerMatch = footerText.match(/(?:id\s*do\s*mediador|mediator\s*id|id)\s*[:#-]?\s*([\w-]+)/i);
   if (footerMatch?.[1]) return footerMatch[1].trim();
 
-  const descriptionMatch = description.match(/(?:id\\s*do\\s*mediador|mediator\\s*id|id)\\s*[:#-]?\\s*([\\w-]+)/i);
+  const descriptionMatch = description.match(/(?:id\s*do\s*mediador|mediator\s*id|id)\s*[:#-]?\s*([\w-]+)/i);
   return (descriptionMatch?.[1] ?? '').trim();
+};
+
+const extractPrimaryValueLine = (description: string): string => {
+  const match = description.match(/^Valor\s*:?\s*(.+)$/im);
+  return (match?.[1] ?? '').trim();
 };
 
 export class ParserService {
@@ -86,7 +92,7 @@ export class ParserService {
       parseCurrencyBRL(extractFromDescription(description, 'Receita do Mediador'));
     const mediatorId = extractMediatorId(embed, description);
 
-    if (!threadName || !game || !mode || !mediator || !winner) {
+    if (!threadName || !game || !mode || !mediator || !winner || !mediatorId) {
       return null;
     }
 
@@ -94,13 +100,13 @@ export class ParserService {
       threadName,
       game,
       mode,
-      closedBy: extractFromDescription(description, 'Encerrado por'),
-      initialValue: parseCurrencyBRL(getValueFromField(fields, [/^valor inicial$/i, /^initial value$/i])) ?? 0,
+      closedBy: '',
+      initialValue: parseCurrencyBRL(extractPrimaryValueLine(description)) ?? 0,
       mediator,
       mediatorId,
       players: [],
       winner,
-      durationSeconds: parseDurationSeconds(getValueFromField(fields, [/^duração total$/i, /^duration$/i])) ?? 0,
+      durationSeconds: parseDurationSeconds(extractFromDescription(description, 'Duração Total')) ?? 0,
       mediatorRevenue
     };
   }
