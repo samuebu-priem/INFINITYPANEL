@@ -19,7 +19,9 @@ const isEmbedLogMessage = (message: Message<boolean>): boolean => {
   if (!embeds.length) return false;
 
   const title = embeds[0]?.title ?? '';
-  return /concluíd|aposta|sucesso/i.test(title);
+  const description = embeds[0]?.description ?? '';
+  const fieldsText = embeds[0]?.fields?.map((field) => `${field.name} ${field.value}`).join(' ') ?? '';
+  return /concluíd|aposta|sucesso|encerrad|finalizad|fila/i.test(`${title} ${description} ${fieldsText}`);
 };
 
 const formatCurrencyBRL = (value: number): string =>
@@ -107,8 +109,8 @@ export class DiscordSupervisorClient {
 
         console.log('mensagem válida de aposta concluída detectada');
 
-        const embed = message.embeds[0]?.data ?? message.embeds[0];
-        const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
+        const embed = message.embeds[0];
+        const parsed = this.options.parserService.parse(embed as unknown as Record<string, unknown>);
 
         console.log('resultado parser:', parsed);
 
