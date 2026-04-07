@@ -3,7 +3,6 @@ import { ApiClient } from '../integrations/api/apiClient';
 import { ParserService, SupervisorLogData } from '../modules/supervisor/parser.service';
 import { ValidatorService } from '../modules/supervisor/validator.service';
 
-
 type SupervisorClientOptions = {
   token: string;
   logChannelId: string;
@@ -33,8 +32,6 @@ const calculateMediatorProfit = (log: SupervisorLogData): number => {
   const netRevenue = Math.max(0, grossRevenue);
   return Math.max(0, netRevenue * Math.max(0, playersCount - 1));
 };
-
-const formatSupervisorFooter = (): string => `Supervisor ativo • ${new Date().toLocaleTimeString('pt-BR')}`;
 
 export class DiscordSupervisorClient {
   private readonly client: Client;
@@ -119,18 +116,15 @@ export class DiscordSupervisorClient {
           return;
         }
 
+        const playersCount = Array.isArray(parsed.players) ? parsed.players.length : 0;
+        const mediatorProfit = calculateMediatorProfit(parsed);
+
         const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
         console.log('match encontrado na API:', !!match);
 
         const result = this.options.validatorService.validate(parsed, match);
         console.log('resultado validação:', result);
-
-        const mediatorProfit = parsed.mediatorRevenue && parsed.mediatorRevenue > 0 ? parsed.mediatorRevenue : 0;
-
-        if (result.ok) {
-          console.log(`validação OK | thread=${parsed.threadName} | lucro mediador=R$ ${mediatorProfit.toFixed(2)}`);
-          return;
-        }
+        console.log(`contabilidade atualizada | mediador=${parsed.mediatorName} | filas=${playersCount} | lucro=R$ ${mediatorProfit.toFixed(2)}`);
 
         const alertChannel = await this.client.channels.fetch(alertChannelId);
         if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) {
@@ -141,22 +135,19 @@ export class DiscordSupervisorClient {
         const textChannel = alertChannel as TextChannel;
         const currentTime = new Date().toLocaleString('pt-BR');
         const issuesText = result.issues.map((issue) => `${issue.field}: ${issue.message}`).join('\n');
-        const playersCount = Array.isArray((parsed as { players?: unknown[] }).players)
-          ? (parsed as { players?: unknown[] }).players!.length
-          : 0;
         const embedBuilder = new EmbedBuilder()
           .setColor(0x3B82F6)
-          .setTitle('📊 Nova Fila Registrada')
+          .setTitle('📊 Fila contabilizada')
           .setDescription('Registro operacional detectado pelo supervisor.')
           .addFields(
-            { name: '👤 Mediador', value: parsed.mediatorId || 'Não informado', inline: true },
-            { name: '🎮 Modalidade', value: parsed.mode || 'Não informado', inline: true },
-            { name: '📈 Filas', value: String(playersCount), inline: true },
-            { name: '💰 Lucro Acumulado', value: formatCurrencyBRL(mediatorProfit), inline: true },
-            { name: '🏆 Último Vencedor', value: parsed.winner || 'Não informado', inline: true },
+            { name: '👤 Mediador', value: parsed.mediatorName || 'Não informado', inline: true },
+            { name: '🧾 Mediador ID', value: parsed.mediatorId || 'Não informado', inline: true },
+            { name: '📈 Filas concluídas', value: String(playersCount), inline: true },
+            { name: '💰 Lucro acumulado', value: formatCurrencyBRL(mediatorProfit), inline: true },
+            { name: '🏆 Último vencedor', value: parsed.winner || 'Não informado', inline: true },
             { name: '🧵 Thread', value: parsed.threadName || 'Não informado', inline: false },
             { name: '🗂️ Jogo', value: parsed.game || 'Não informado', inline: true },
-            { name: '🆔 ID do Mediador', value: parsed.mediatorId || 'Não informado', inline: true }
+            { name: '🎮 Modalidade', value: parsed.mode || 'Não informado', inline: true }
           )
           .setFooter({ text: `Supervisor ativo • ${currentTime}` });
 
