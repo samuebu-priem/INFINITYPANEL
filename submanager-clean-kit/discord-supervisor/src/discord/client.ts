@@ -32,6 +32,8 @@ const calculateMediatorProfit = (log: SupervisorLogData): number => {
   return Math.max(0, grossRevenue || baseValue * Math.max(0, playersCount - 1));
 };
 
+const formatSupervisorFooter = (): string => `Supervisor ativo • ${new Date().toLocaleTimeString('pt-BR')}`;
+
 export class DiscordSupervisorClient {
   private readonly client: Client;
 
@@ -139,16 +141,15 @@ export class DiscordSupervisorClient {
         const issuesText = result.issues.map((issue) => `${issue.field}: ${issue.message}`).join('\n');
         const embedBuilder = new EmbedBuilder()
           .setColor(0x3B82F6)
-          .setTitle('Supervisor ativo • Divergência detectada')
+          .setTitle('📊 Nova Fila Registrada')
           .addFields(
-            { name: 'Thread', value: parsed.threadName || 'Não informado', inline: true },
-            { name: 'Jogo', value: parsed.game || 'Não informado', inline: true },
-            { name: 'Modalidade', value: parsed.mode || 'Não informado', inline: true },
-            { name: 'Mediador', value: parsed.mediator || 'Não informado', inline: true },
-            { name: 'Vencedor', value: parsed.winner || 'Não informado', inline: true },
-            { name: 'Lucro do mediador', value: formatCurrencyBRL(mediatorProfit), inline: true }
+            { name: '👤 Mediador', value: parsed.mediator || 'Não informado', inline: true },
+            { name: '🎮 Modalidade', value: parsed.mode || 'Não informado', inline: true },
+            { name: '📈 Filas', value: String(Array.isArray(parsed.players) ? parsed.players.length : 0), inline: true },
+            { name: '💰 Lucro Acumulado', value: formatCurrencyBRL(mediatorProfit), inline: true },
+            { name: '🏆 Último Vencedor', value: parsed.winner || 'Não informado', inline: true }
           )
-          .setFooter({ text: `Supervisor ativo • ${currentTime}` });
+          .setFooter({ text: formatSupervisorFooter() });
 
         if (issuesText) {
           embedBuilder.addFields({ name: 'Erros', value: issuesText.slice(0, 1024) });

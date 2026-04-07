@@ -80,16 +80,33 @@ const extractListFromValue = (value: string): string[] =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const normalizeEmbed = (embed: AnyRecord): AnyRecord => {
+  const data = (embed.data as AnyRecord | undefined) ?? {};
+  return {
+    ...data,
+    ...embed,
+    description: cleanText(embed.description ?? data.description),
+    title: cleanText(embed.title ?? data.title),
+    footerText: cleanText((embed.footer as AnyRecord | undefined)?.text ?? (data.footer as AnyRecord | undefined)?.text),
+    fields: Array.isArray(embed.fields)
+      ? embed.fields
+      : Array.isArray(data.fields)
+        ? data.fields
+        : []
+  };
+};
+
 export class ParserService {
   parse(embed: AnyRecord): SupervisorLogData | null {
-    const title = cleanText(embed.title);
-    if (!/^🏆?\s*Aposta Concluída/i.test(title)) return null;
+    const normalized = normalizeEmbed(embed);
+    const title = cleanText(normalized.title);
+    if (!/^🏆?\s*Aposta Concluída/i.test(title) && !/concluíd|aposta|sucesso/i.test(title)) return null;
 
-    const fields = Array.isArray(embed.fields) ? (embed.fields as AnyRecord[]) : [];
-    const description = cleanText(embed.description);
+    const fields = Array.isArray(normalized.fields) ? (normalized.fields as AnyRecord[]) : [];
+    const description = cleanText(normalized.description);
 
     const threadName =
-      getValueFromField(fields, [/^thread$/i, /^thread name$/i]) ||
+      getValueFromField(fields, [/^thread$/i, /^thread name$/i, /^thread\s*:/i]) ||
       extractFromDescription(description, 'Thread');
     const game =
       getValueFromField(fields, [/^jogo$/i, /^game$/i]) ||
@@ -111,7 +128,9 @@ export class ParserService {
     const mediatorRevenue =
       parseCurrencyBRL(getValueFromField(fields, [/^receita do mediador$/i, /^mediator revenue$/i])) ??
       parseCurrencyBRL(extractFromDescription(description, 'Receita do Mediador'));
-    const mediatorId = extractMediatorId(embed, description);
+    const mediatorId =
+      extractMediatorId(normalized, description) ||
+      cleanText((normalized.footerText as string | undefined) ?? '');
 
     if (!threadName || !game || !mode || !mediator || !winner || !mediatorId) {
       return null;
