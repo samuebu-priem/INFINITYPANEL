@@ -17,6 +17,7 @@ type MatchRecord = {
   closedBy?: string;
   initialValue?: number;
   mediator?: string;
+  mediatorId?: string;
   players?: string[];
   winner?: string;
   durationSeconds?: number;
@@ -38,24 +39,32 @@ export class ValidatorService {
       issues.push({ field: 'players', message: 'A aposta deve conter exatamente 2 jogadores.' });
     }
 
-    if (!log.players.some((player) => normalize(player) === normalize(log.winner))) {
+    if (!log.players.some((player: string) => normalize(player) === normalize(log.winner))) {
       issues.push({ field: 'winner', message: 'O vencedor não está listado entre os jogadores.' });
     }
 
-    if (!log.mediator) {
+    if (!log.mediatorName && !log.mediatorId) {
       issues.push({ field: 'mediator', message: 'Mediador ausente no log.' });
     }
 
-    if (!isPositiveFiniteNumber(log.initialValue) || log.initialValue <= 0) {
-      issues.push({ field: 'initialValue', message: 'Valor inicial inválido.' });
+    if (!Array.isArray(log.players) || log.players.length === 0) {
+      issues.push({ field: 'players', message: 'Lista de jogadores ausente no log.' });
     }
 
-    if (!isPositiveFiniteNumber(log.durationSeconds) || log.durationSeconds <= 0 || log.durationSeconds > 60 * 60 * 24) {
-      issues.push({ field: 'duration', message: 'Duração total fora do intervalo esperado.' });
+    if (!log.threadName) {
+      issues.push({ field: 'threadName', message: 'Thread ausente no log.' });
     }
 
-    if (!isPositiveFiniteNumber(log.mediatorRevenue) && log.mediatorRevenue !== 0) {
-      issues.push({ field: 'mediatorRevenue', message: 'Receita do mediador inválida.' });
+    if (!log.game) {
+      issues.push({ field: 'game', message: 'Jogo ausente no log.' });
+    }
+
+    if (!log.mode) {
+      issues.push({ field: 'mode', message: 'Modalidade ausente no log.' });
+    }
+
+    if (!log.winner) {
+      issues.push({ field: 'winner', message: 'Vencedor ausente no log.' });
     }
 
     if (!match) {
@@ -75,19 +84,11 @@ export class ValidatorService {
       issues.push({ field: 'mode', message: 'Modalidade divergente entre Discord e backend.' });
     }
 
-    if (normalize(match.closedBy) !== normalize(log.closedBy)) {
-      issues.push({ field: 'closedBy', message: 'Campo "encerrado por" divergente.' });
-    }
-
-    if (isPositiveFiniteNumber(match.initialValue) && match.initialValue !== log.initialValue) {
-      issues.push({ field: 'initialValue', message: 'Valor inicial divergente entre Discord e backend.' });
-    }
-
-    if (normalize(match.mediator) !== normalize(log.mediator)) {
+    if (normalize(match.mediator) !== normalize(log.mediatorName) && normalize(match.mediator) !== normalize(log.mediatorId)) {
       issues.push({ field: 'mediator', message: 'Mediador divergente entre Discord e backend.' });
     }
 
-    if (Array.isArray(match.players)) {
+    if (Array.isArray(match.players) && log.players.length > 0) {
       const backendPlayers = match.players.map(normalize).sort();
       const discordPlayers = log.players.map(normalize).sort();
       if (backendPlayers.length !== discordPlayers.length || backendPlayers.some((player, index) => player !== discordPlayers[index])) {
@@ -99,11 +100,7 @@ export class ValidatorService {
       issues.push({ field: 'winner', message: 'Vencedor divergente entre Discord e backend.' });
     }
 
-    if (isPositiveFiniteNumber(match.durationSeconds) && Math.abs(match.durationSeconds - log.durationSeconds) > 5) {
-      issues.push({ field: 'duration', message: 'Duração divergente entre Discord e backend.' });
-    }
-
-    if (isPositiveFiniteNumber(match.mediatorRevenue) && match.mediatorRevenue !== log.mediatorRevenue) {
+    if (isPositiveFiniteNumber(match.mediatorRevenue) && log.mediatorRevenue !== undefined && match.mediatorRevenue !== log.mediatorRevenue) {
       issues.push({ field: 'mediatorRevenue', message: 'Receita do mediador divergente.' });
     }
 

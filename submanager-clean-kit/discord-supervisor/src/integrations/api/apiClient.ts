@@ -29,11 +29,22 @@ export class ApiClient {
       }
     });
 
+    const contentType = response.headers.get('content-type') || '';
+    const rawBody = await response.text();
+
     if (!response.ok) {
-      throw new Error(`API request failed (${response.status}) for ${path}`);
+      throw new Error(`API request failed (${response.status}) for ${path}: ${rawBody.slice(0, 200)}`);
     }
 
-    return response.json();
+    if (!contentType.toLowerCase().includes('application/json')) {
+      throw new Error(`API returned non-JSON content for ${path}: ${contentType || 'unknown content-type'} | body=${rawBody.slice(0, 200)}`);
+    }
+
+    try {
+      return JSON.parse(rawBody);
+    } catch (error) {
+      throw new Error(`API returned invalid JSON for ${path}: ${(error as Error).message} | body=${rawBody.slice(0, 200)}`);
+    }
   }
 
   async getMatchByThreadName(threadName: string): Promise<MatchRecord | null> {

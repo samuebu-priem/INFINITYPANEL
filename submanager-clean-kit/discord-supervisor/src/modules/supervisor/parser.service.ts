@@ -1,5 +1,5 @@
 export type SupervisorLogData = {
-  players: any;
+  players: string[];
   threadName: string;
   game: string;
   mode: string;
@@ -62,6 +62,7 @@ export class ParserService {
 
     const mediatorIdMatch = footerText.match(/ID do Mediador:\s*(\d+)/i);
     const winnerMatch = partidasField.match(/\*\*Vencedor:\*\*\s*<@(\d+)>/i);
+    const players = Array.from(description.matchAll(/<@(\d+)>/g)).map((match) => normalizeText(match[1]));
 
     if (
       !threadMatch ||
@@ -75,16 +76,14 @@ export class ParserService {
     }
 
     return {
-      players: [], // TODO: Extract players data from embed
+      players,
       threadName: normalizeText(threadMatch[1]),
       game: normalizeText(gameMatch[1]),
       mode: normalizeText(modeMatch[1]),
       mediatorName,
       mediatorId: normalizeText(mediatorIdMatch[1]),
       winner: normalizeText(winnerMatch[1]),
-      mediatorRevenue: mediatorRevenueField
-        ? parseMoneyBRL(mediatorRevenueField)
-        : undefined,
+      mediatorRevenue: mediatorRevenueField ? parseMoneyBRL(mediatorRevenueField) : undefined,
     };
   }
 }
