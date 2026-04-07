@@ -73,7 +73,7 @@ export class ApiClient {
 
   async getMatchByThreadName(threadName: string): Promise<MatchRecord | null> {
     const lookupThreadName = threadName.replace(/\s+/g, ' ').trim();
-    const payload = (await this.request(`/internal/matches/by-thread-name?threadName=${encodeURIComponent(lookupThreadName)}`)) as InternalMatchResponse;
+    const payload = (await this.request(`/api/internal/matches/by-thread-name?threadName=${encodeURIComponent(lookupThreadName)}`)) as InternalMatchResponse;
 
     if (!payload?.match) return null;
 

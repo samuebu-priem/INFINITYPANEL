@@ -3,7 +3,7 @@ import { prisma } from "../../config/prisma.js";
 
 const normalizeThreadName = (value: unknown): string => {
   if (typeof value !== "string") return "";
-  return value.trim().toLowerCase();
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
 };
 
 const normalizeQueueId = (value: unknown): string => {
@@ -13,7 +13,7 @@ const normalizeQueueId = (value: unknown): string => {
 
 const extractQueueBase = (value: string): string => {
   const normalized = normalizeThreadName(value);
-  return normalized.replace(/\s+/g, " ");
+  return normalized.replace(/\s*\(([^)]+)\)\s*$/, "").trim();
 };
 
 const buildMatchSelect = () => ({
@@ -89,6 +89,7 @@ export const internalMatchesController = {
           { queue: { notes: { contains: threadName, mode: "insensitive" } } },
           { queue: { notes: { contains: queueBase, mode: "insensitive" } } },
           { queue: { notes: { contains: threadName.replace(/^\s*fila-?\s*/i, ""), mode: "insensitive" } } },
+          { queue: { notes: { contains: queueBase.replace(/^\s*fila-?\s*/i, ""), mode: "insensitive" } } },
         ],
       },
       select: buildMatchSelect(),
