@@ -5,10 +5,11 @@ export type SupervisorLogData = {
   closedBy: string;
   initialValue: number;
   mediator: string;
+  mediatorId: string;
   players: string[];
   winner: string;
   durationSeconds: number;
-  mediatorRevenue: number;
+  mediatorRevenue: number | null;
 };
 
 type AnyRecord = Record<string, unknown>;
@@ -48,70 +49,44 @@ const getValueFromField = (fields: AnyRecord[], nameMatchers: RegExp[]): string 
   return '';
 };
 
+const extractFromDescription = (description: string, label: string): string => {
+  const match = description.match(new RegExp(`${label}:\\s*([^\\n]+)`, 'i'));
+  return (match?.[1] ?? '').trim();
+};
+
+const extractFooterText = (embed: AnyRecord): string => {
+  const footer = embed.footer as AnyRecord | undefined;
+  return cleanText(footer?.text);
+};
+
+const extractMediatorId = (embed: AnyRecord, description: string): string => {
+  const footerText = extractFooterText(embed);
+  const footerMatch = footerText.match(/(?:id\\s*do\\s*mediador|mediator\\s*id|id)\\s*[:#-]?\\s*([\\w-]+)/i);
+  if (footerMatch?.[1]) return footerMatch[1].trim();
+
+  const descriptionMatch = description.match(/(?:id\\s*do\\s*mediador|mediator\\s*id|id)\\s*[:#-]?\\s*([\\w-]+)/i);
+  return (descriptionMatch?.[1] ?? '').trim();
+};
+
 export class ParserService {
   parse(embed: AnyRecord): SupervisorLogData | null {
     const title = cleanText(embed.title);
     if (!/^🏆?\s*Aposta Concluída/i.test(title)) return null;
 
-    const fields = Array.isArray(embed.fields) ? embed.fields as AnyRecord[] : [];
+    const fields = Array.isArray(embed.fields) ? (embed.fields as AnyRecord[]) : [];
     const description = cleanText(embed.description);
-
-    const threadName =
-      getValueFromField(fields, [/^thread$/i, /^thread name$/i]) ||
-      (description.match(/Thread:\s*([^\n]+)/i)?.[1] ?? '').trim();
-
-    const game =
-      getValueFromField(fields, [/^jogo$/i, /^game$/i]) ||
-      (description.match(/Jogo:\s*([^\n]+)/i)?.[1] ?? '').trim();
-
-    const mode =
-      getValueFromField(fields, [/^modalidade$/i, /^mode$/i]) ||
-      (description.match(/Modalidade:\s*([^\n]+)/i)?.[1] ?? '').trim();
-
-    const closedBy =
-      getValueFromField(fields, [/^encerrado por$/i, /^closed by$/i]) ||
-      (description.match(/Encerrado por:\s*([^\n]+)/i)?.[1] ?? '').trim();
-
-    const initialValue =
-      parseCurrencyBRL(getValueFromField(fields, [/^valor inicial$/i, /^initial value$/i])) ??
-      parseCurrencyBRL(description.match(/Valor Inicial:\s*([^\n]+)/i)?.[1] ?? '');
-
+    const threadName = getValueFromField(fields, [/^thread$/i, /^thread name$/i]) || extractFromDescription(description, 'Thread');
+    const game = getValueFromField(fields, [/^jogo$/i, /^game$/i]) || extractFromDescription(description, 'Jogo');
+    const mode = getValueFromField(fields, [/^modalidade$/i, /^mode$/i]) || extractFromDescription(description, 'Modalidade');
     const mediator =
-      getValueFromField(fields, [/^mediador$/i, /^mediator$/i]) ||
-      (description.match(/Mediador:\s*([^\n]+)/i)?.[1] ?? '').trim();
-
-    const playersBlock =
-      getValueFromField(fields, [/^jogadores$/i, /^players$/i]) ||
-      (description.match(/Jogadores:\s*([\s\S]*?)(?:\n\s*Partidas:|\n\s*Duração Total:|$)/i)?.[1] ?? '');
-
-    const players = playersBlock
-      .split('\n')
-      .map((line) => line.replace(/^[*\-\d.\s]+/, '').trim())
-      .filter(Boolean);
-
-    const winner =
-      getValueFromField(fields, [/^vencedor$/i, /^winner$/i]) ||
-      (description.match(/Vencedor:\s*([^\n]+)/i)?.[1] ?? '').trim();
-
-    const durationSeconds =
-      parseDurationSeconds(getValueFromField(fields, [/^duração total$/i, /^duration$/i])) ??
-      parseDurationSeconds(description.match(/Duração Total:\s*([^\n]+)/i)?.[1] ?? '');
-
+      getValueFromField(fields, [/^mediador$/i, /^mediator$/i]) || extractFromDescription(description, 'Mediador');
+    const winner = getValueFromField(fields, [/^vencedor$/i, /^winner$/i]) || extractFromDescription(description, 'Vencedor');
     const mediatorRevenue =
       parseCurrencyBRL(getValueFromField(fields, [/^receita do mediador$/i, /^mediator revenue$/i])) ??
-      parseCurrencyBRL(description.match(/Receita do Mediador:\s*([^\n]+)/i)?.[1] ?? '');
+      parseCurrencyBRL(extractFromDescription(description, 'Receita do Mediador'));
+    const mediatorId = extractMediatorId(embed, description);
 
-    if (
-      !threadName ||
-      !game ||
-      !mode ||
-      !closedBy ||
-      initialValue === null ||
-      !mediator ||
-      !winner ||
-      durationSeconds === null ||
-      mediatorRevenue === null
-    ) {
+    if (!threadName || !game || !mode || !mediator || !winner) {
       return null;
     }
 
@@ -119,12 +94,13 @@ export class ParserService {
       threadName,
       game,
       mode,
-      closedBy,
-      initialValue,
+      closedBy: extractFromDescription(description, 'Encerrado por'),
+      initialValue: parseCurrencyBRL(getValueFromField(fields, [/^valor inicial$/i, /^initial value$/i])) ?? 0,
       mediator,
-      players,
+      mediatorId,
+      players: [],
       winner,
-      durationSeconds,
+      durationSeconds: parseDurationSeconds(getValueFromField(fields, [/^duração total$/i, /^duration$/i])) ?? 0,
       mediatorRevenue
     };
   }
