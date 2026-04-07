@@ -17,6 +17,30 @@ type ApiClientOptions = {
   token?: string;
 };
 
+type InternalMatchResponse = {
+  match?: {
+    queueId?: string;
+    player1Id?: string;
+    player2Id?: string;
+    adminId?: string;
+    mode?: string;
+    amount?: unknown;
+    adminFee?: unknown;
+    status?: string;
+    paymentStatus?: string;
+    winnerId?: string | null;
+    startedAt?: string | Date | null;
+    completedAt?: string | Date | null;
+    createdAt?: string | Date;
+    updatedAt?: string | Date;
+    queue?: { id?: string; notes?: string | null };
+    admin?: { id?: string; username?: string | null; discordId?: string | null };
+    player1?: { id?: string; username?: string | null; discordId?: string | null };
+    player2?: { id?: string; username?: string | null; discordId?: string | null };
+    winner?: { id?: string; username?: string | null; discordId?: string | null } | null;
+  };
+};
+
 export class ApiClient {
   constructor(private readonly options: ApiClientOptions) {}
 
@@ -48,20 +72,24 @@ export class ApiClient {
   }
 
   async getMatchByThreadName(threadName: string): Promise<MatchRecord | null> {
-    const payload = await this.request(`/matches?threadName=${encodeURIComponent(threadName)}`);
+    const payload = (await this.request(`/internal/matches/by-thread-name?threadName=${encodeURIComponent(threadName)}`)) as InternalMatchResponse;
 
-    if (Array.isArray(payload)) {
-      return (payload.find((item) => {
-        const record = item as MatchRecord;
-        return typeof record.threadName === 'string' && record.threadName.trim().toLowerCase() === threadName.trim().toLowerCase();
-      }) as MatchRecord | undefined) ?? null;
-    }
+    if (!payload?.match) return null;
 
-    if (payload && typeof payload === 'object') {
-      const record = payload as MatchRecord;
-      if (typeof record.threadName === 'string') return record;
-    }
+    const match = payload.match;
 
-    return null;
+    return {
+      threadName: typeof match.queue?.id === "string" ? match.queue.id : threadName,
+      game: match.mode,
+      mode: match.mode,
+      closedBy: match.admin?.username ?? match.adminId,
+      initialValue: typeof match.amount === "number" ? match.amount : Number(match.amount ?? 0),
+      mediator: match.admin?.username ?? match.adminId,
+      players: [match.player1?.username ?? match.player1Id, match.player2?.username ?? match.player2Id].filter(Boolean) as string[],
+      winner: match.winner?.username ?? match.winnerId ?? undefined,
+      durationSeconds: undefined,
+      mediatorRevenue: typeof match.adminFee === "number" ? match.adminFee : Number(match.adminFee ?? 0),
+      status: match.status,
+    };
   }
 }
