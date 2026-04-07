@@ -139,17 +139,22 @@ export class DiscordSupervisorClient {
         const textChannel = alertChannel as TextChannel;
         const currentTime = new Date().toLocaleString('pt-BR');
         const issuesText = result.issues.map((issue) => `${issue.field}: ${issue.message}`).join('\n');
+        const playersCount = Array.isArray(parsed.players) ? parsed.players.length : 0;
         const embedBuilder = new EmbedBuilder()
           .setColor(0x3B82F6)
           .setTitle('📊 Nova Fila Registrada')
+          .setDescription('Registro operacional detectado pelo supervisor.')
           .addFields(
             { name: '👤 Mediador', value: parsed.mediator || 'Não informado', inline: true },
             { name: '🎮 Modalidade', value: parsed.mode || 'Não informado', inline: true },
-            { name: '📈 Filas', value: String(Array.isArray(parsed.players) ? parsed.players.length : 0), inline: true },
+            { name: '📈 Filas', value: String(playersCount), inline: true },
             { name: '💰 Lucro Acumulado', value: formatCurrencyBRL(mediatorProfit), inline: true },
-            { name: '🏆 Último Vencedor', value: parsed.winner || 'Não informado', inline: true }
+            { name: '🏆 Último Vencedor', value: parsed.winner || 'Não informado', inline: true },
+            { name: '🧵 Thread', value: parsed.threadName || 'Não informado', inline: false },
+            { name: '🗂️ Jogo', value: parsed.game || 'Não informado', inline: true },
+            { name: '🆔 ID do Mediador', value: parsed.mediatorId || 'Não informado', inline: true }
           )
-          .setFooter({ text: formatSupervisorFooter() });
+          .setFooter({ text: `Supervisor ativo • ${currentTime}` });
 
         if (issuesText) {
           embedBuilder.addFields({ name: 'Erros', value: issuesText.slice(0, 1024) });
