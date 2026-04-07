@@ -106,7 +106,11 @@ export class DiscordSupervisorClient {
         console.log('mensagem válida de aposta concluída detectada');
 
         const embed = message.embeds[0]?.data ?? message.embeds[0];
-        const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
+
+       console.log('EMBED RAW JSON:');
+       console.log(JSON.stringify(embed, null, 2));
+
+      const parsed = this.options.parserService.parse(embed as Record<string, unknown>);
 
         console.log('resultado parser:', parsed);
 
