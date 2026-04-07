@@ -1,5 +1,4 @@
 import { Client, EmbedBuilder, Events, GatewayIntentBits, Message, TextChannel } from 'discord.js';
-import { ApiClient } from '../integrations/api/apiClient';
 import { ParserService, SupervisorLogData } from '../modules/supervisor/parser.service';
 import { ValidatorService } from '../modules/supervisor/validator.service';
 
@@ -7,7 +6,6 @@ type SupervisorClientOptions = {
   token: string;
   logChannelId: string;
   alertChannelId: string;
-  apiClient: ApiClient;
   parserService: ParserService;
   validatorService: ValidatorService;
   sendStartupMessage?: boolean;
@@ -27,14 +25,13 @@ const formatCurrencyBRL = (value: number): string =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
 const calculateMediatorProfit = (log: SupervisorLogData): number => {
-  const playersCount = Array.isArray(log.players) ? log.players.length : 0;
   const grossRevenue = Number.isFinite(log.mediatorRevenue) ? (log.mediatorRevenue ?? 0) : 0;
-  const netRevenue = Math.max(0, grossRevenue);
-  return Math.max(0, netRevenue * Math.max(0, playersCount - 1));
+  return Math.max(0, grossRevenue);
 };
 
 export class DiscordSupervisorClient {
   private readonly client: Client;
+  private readonly mediatorRevenueTotals = new Map<string, number>();
 
   constructor(private readonly options: SupervisorClientOptions) {
     this.client = new Client({
@@ -118,13 +115,14 @@ export class DiscordSupervisorClient {
 
         const playersCount = Array.isArray(parsed.players) ? parsed.players.length : 0;
         const mediatorProfit = calculateMediatorProfit(parsed);
+        const mediatorId = parsed.mediatorId || 'unknown';
+        const previousMediatorTotal = this.mediatorRevenueTotals.get(mediatorId) ?? 0;
+        const updatedMediatorTotal = previousMediatorTotal + mediatorProfit;
+        this.mediatorRevenueTotals.set(mediatorId, updatedMediatorTotal);
 
-        const match = await this.options.apiClient.getMatchByThreadName(parsed.threadName);
-        console.log('match encontrado na API:', !!match);
-
-        const result = this.options.validatorService.validate(parsed, match);
+        const result = this.options.validatorService.validate(parsed, undefined);
         console.log('resultado validação:', result);
-        console.log(`contabilidade atualizada | mediador=${parsed.mediatorName} | filas=${playersCount} | lucro=R$ ${mediatorProfit.toFixed(2)}`);
+        console.log(`contabilidade atualizada | mediador=${parsed.mediatorName} | filas=${playersCount} | lucroAtual=R$ ${mediatorProfit.toFixed(2)} | totalAcumulado=R$ ${updatedMediatorTotal.toFixed(2)}`);
 
         const alertChannel = await this.client.channels.fetch(alertChannelId);
         if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) {
@@ -142,8 +140,9 @@ export class DiscordSupervisorClient {
           .addFields(
             { name: '👤 Mediador', value: parsed.mediatorName || 'Não informado', inline: true },
             { name: '🧾 Mediador ID', value: parsed.mediatorId || 'Não informado', inline: true },
-            { name: '📈 Filas concluídas', value: String(playersCount), inline: true },
-            { name: '💰 Lucro acumulado', value: formatCurrencyBRL(mediatorProfit), inline: true },
+          { name: '📈 Filas concluídas', value: String(playersCount), inline: true },
+          { name: '💰 Lucro da aposta', value: formatCurrencyBRL(mediatorProfit), inline: true },
+          { name: '📊 Total acumulado do mediador', value: formatCurrencyBRL(updatedMediatorTotal), inline: true },
             { name: '🏆 Último vencedor', value: parsed.winner || 'Não informado', inline: true },
             { name: '🧵 Thread', value: parsed.threadName || 'Não informado', inline: false },
             { name: '🗂️ Jogo', value: parsed.game || 'Não informado', inline: true },
