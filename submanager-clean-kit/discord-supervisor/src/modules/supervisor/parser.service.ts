@@ -74,6 +74,12 @@ const extractPrimaryValueLine = (description: string): string => {
   return (match?.[1] ?? '').trim();
 };
 
+const extractListFromValue = (value: string): string[] =>
+  value
+    .split(/[,\n]/g)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
 export class ParserService {
   parse(embed: AnyRecord): SupervisorLogData | null {
     const title = cleanText(embed.title);
@@ -81,12 +87,27 @@ export class ParserService {
 
     const fields = Array.isArray(embed.fields) ? (embed.fields as AnyRecord[]) : [];
     const description = cleanText(embed.description);
-    const threadName = getValueFromField(fields, [/^thread$/i, /^thread name$/i]) || extractFromDescription(description, 'Thread');
-    const game = getValueFromField(fields, [/^jogo$/i, /^game$/i]) || extractFromDescription(description, 'Jogo');
-    const mode = getValueFromField(fields, [/^modalidade$/i, /^mode$/i]) || extractFromDescription(description, 'Modalidade');
+
+    const threadName =
+      getValueFromField(fields, [/^thread$/i, /^thread name$/i]) ||
+      extractFromDescription(description, 'Thread');
+    const game =
+      getValueFromField(fields, [/^jogo$/i, /^game$/i]) ||
+      extractFromDescription(description, 'Jogo');
+    const mode =
+      getValueFromField(fields, [/^modalidade$/i, /^mode$/i]) ||
+      extractFromDescription(description, 'Modalidade');
     const mediator =
-      getValueFromField(fields, [/^mediador$/i, /^mediator$/i]) || extractFromDescription(description, 'Mediador');
-    const winner = getValueFromField(fields, [/^vencedor$/i, /^winner$/i]) || extractFromDescription(description, 'Vencedor');
+      getValueFromField(fields, [/^mediador$/i, /^mediator$/i]) ||
+      extractFromDescription(description, 'Mediador');
+    const playersRaw =
+      getValueFromField(fields, [/^jogadores$/i, /^players$/i]) ||
+      extractFromDescription(description, 'Jogadores');
+    const players = extractListFromValue(playersRaw);
+    const winner =
+      getValueFromField(fields, [/^partidas$/i, /^winner$/i, /^vencedor$/i]) ||
+      extractFromDescription(description, 'Partidas') ||
+      extractFromDescription(description, 'Vencedor');
     const mediatorRevenue =
       parseCurrencyBRL(getValueFromField(fields, [/^receita do mediador$/i, /^mediator revenue$/i])) ??
       parseCurrencyBRL(extractFromDescription(description, 'Receita do Mediador'));
@@ -104,7 +125,7 @@ export class ParserService {
       initialValue: parseCurrencyBRL(extractPrimaryValueLine(description)) ?? 0,
       mediator,
       mediatorId,
-      players: [],
+      players,
       winner,
       durationSeconds: parseDurationSeconds(extractFromDescription(description, 'Duração Total')) ?? 0,
       mediatorRevenue

@@ -1,4 +1,4 @@
-import { Client, Events, GatewayIntentBits, Message, TextChannel } from 'discord.js';
+import { Client, EmbedBuilder, Events, GatewayIntentBits, Message, TextChannel } from 'discord.js';
 import { ApiClient } from '../integrations/api/apiClient';
 import { ParserService, SupervisorLogData } from '../modules/supervisor/parser.service';
 import { ValidatorService } from '../modules/supervisor/validator.service';
@@ -135,18 +135,26 @@ export class DiscordSupervisorClient {
         }
 
         const textChannel = alertChannel as TextChannel;
-        const lines = [
-          '⚠️ Divergência detectada no bot supervisor',
-          `Thread: ${parsed.threadName}`,
-          `Jogo: ${parsed.game}`,
-          `Modalidade: ${parsed.mode}`,
-          `Vencedor: ${parsed.winner}`,
-          `Lucro do mediador: R$ ${mediatorProfit.toFixed(2)}`,
-          'Erros:',
-          ...result.issues.map((issue) => `- ${issue.field}: ${issue.message}`)
-        ];
+        const currentTime = new Date().toLocaleString('pt-BR');
+        const issuesText = result.issues.map((issue) => `${issue.field}: ${issue.message}`).join('\n');
+        const embedBuilder = new EmbedBuilder()
+          .setColor(0x3B82F6)
+          .setTitle('Supervisor ativo • Divergência detectada')
+          .addFields(
+            { name: 'Thread', value: parsed.threadName || 'Não informado', inline: true },
+            { name: 'Jogo', value: parsed.game || 'Não informado', inline: true },
+            { name: 'Modalidade', value: parsed.mode || 'Não informado', inline: true },
+            { name: 'Mediador', value: parsed.mediator || 'Não informado', inline: true },
+            { name: 'Vencedor', value: parsed.winner || 'Não informado', inline: true },
+            { name: 'Lucro do mediador', value: formatCurrencyBRL(mediatorProfit), inline: true }
+          )
+          .setFooter({ text: `Supervisor ativo • ${currentTime}` });
 
-        await textChannel.send({ content: lines.join('\n') });
+        if (issuesText) {
+          embedBuilder.addFields({ name: 'Erros', value: issuesText.slice(0, 1024) });
+        }
+
+        await textChannel.send({ embeds: [embedBuilder] });
         console.log('alerta enviado');
       } catch (error) {
         console.error('Supervisor processing error:', error);
