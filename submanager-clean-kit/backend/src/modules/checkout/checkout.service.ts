@@ -108,7 +108,7 @@ export const checkoutService = {
     // eslint-disable-next-line no-console
     console.log("[checkout] calling provider.createCheckout", { checkoutSessionId: pending.id });
 
-    const providerResponse = await provider.createCheckout({
+    const providerResponse = (await provider.createCheckout({
       amount: plan.amount.toString(),
       currency: plan.currency,
       externalReference: pending.id,
@@ -119,7 +119,16 @@ export const checkoutService = {
         planId: plan.id,
         payerEmail: (env as any).MERCADO_PAGO_PAYER_EMAIL,
       },
-    });
+    })) as unknown as {
+      status: string;
+      externalCheckoutId?: string | null;
+      checkoutUrl?: string | null;
+      qrCode?: string | null;
+      qrCodeBase64?: string | null;
+      paymentMethod?: string | null;
+      expiresAt?: Date | null;
+      raw?: unknown;
+    };
 
     const baseMetadata =
       pending.metadata && typeof pending.metadata === "object" ? (pending.metadata as Record<string, unknown>) : {};
@@ -143,7 +152,7 @@ export const checkoutService = {
     });
 
     // Create a PaymentTransaction record to track payment lifecycle (still PENDING at this stage).
-    const txData: Parameters<typeof prisma.paymentTransaction.create>[0]["data"] = {
+    const txData = {
       adminId: admin.id,
       checkoutSessionId: updated.id,
       provider: updated.provider,
@@ -157,7 +166,8 @@ export const checkoutService = {
       ...(providerResponse.raw ? { metadata: { providerRaw: providerResponse.raw } } : {}),
     };
 
-    const tx = await prisma.paymentTransaction.create({ data: txData });
+    const txCreateResult = await prisma.paymentTransaction.create({ data: txData });
+    const tx = txCreateResult as { id: string };
 
     return {
       checkoutSessionId: updated.id,

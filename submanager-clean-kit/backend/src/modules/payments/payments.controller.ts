@@ -52,7 +52,7 @@ export const paymentsController = {
     });
 
     res.json({
-      payments: payments.map((p) => ({
+      payments: payments.map((p: (typeof payments)[number]) => ({
         id: p.id,
         provider: p.provider,
         status: p.status,
@@ -112,7 +112,7 @@ export const paymentsController = {
     }
 
     // Update checkout session + transaction atomically
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       const checkout = await tx.checkoutSession.findUnique({
         where: { id: checkoutSessionId },
         include: { plan: true },

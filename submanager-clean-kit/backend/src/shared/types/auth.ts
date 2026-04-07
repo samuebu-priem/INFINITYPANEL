@@ -1,6 +1,4 @@
-import type { Role as PrismaRole } from "@prisma/client";
-
-export type Role = PrismaRole;
+export type Role = "OWNER" | "ADMIN" | "PLAYER";
 
 export type JwtPayload = {
   sub: string;
