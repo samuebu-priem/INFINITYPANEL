@@ -17,8 +17,9 @@ type SupervisorClientOptions = {
 const isEmbedLogMessage = (message: Message<boolean>): boolean => {
   const embeds = message.embeds ?? [];
   if (!embeds.length) return false;
+
   const title = embeds[0]?.title ?? '';
-  return /Aposta Concluída/i.test(title);
+  return /concluíd|aposta|sucesso/i.test(title);
 };
 
 const formatCurrencyBRL = (value: number): string =>
