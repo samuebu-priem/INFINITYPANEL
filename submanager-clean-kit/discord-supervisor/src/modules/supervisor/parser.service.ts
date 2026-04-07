@@ -1,4 +1,5 @@
 export type SupervisorLogData = {
+  players: any;
   threadName: string;
   game: string;
   mode: string;
@@ -74,6 +75,7 @@ export class ParserService {
     }
 
     return {
+      players: [], // TODO: Extract players data from embed
       threadName: normalizeText(threadMatch[1]),
       game: normalizeText(gameMatch[1]),
       mode: normalizeText(modeMatch[1]),
