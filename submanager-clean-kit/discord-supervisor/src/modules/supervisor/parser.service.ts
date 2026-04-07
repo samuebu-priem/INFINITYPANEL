@@ -58,26 +58,38 @@ export class ParserService {
         : null;
 
     const footerText = normalizeText(footer?.text);
-    const threadName =
+    const rawThreadName =
       normalizeText(getFieldValue(fields, 'Thread')) ||
       normalizeText(getFieldValue(fields, 'Sala')) ||
       normalizeText(description.match(/thread[:\s]+([^\n`]+)/i)?.[1]) ||
-      normalizeText(description.match(/fila[:\s]+([^\n`]+)/i)?.[1]) ||
-      normalizeText(description.match(/([A-Za-z0-9_-]{6,})/i)?.[1]).replace(/^\*\*\s*/, '').replace(/\s*\*+\s*$/, '');
+      normalizeText(description.match(/(fila-[^\s`]+)/i)?.[1]) ||
+      normalizeText(description.match(/([A-Za-z0-9_-]{6,})/i)?.[1]);
+
+    const threadName = rawThreadName
+      .replace(/^\*+\s*/, '')
+      .replace(/\s*\*+$/, '')
+      .replace(/^\s*fila\s*-\s*/i, 'fila-')
+      .trim();
     const game =
       normalizeText(getFieldValue(fields, 'Jogo')) ||
       normalizeText(getFieldValue(fields, 'Game')) ||
-      normalizeText(description.match(/jogo[:\s]+([^\n]+)/i)?.[1]).replace(/^\*\*\s*/, '').replace(/\s*\*+\s*$/, '');
+      normalizeText(description.match(/jogo[:\s]+([^\n]+)/i)?.[1])
+        .replace(/^\*+\s*/, '')
+        .replace(/\s*\*+$/, '');
     const mode =
       normalizeText(getFieldValue(fields, 'Modalidade')) ||
       normalizeText(getFieldValue(fields, 'Modo')) ||
-      normalizeText(description.match(/modalidade[:\s]+([^\n]+)/i)?.[1]).replace(/^\*\*\s*/, '').replace(/\s*\*+\s*$/, '');
+      normalizeText(description.match(/modalidade[:\s]+([^\n]+)/i)?.[1])
+        .replace(/^\*+\s*/, '')
+        .replace(/\s*\*+$/, '');
 
     const mediatorName =
       normalizeText(getFieldValue(fields, 'Mediador')) ||
       normalizeText(getFieldValue(fields, 'Mediator')) ||
       normalizeText(getFieldValue(fields, 'Administrador')) ||
-      normalizeText(description.match(/mediador[:\s]+([^\n]+)/i)?.[1]).replace(/^\*\*\s*/, '').replace(/\s*\*+\s*$/, '');
+      normalizeText(description.match(/mediador[:\s]+([^\n]+)/i)?.[1])
+        .replace(/^\*+\s*/, '')
+        .replace(/\s*\*+$/, '');
     const mediatorId =
       extractFirstNumber(getFieldValue(fields, 'ID do Mediador')) ||
       extractFirstNumber(getFieldValue(fields, 'Mediador ID')) ||
