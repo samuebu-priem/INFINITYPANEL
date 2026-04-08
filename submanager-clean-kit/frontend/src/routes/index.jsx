@@ -6,6 +6,9 @@ import Plans from "../pages/Plans.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import AdminSubscribers from "../pages/AdminSubscribers.jsx";
 import UserHome from "../pages/UserHome.jsx";
+import TermsOfUse from "../pages/TermsOfUse.jsx";
+import PrivacyPolicy from "../pages/PrivacyPolicy.jsx";
+import FinancialTerms from "../pages/FinancialTerms.jsx";
 import { useAuth } from "../context/auth.jsx";
 
 function AdminOnlyRoute({ children }) {
@@ -38,6 +41,30 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route
+        path="/termos-de-uso"
+        element={
+          <AppShell>
+            <TermsOfUse />
+          </AppShell>
+        }
+      />
+      <Route
+        path="/politica-de-privacidade"
+        element={
+          <AppShell>
+            <PrivacyPolicy />
+          </AppShell>
+        }
+      />
+      <Route
+        path="/termos-financeiros"
+        element={
+          <AppShell>
+            <FinancialTerms />
+          </AppShell>
+        }
+      />
       <Route path="/" element={<AppShell><DefaultRedirect /></AppShell>} />
       <Route path="/dashboard" element={<AppShell><UserHome /></AppShell>} />
       <Route

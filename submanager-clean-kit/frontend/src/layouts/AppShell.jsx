@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, LayoutDashboard, LogOut, ShieldCheck } from "lucide-react";
+import { Home, LayoutDashboard, LogOut, ShieldCheck, FileText } from "lucide-react";
 import { useAuth } from "../context/auth.jsx";
 
 export default function AppShell({ children }) {
@@ -13,6 +13,7 @@ export default function AppShell({ children }) {
     ...(isAdmin ? [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard }] : []),
     ...(user?.role ? [{ to: "/dashboard", label: "Início", icon: Home }] : []),
     ...(isAdmin ? [{ to: "/plans", label: "Planos", icon: LayoutDashboard }] : []),
+    { to: "/termos-de-uso", label: "Termos", icon: FileText },
   ];
 
   return (

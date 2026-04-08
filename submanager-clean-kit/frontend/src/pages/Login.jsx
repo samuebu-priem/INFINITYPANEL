@@ -87,6 +87,17 @@ export default function Login() {
                   Criar conta
                 </Link>
               </p>
+              <p className="mt-3 text-xs text-slate-500">
+                Ao entrar, você concorda com os{" "}
+                <Link to="/termos-de-uso" className="font-semibold text-sky-400 hover:text-sky-300">
+                  Termos de Uso
+                </Link>{" "}
+                e a{" "}
+                <Link to="/politica-de-privacidade" className="font-semibold text-sky-400 hover:text-sky-300">
+                  Política de Privacidade
+                </Link>
+                .
+              </p>
             </div>
           </div>
         </div>
