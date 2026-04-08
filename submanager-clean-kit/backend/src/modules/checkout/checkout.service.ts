@@ -2,6 +2,8 @@ import { prisma } from "../../config/prisma.js";
 import { env } from "../../config/env.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
 import { getPaymentProvider } from "../payments/providers/providerFactory.js";
+type CheckoutSessionStatus = "PENDING" | "OPEN" | "COMPLETED" | "EXPIRED" | "CANCELLED";
+type PaymentTransactionStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "REFUNDED";
 
 export type CreateCheckoutInput = {
   adminProfileId: string;
@@ -25,6 +27,22 @@ export type CreateCheckoutResult = {
   expiresAt: Date | null;
   paymentTransactionId: string | null;
 };
+
+function mapProviderStatusToCheckoutStatus(status: string): CheckoutSessionStatus {
+  if (status === "approved") return "COMPLETED";
+  if (status === "cancelled") return "CANCELLED";
+  if (status === "expired") return "EXPIRED";
+  if (status === "rejected") return "CANCELLED";
+  return "OPEN";
+}
+
+function mapProviderStatusToPaymentStatus(status: string): PaymentTransactionStatus {
+  if (status === "approved") return "APPROVED";
+  if (status === "cancelled") return "CANCELLED";
+  if (status === "expired") return "EXPIRED";
+  if (status === "rejected") return "REJECTED";
+  return "PENDING";
+}
 
 export const checkoutService = {
   createAdminSubscriptionCheckout: async (
@@ -140,7 +158,7 @@ export const checkoutService = {
     const updated = await prisma.checkoutSession.update({
       where: { id: pending.id },
       data: {
-        status: providerResponse.status,
+        status: mapProviderStatusToCheckoutStatus(providerResponse.status),
         externalCheckoutId: providerResponse.externalCheckoutId ?? null,
         checkoutUrl: providerResponse.checkoutUrl ?? null,
         qrCode: providerResponse.qrCode ?? null,
@@ -156,7 +174,7 @@ export const checkoutService = {
       adminId: admin.id,
       checkoutSessionId: updated.id,
       provider: updated.provider,
-      status: "PENDING",
+      status: mapProviderStatusToPaymentStatus(providerResponse.status),
       providerPublicKey: updated.providerPublicKey ?? null,
       providerAccessToken: updated.providerAccessToken ?? null,
       externalCheckoutId: updated.externalCheckoutId ?? null,

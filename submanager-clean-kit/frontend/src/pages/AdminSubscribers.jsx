@@ -11,10 +11,10 @@ export default function AdminSubscribers() {
         setError("");
         const response = await api.get("/users");
         const users = Array.isArray(response?.users) ? response.users : [];
-        setItems(users.filter((user) => user?.role === "ADMIN"));
+        setItems(users.filter((user) => user?.role === "ADMIN" || user?.role === "OWNER"));
       } catch (err) {
         setItems([]);
-        setError(err?.response?.data?.message || "Não foi possível carregar os admins.");
+        setError(err?.response?.data?.message || "Não foi possível carregar os admins e owners.");
       }
     };
 
@@ -31,7 +31,7 @@ export default function AdminSubscribers() {
       <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-6">
         {error ? <p className="mb-4 text-sm text-rose-300">{error}</p> : null}
         {items.length === 0 ? (
-          <p className="text-slate-400">Nenhum admin encontrado.</p>
+          <p className="text-slate-400">Nenhum admin ou owner encontrado.</p>
         ) : (
           <div className="space-y-3">
             {items.map((item) => (

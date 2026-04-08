@@ -22,7 +22,12 @@ export default function AdminDashboard() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [plansRes, usersRes] = await Promise.allSettled([api.get("/plans"), api.get("/users")]);
+      const [plansRes, usersRes, subscriptionsRes, paymentsRes] = await Promise.allSettled([
+        api.get("/plans"),
+        api.get("/users"),
+        api.get("/subscriptions/me"),
+        api.get("/payments"),
+      ]);
 
       const plansList = plansRes.status === "fulfilled"
         ? Array.isArray(plansRes.value?.plans)
@@ -33,10 +38,17 @@ export default function AdminDashboard() {
         : [];
 
       const userList = usersRes.status === "fulfilled" ? usersRes.value?.users || [] : [];
+      const subscriptionList =
+        subscriptionsRes.status === "fulfilled"
+          ? subscriptionsRes.value?.subscription
+            ? [subscriptionsRes.value.subscription]
+            : []
+          : [];
+      const paymentList = paymentsRes.status === "fulfilled" ? paymentsRes.value?.payments || [] : [];
 
       setPlans(plansList);
-      setSubscriptions(userList);
-      setPayments([]);
+      setSubscriptions(subscriptionList.length > 0 ? subscriptionList : userList);
+      setPayments(paymentList);
     } catch {
       setPlans([]);
       setSubscriptions([]);
@@ -213,7 +225,7 @@ export default function AdminDashboard() {
 
           <div className="mt-5 space-y-3">
             {searchableSubscribers.length === 0 ? (
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-400">Nenhum assinante encontrado.</div>
+              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-400">Nenhuma assinatura ativa encontrada.</div>
             ) : (
               searchableSubscribers.map((item) => (
                 <div key={item.id} className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
