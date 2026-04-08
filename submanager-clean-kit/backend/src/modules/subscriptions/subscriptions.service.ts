@@ -10,9 +10,25 @@ export const subscriptionsService = {
 
     if (!admin) throw new ApiError(403, "Admin profile required");
 
+    const now = new Date();
     const subscription = await prisma.subscription.findFirst({
-      where: { adminId: admin.id },
+      where: {
+        adminId: admin.id,
+        status: "ACTIVE",
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+      },
       orderBy: { createdAt: "desc" },
+      include: {
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            amount: true,
+            billingCycle: true,
+            currency: true,
+          },
+        },
+      },
     });
 
     if (!subscription) {
@@ -27,7 +43,8 @@ export const subscriptionsService = {
         endsAt: subscription.endsAt,
         approvedAt: subscription.approvedAt ?? null,
         createdAt: subscription.createdAt,
-        // Plan details will be linked once we unify schema to the new SubscriptionPlan model.
+        plan: subscription.plan,
+        isActive: subscription.status === "ACTIVE" && (!subscription.endsAt || subscription.endsAt > now),
       },
     };
   },
