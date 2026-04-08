@@ -1,6 +1,6 @@
 import { Instagram, MessageCircleMore, Shield, FileText } from "lucide-react";
 import { useState } from "react";
-import { financialTerms, privacyTerms } from "../../lib/terms.js";
+import { financialTermsSections, privacyPolicySections } from "../../lib/terms.js";
 import { TermsModal } from "../ui/TermsModal.jsx";
 
 function TermsContent({ terms }) {
@@ -52,19 +52,19 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setActiveTerms({ title: "Termos de Privacidade", content: <TermsContent terms={privacyTerms} /> })}
+              onClick={() => setActiveTerms({ title: "Política de Privacidade", content: <TermsContent terms={privacyPolicySections} /> })}
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-300"
             >
               <FileText className="h-4 w-4" />
-              Privacy Terms
+              Política de Privacidade
             </button>
             <button
               type="button"
-              onClick={() => setActiveTerms({ title: "Termos Financeiros", content: <TermsContent terms={financialTerms} /> })}
+              onClick={() => setActiveTerms({ title: "Termos Financeiros", content: <TermsContent terms={financialTermsSections} /> })}
               className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-300"
             >
               <FileText className="h-4 w-4" />
-              Financial Terms
+              Termos Financeiros
             </button>
 
             <div className="ml-0 flex items-center gap-2 sm:ml-2">
