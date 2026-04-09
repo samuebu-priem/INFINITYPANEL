@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   financialTermsSections,
   privacyPolicySections,
+  termsOfUseSections,
 } from "../../lib/terms.js";
 import { TermsModal } from "../ui/TermsModal.jsx";
 
@@ -204,6 +205,33 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
               >
                 <FileText size={16} />
                 Termos Financeiros
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTerms({
+                    title: "Termos de Uso",
+                    content: <TermsContent terms={termsOfUseSections} />,
+                  })
+                }
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: 42,
+                  padding: "0 14px",
+                  borderRadius: 16,
+                  border: "1px solid #1f2937",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#e5e7eb",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <FileText size={16} />
+                Termos de Uso
               </button>
 
               <div
