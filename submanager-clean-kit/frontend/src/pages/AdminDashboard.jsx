@@ -23,13 +23,7 @@ function getPlanTitle(plan) {
 }
 
 function getPlanPrice(plan) {
-  return (
-    plan?.price ??
-    plan?.amount ??
-    plan?.value ??
-    plan?.monthlyPrice ??
-    0
-  );
+  return plan?.price ?? plan?.amount ?? plan?.value ?? plan?.monthlyPrice ?? 0;
 }
 
 function getPlanValidity(plan) {
@@ -43,14 +37,9 @@ function getPlanValidity(plan) {
 }
 
 function getPlanStock(plan) {
-  const stock =
-    plan?.stock ??
-    plan?.quantity ??
-    plan?.availableQuantity ??
-    plan?.limit ??
-    null;
-
-  return stock;
+  return (
+    plan?.stock ?? plan?.quantity ?? plan?.availableQuantity ?? plan?.limit ?? null
+  );
 }
 
 function isPlanActive(plan) {
@@ -83,47 +72,45 @@ function sortNewestPlans(plans) {
   });
 }
 
-function DashboardStatCard({ title, value, hint, accent = "primary" }) {
-  const accentStyles = {
+function StatCard({ title, value, hint, accent = "primary" }) {
+  const themes = {
     primary: {
-      glow: "0 0 30px rgba(99, 102, 241, 0.22)",
-      border: "rgba(99, 102, 241, 0.35)",
       chip: "rgba(99, 102, 241, 0.14)",
+      border: "rgba(99, 102, 241, 0.30)",
+      glow: "0 0 30px rgba(99, 102, 241, 0.16)",
       dot: "#6366f1",
     },
     success: {
-      glow: "0 0 30px rgba(34, 197, 94, 0.18)",
-      border: "rgba(34, 197, 94, 0.28)",
       chip: "rgba(34, 197, 94, 0.12)",
+      border: "rgba(34, 197, 94, 0.24)",
+      glow: "0 0 30px rgba(34, 197, 94, 0.12)",
       dot: "#22c55e",
     },
     danger: {
-      glow: "0 0 30px rgba(239, 68, 68, 0.18)",
-      border: "rgba(239, 68, 68, 0.28)",
       chip: "rgba(239, 68, 68, 0.12)",
+      border: "rgba(239, 68, 68, 0.24)",
+      glow: "0 0 30px rgba(239, 68, 68, 0.12)",
       dot: "#ef4444",
     },
     neutral: {
-      glow: "0 0 30px rgba(148, 163, 184, 0.10)",
-      border: "rgba(148, 163, 184, 0.18)",
       chip: "rgba(148, 163, 184, 0.10)",
+      border: "rgba(148, 163, 184, 0.18)",
+      glow: "0 0 24px rgba(148, 163, 184, 0.08)",
       dot: "#94a3b8",
     },
   };
 
-  const theme = accentStyles[accent] || accentStyles.primary;
+  const theme = themes[accent] || themes.primary;
 
   return (
     <div
       style={{
         background:
-          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(12,17,24,0.98) 100%)",
+          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
         border: `1px solid ${theme.border}`,
         borderRadius: 24,
         padding: 20,
         boxShadow: theme.glow,
-        position: "relative",
-        overflow: "hidden",
       }}
     >
       <div
@@ -136,8 +123,7 @@ function DashboardStatCard({ title, value, hint, accent = "primary" }) {
           background: theme.chip,
           color: "#cbd5e1",
           fontSize: 12,
-          fontWeight: 600,
-          letterSpacing: 0.4,
+          fontWeight: 700,
           marginBottom: 14,
         }}
       >
@@ -152,39 +138,31 @@ function DashboardStatCard({ title, value, hint, accent = "primary" }) {
         />
         {title}
       </div>
-
       <div
         style={{
-          fontSize: 32,
-          fontWeight: 800,
           color: "#f3f4f6",
+          fontSize: 32,
           lineHeight: 1.05,
+          fontWeight: 900,
           marginBottom: 8,
         }}
       >
         {value}
       </div>
-
-      <div
-        style={{
-          color: "#9ca3af",
-          fontSize: 13,
-          lineHeight: 1.45,
-        }}
-      >
+      <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.55 }}>
         {hint}
       </div>
     </div>
   );
 }
 
-function SectionCard({ title, subtitle, children, action }) {
+function SectionCard({ title, subtitle, action, children }) {
   return (
     <section
       style={{
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid rgba(31, 41, 55, 1)",
+        border: "1px solid #1f2937",
         borderRadius: 28,
         padding: 22,
         boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
@@ -194,8 +172,8 @@ function SectionCard({ title, subtitle, children, action }) {
         style={{
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "flex-start",
           gap: 16,
+          alignItems: "flex-start",
           marginBottom: 18,
           flexWrap: "wrap",
         }}
@@ -205,20 +183,14 @@ function SectionCard({ title, subtitle, children, action }) {
             style={{
               margin: 0,
               fontSize: 22,
-              fontWeight: 800,
+              fontWeight: 900,
               color: "#f3f4f6",
             }}
           >
             {title}
           </h2>
           {subtitle ? (
-            <p
-              style={{
-                margin: "8px 0 0",
-                color: "#9ca3af",
-                fontSize: 14,
-              }}
-            >
+            <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14 }}>
               {subtitle}
             </p>
           ) : null}
@@ -254,22 +226,20 @@ function ActionButton({ children, onClick, variant = "secondary" }) {
     <button
       type="button"
       onClick={onClick}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-1px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
       style={{
         ...current,
         borderRadius: 16,
         padding: "12px 16px",
         fontSize: 14,
-        fontWeight: 700,
+        fontWeight: 800,
         cursor: "pointer",
         transition: "transform 0.2s ease, opacity 0.2s ease",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-1px)";
-        e.currentTarget.style.opacity = "0.96";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.opacity = "1";
       }}
     >
       {children}
@@ -306,14 +276,7 @@ function EmptyState({ title, description, buttonLabel, onClick }) {
         ✦
       </div>
 
-      <h3
-        style={{
-          margin: 0,
-          color: "#f3f4f6",
-          fontSize: 18,
-          fontWeight: 800,
-        }}
-      >
+      <h3 style={{ margin: 0, color: "#f3f4f6", fontSize: 18, fontWeight: 900 }}>
         {title}
       </h3>
 
@@ -347,6 +310,7 @@ function PlanRow({ plan }) {
 
   return (
     <div
+      className="admin-dashboard-plan-row"
       style={{
         display: "grid",
         gridTemplateColumns: "minmax(0, 1.6fr) 0.9fr 0.8fr 0.8fr auto",
@@ -354,22 +318,21 @@ function PlanRow({ plan }) {
         alignItems: "center",
         padding: "16px 18px",
         background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(31, 41, 55, 1)",
+        border: "1px solid #1f2937",
         borderRadius: 20,
       }}
-      className="admin-dashboard-plan-row"
     >
       <div style={{ minWidth: 0 }}>
         <div
+          title={title}
           style={{
             color: "#f3f4f6",
-            fontWeight: 700,
+            fontWeight: 800,
             fontSize: 15,
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
           }}
-          title={title}
         >
           {title}
         </div>
@@ -382,7 +345,7 @@ function PlanRow({ plan }) {
             padding: "5px 10px",
             borderRadius: 999,
             fontSize: 12,
-            fontWeight: 700,
+            fontWeight: 800,
             color: active ? "#86efac" : "#fca5a5",
             background: active
               ? "rgba(34,197,94,0.10)"
@@ -423,7 +386,7 @@ function PlanRow({ plan }) {
         style={{
           color: "#94a3b8",
           fontSize: 12,
-          fontWeight: 700,
+          fontWeight: 800,
           textAlign: "right",
         }}
       >
@@ -442,7 +405,7 @@ function MiniPlanCard({ plan }) {
   return (
     <div
       style={{
-        border: "1px solid rgba(31, 41, 55, 1)",
+        border: "1px solid #1f2937",
         borderRadius: 20,
         padding: 16,
         background: "rgba(255,255,255,0.02)",
@@ -456,13 +419,7 @@ function MiniPlanCard({ plan }) {
           alignItems: "center",
         }}
       >
-        <strong
-          style={{
-            color: "#f3f4f6",
-            fontSize: 14,
-            lineHeight: 1.4,
-          }}
-        >
+        <strong style={{ color: "#f3f4f6", fontSize: 14, lineHeight: 1.4 }}>
           {title}
         </strong>
 
@@ -471,7 +428,7 @@ function MiniPlanCard({ plan }) {
             padding: "5px 10px",
             borderRadius: 999,
             fontSize: 11,
-            fontWeight: 800,
+            fontWeight: 900,
             color: active ? "#86efac" : "#fca5a5",
             background: active
               ? "rgba(34,197,94,0.10)"
@@ -504,7 +461,6 @@ function MiniPlanCard({ plan }) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-
   const [plans, setPlans] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [plansError, setPlansError] = useState("");
@@ -518,7 +474,6 @@ export default function AdminDashboard() {
         setPlansError("");
 
         const token = localStorage.getItem(TOKEN_KEY);
-
         const response = await fetch(`${API_BASE}/plans`, {
           headers: {
             "Content-Type": "application/json",
@@ -531,7 +486,6 @@ export default function AdminDashboard() {
         }
 
         const data = await response.json();
-
         const normalized = Array.isArray(data)
           ? data
           : Array.isArray(data?.plans)
@@ -540,20 +494,14 @@ export default function AdminDashboard() {
           ? data.data
           : [];
 
-        if (mounted) {
-          setPlans(normalized);
-        }
+        if (mounted) setPlans(normalized);
       } catch (error) {
         if (mounted) {
           setPlans([]);
-          setPlansError(
-            error?.message || "Não foi possível carregar os planos."
-          );
+          setPlansError(error?.message || "Não foi possível carregar os planos.");
         }
       } finally {
-        if (mounted) {
-          setLoadingPlans(false);
-        }
+        if (mounted) setLoadingPlans(false);
       }
     }
 
@@ -568,23 +516,15 @@ export default function AdminDashboard() {
     const totalPlans = plans.length;
     const activePlans = plans.filter((plan) => isPlanActive(plan)).length;
     const inactivePlans = totalPlans - activePlans;
-
     const totalStock = plans.reduce((acc, plan) => {
       const stock = Number(getPlanStock(plan));
       return acc + (Number.isFinite(stock) ? stock : 0);
     }, 0);
 
-    return {
-      totalPlans,
-      activePlans,
-      inactivePlans,
-      totalStock,
-    };
+    return { totalPlans, activePlans, inactivePlans, totalStock };
   }, [plans]);
 
-  const latestPlans = useMemo(() => {
-    return sortNewestPlans(plans).slice(0, 4);
-  }, [plans]);
+  const latestPlans = useMemo(() => sortNewestPlans(plans).slice(0, 4), [plans]);
 
   return (
     <div
@@ -595,54 +535,52 @@ export default function AdminDashboard() {
         padding: 24,
       }}
     >
-      <style>
-        {`
-          .admin-dashboard-grid {
-            display: grid;
-            grid-template-columns: 1.5fr 0.95fr;
-            gap: 20px;
-          }
+      <style>{`
+        .admin-dashboard-grid {
+          display: grid;
+          grid-template-columns: 1.5fr 0.95fr;
+          gap: 20px;
+        }
 
+        .admin-dashboard-stats {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
+        }
+
+        .admin-dashboard-quick-actions {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 14px;
+        }
+
+        @media (max-width: 1180px) {
           .admin-dashboard-stats {
-            display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
           }
 
+          .admin-dashboard-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 860px) {
           .admin-dashboard-quick-actions {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 14px;
+            grid-template-columns: 1fr;
           }
 
-          @media (max-width: 1180px) {
-            .admin-dashboard-stats {
-              grid-template-columns: repeat(2, minmax(0, 1fr));
-            }
-
-            .admin-dashboard-grid {
-              grid-template-columns: 1fr;
-            }
+          .admin-dashboard-plan-row {
+            grid-template-columns: 1fr;
+            text-align: left;
           }
+        }
 
-          @media (max-width: 860px) {
-            .admin-dashboard-quick-actions {
-              grid-template-columns: 1fr;
-            }
-
-            .admin-dashboard-plan-row {
-              grid-template-columns: 1fr;
-              text-align: left;
-            }
+        @media (max-width: 640px) {
+          .admin-dashboard-stats {
+            grid-template-columns: 1fr;
           }
-
-          @media (max-width: 640px) {
-            .admin-dashboard-stats {
-              grid-template-columns: 1fr;
-            }
-          }
-        `}
-      </style>
+        }
+      `}</style>
 
       <div
         style={{
@@ -711,7 +649,7 @@ export default function AdminDashboard() {
                     boxShadow: "0 0 16px rgba(99,102,241,0.95)",
                   }}
                 />
-                visao geral
+                visão geral
               </div>
 
               <h1
@@ -736,60 +674,45 @@ export default function AdminDashboard() {
                   lineHeight: 1.65,
                 }}
               >
-                Gerencie a plataforma"
+                Painel focado nos dados reais dos planos retornados pela API.
               </p>
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
-              <ActionButton
-                variant="secondary"
-                onClick={() => window.location.reload()}
-              >
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <ActionButton variant="secondary" onClick={() => window.location.reload()}>
                 Atualizar painel
               </ActionButton>
 
-              <ActionButton
-                variant="primary"
-                onClick={() => navigate("/plans")}
-              >
-                Criar plano
+              <ActionButton variant="primary" onClick={() => navigate("/plans")}>
+                Ver planos
               </ActionButton>
             </div>
           </div>
         </header>
 
         <div className="admin-dashboard-stats">
-          <DashboardStatCard
+          <StatCard
             title="Total de planos"
             value={loadingPlans ? "..." : stats.totalPlans}
-            hint="Quantidade total de planos carregados do backend."
+            hint="Quantidade de planos carregados do backend."
             accent="primary"
           />
-
-          <DashboardStatCard
+          <StatCard
             title="Planos ativos"
             value={loadingPlans ? "..." : stats.activePlans}
-            hint="Planos disponíveis para operação no momento."
+            hint="Itens disponíveis no momento."
             accent="success"
           />
-
-          <DashboardStatCard
+          <StatCard
             title="Planos inativos"
             value={loadingPlans ? "..." : stats.inactivePlans}
-            hint="Planos pausados ou indisponíveis."
+            hint="Planos retornados com status inativo."
             accent="danger"
           />
-
-          <DashboardStatCard
+          <StatCard
             title="Estoque somado"
             value={loadingPlans ? "..." : stats.totalStock}
-            hint="Soma de estoque encontrada nos planos retornados."
+            hint="Soma do estoque informado nos planos retornados."
             accent="neutral"
           />
         </div>
@@ -797,23 +720,15 @@ export default function AdminDashboard() {
         <div className="admin-dashboard-grid">
           <SectionCard
             title="Planos disponíveis"
-            subtitle="Visual premium dos planos cadastrados atualmente."
+            subtitle="Lista com os planos reais recebidos da API."
             action={
-              <ActionButton
-                variant="secondary"
-                onClick={() => navigate("/plans")}
-              >
+              <ActionButton variant="secondary" onClick={() => navigate("/plans")}>
                 Gerenciar planos
               </ActionButton>
             }
           >
             {loadingPlans ? (
-              <div
-                style={{
-                  display: "grid",
-                  gap: 12,
-                }}
-              >
+              <div style={{ display: "grid", gap: 12 }}>
                 {[1, 2, 3, 4].map((item) => (
                   <div
                     key={item}
@@ -828,14 +743,6 @@ export default function AdminDashboard() {
                     }}
                   />
                 ))}
-                <style>
-                  {`
-                    @keyframes pulse {
-                      0% { background-position: 100% 50%; }
-                      100% { background-position: 0 50%; }
-                    }
-                  `}
-                </style>
               </div>
             ) : plansError ? (
               <EmptyState
@@ -847,37 +754,23 @@ export default function AdminDashboard() {
             ) : plans.length === 0 ? (
               <EmptyState
                 title="Nenhum plano cadastrado"
-                description="Seu painel já está pronto, mas ainda não existem planos para exibir. Crie o primeiro plano para começar."
-                buttonLabel="Criar primeiro plano"
-                onClick={() => navigate("/plans")}
+                description="Não há planos para exibir no momento."
+                buttonLabel="Atualizar"
+                onClick={() => window.location.reload()}
               />
             ) : (
-              <div
-                style={{
-                  display: "grid",
-                  gap: 12,
-                }}
-              >
+              <div style={{ display: "grid", gap: 12 }}>
                 {sortNewestPlans(plans).map((plan, index) => (
-                  <PlanRow
-                    key={plan?.id || `${getPlanTitle(plan)}-${index}`}
-                    plan={plan}
-                  />
+                  <PlanRow key={plan?.id || `${getPlanTitle(plan)}-${index}`} plan={plan} />
                 ))}
               </div>
             )}
           </SectionCard>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 20,
-              alignContent: "start",
-            }}
-          >
+          <div style={{ display: "grid", gap: 20, alignContent: "start" }}>
             <SectionCard
               title="Planos recentes"
-              subtitle="Os últimos planos carregados no painel."
+              subtitle="Últimos itens retornados pela API."
             >
               {loadingPlans ? (
                 <div style={{ display: "grid", gap: 12 }}>
@@ -897,13 +790,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : latestPlans.length === 0 ? (
-                <div
-                  style={{
-                    color: "#9ca3af",
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                  }}
-                >
+                <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
                   Sem planos recentes para mostrar.
                 </div>
               ) : (
@@ -918,29 +805,17 @@ export default function AdminDashboard() {
               )}
             </SectionCard>
 
-            <SectionCard
-              title="Ações rápidas"
-              subtitle="Atalhos diretos para o fluxo principal."
-            >
+            <SectionCard title="Ações rápidas" subtitle="Atalhos para o fluxo principal.">
               <div className="admin-dashboard-quick-actions">
-                <ActionButton
-                  variant="primary"
-                  onClick={() => navigate("/plans")}
-                >
-                  Criar plano
+                <ActionButton variant="primary" onClick={() => navigate("/plans")}>
+                  Ver planos
                 </ActionButton>
 
-                <ActionButton
-                  variant="secondary"
-                  onClick={() => navigate("/plans")}
-                >
-                  Gerenciar planos
+                <ActionButton variant="secondary" onClick={() => navigate("/plans")}>
+                  Atualizar catálogo
                 </ActionButton>
 
-                <ActionButton
-                  variant="secondary"
-                  onClick={() => navigate("/admin/subscribers")}
-                >
+                <ActionButton variant="secondary" onClick={() => navigate("/admin/subscribers")}>
                   Ver assinantes
                 </ActionButton>
               </div>

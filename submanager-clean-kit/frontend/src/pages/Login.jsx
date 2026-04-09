@@ -14,7 +14,10 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await login({ emailOrUsername: form.email, password: form.password });
+      const response = await login({
+        emailOrUsername: form.email,
+        password: form.password,
+      });
       toast.success("Login realizado.");
       navigate(response?.user?.role === "ADMIN" ? "/admin" : "/dashboard");
     } catch (error) {
@@ -25,33 +28,33 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 px-4 py-10 text-white">
+    <div className="min-h-screen bg-[#0b0f14] px-4 py-10 text-[#f3f4f6]">
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-[2.5rem] border border-slate-800 bg-slate-900 shadow-2xl shadow-black/40 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="hidden flex-col justify-between bg-gradient-to-br from-sky-600 via-sky-500 to-cyan-400 p-10 text-slate-950 lg:flex">
+        <div className="grid w-full overflow-hidden rounded-[2.5rem] border border-[#1f2937] bg-[#121821] shadow-2xl shadow-black/40 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="hidden flex-col justify-between bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-500 p-10 text-white lg:flex">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em]">InfinityPainel</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">SubManager</p>
               <h1 className="mt-6 max-w-md text-5xl font-black leading-tight">
                 Entre para gerenciar seus planos e assinaturas.
               </h1>
             </div>
-            <p className="max-w-md text-base font-medium text-slate-900/80">
-              Acesse sua conta para visualizar planos, acompanhar status e administrar assinaturas.
+            <p className="max-w-md text-base font-medium text-white/80">
+              Acesso autenticado para visualizar planos e acompanhar a área da conta.
             </p>
           </div>
 
           <div className="flex items-center justify-center p-8 sm:p-10">
             <div className="w-full max-w-md">
               <div className="mb-8">
-                <p className="text-sm text-slate-400">Acesso</p>
-                <h2 className="mt-2 text-3xl font-bold text-white">Entrar</h2>
+                <p className="text-sm text-[#9ca3af]">Acesso</p>
+                <h2 className="mt-2 text-3xl font-bold text-[#f3f4f6]">Entrar</h2>
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-5">
                 <label className="block">
-                  <span className="mb-2 block text-sm text-slate-300">E-mail</span>
+                  <span className="mb-2 block text-sm text-[#e5e7eb]">E-mail ou usuário</span>
                   <input
-                    type="email"
+                    type="text"
                     required
                     className="field"
                     value={form.email}
@@ -61,7 +64,7 @@ export default function Login() {
                 </label>
 
                 <label className="block">
-                  <span className="mb-2 block text-sm text-slate-300">Senha</span>
+                  <span className="mb-2 block text-sm text-[#e5e7eb]">Senha</span>
                   <input
                     type="password"
                     required
@@ -75,25 +78,25 @@ export default function Login() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex w-full items-center justify-center rounded-2xl bg-sky-600 px-5 py-3 font-semibold text-white transition hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loading ? "Entrando..." : "Entrar"}
                 </button>
               </form>
 
-              <p className="mt-6 text-sm text-slate-400">
+              <p className="mt-6 text-sm text-[#9ca3af]">
                 Não tem conta?{" "}
-                <Link to="/register" className="font-semibold text-sky-400 hover:text-sky-300">
+                <Link to="/register" className="font-semibold text-indigo-400 hover:text-indigo-300">
                   Criar conta
                 </Link>
               </p>
-              <p className="mt-3 text-xs text-slate-500">
+              <p className="mt-3 text-xs leading-5 text-[#6b7280]">
                 Ao entrar, você concorda com os{" "}
-                <Link to="/termos-de-uso" className="font-semibold text-sky-400 hover:text-sky-300">
+                <Link to="/termos-de-uso" className="font-semibold text-indigo-400 hover:text-indigo-300">
                   Termos de Uso
                 </Link>{" "}
                 e a{" "}
-                <Link to="/politica-de-privacidade" className="font-semibold text-sky-400 hover:text-sky-300">
+                <Link to="/politica-de-privacidade" className="font-semibold text-indigo-400 hover:text-indigo-300">
                   Política de Privacidade
                 </Link>
                 .
