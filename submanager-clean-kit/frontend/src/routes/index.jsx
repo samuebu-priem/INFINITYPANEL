@@ -1,113 +1,27 @@
-import { Navigate, Route, Routes } from "react-router-dom";
-import AppShell from "../layouts/AppShell.jsx";
-import Login from "../pages/Login.jsx";
-import Register from "../pages/Register.jsx";
-import Plans from "../pages/Plans.jsx";
-import AdminDashboard from "../pages/AdminDashboard.jsx";
-import AdminSubscribers from "../pages/AdminSubscribers.jsx";
-import UserHome from "../pages/UserHome.jsx";
-import TermsOfUse from "../pages/TermsOfUse.jsx";
-import PrivacyPolicy from "../pages/PrivacyPolicy.jsx";
-import FinancialTerms from "../pages/FinancialTerms.jsx";
-import { useAuth } from "../context/auth.jsx";
-
-function AdminOnlyRoute({ children }) {
-  const { user, booting } = useAuth();
-
-  if (booting) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user?.role !== "ADMIN") return <Navigate to="/dashboard" replace />;
-  return children;
-}
-
-function DefaultRedirect() {
-  const { user, booting } = useAuth();
-
-  if (booting) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
-}
-
-function LogoutRedirect() {
-  const { user, booting } = useAuth();
-
-  if (booting) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
-}
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import AdminDashboard from "../pages/AdminDashboard";
+import AdminSubscribers from "../pages/AdminSubscribers";
+import Checkout from "../pages/Checkout";
+import Login from "../pages/Login";
+import NotFound from "../pages/NotFound";
+import Plans from "../pages/Plans";
+import Register from "../pages/Register";
+import UserHome from "../pages/UserHome";
 
 export default function AppRoutes() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route
-        path="/termos-de-uso"
-        element={
-          <AppShell>
-            <TermsOfUse />
-          </AppShell>
-        }
-      />
-      <Route
-        path="/politica-de-privacidade"
-        element={
-          <AppShell>
-            <PrivacyPolicy />
-          </AppShell>
-        }
-      />
-      <Route
-        path="/termos-financeiros"
-        element={
-          <AppShell>
-            <FinancialTerms />
-          </AppShell>
-        }
-      />
-      <Route path="/" element={<AppShell><DefaultRedirect /></AppShell>} />
-      <Route path="/dashboard" element={<AppShell><UserHome /></AppShell>} />
-      <Route
-        path="/plans"
-        element={
-          <AppShell>
-            <AdminOnlyRoute>
-              <Plans />
-            </AdminOnlyRoute>
-          </AppShell>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <AppShell>
-            <AdminOnlyRoute>
-              <AdminDashboard />
-            </AdminOnlyRoute>
-          </AppShell>
-        }
-      />
-      <Route
-        path="/admin/subscribers"
-        element={
-          <AppShell>
-            <AdminOnlyRoute>
-              <AdminSubscribers />
-            </AdminOnlyRoute>
-          </AppShell>
-        }
-      />
-      <Route path="/logout" element={<LogoutRedirect />} />
-      <Route
-        path="*"
-        element={
-          <AppShell>
-            <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-8 text-white">
-              Página não encontrada.
-            </div>
-          </AppShell>
-        }
-      />
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/plans" element={<Plans />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/user-home" element={<UserHome />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/subscribers" element={<AdminSubscribers />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

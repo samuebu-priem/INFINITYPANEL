@@ -1,59 +1,151 @@
-import { useEffect, useState } from "react";
-import { api } from "../services/api.js";
+import { useEffect, useMemo, useState } from "react";
+import PageShell from "../components/ui/PageShell";
+import SectionCard from "../components/ui/SectionCard";
+import ActionButton from "../components/ui/ActionButton";
+import StatusBadge from "../components/ui/StatusBadge";
+import EmptyState from "../components/ui/EmptyState";
 
-function getUsersList(response) {
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.users)) return response.users;
-  if (Array.isArray(response?.data)) return response.data;
-  return [];
+const API_BASE = "/api";
+const TOKEN_KEY = "submanager_token";
+
+function getSubscriberName(subscriber) {
+  return (
+    subscriber?.name ||
+    subscriber?.fullName ||
+    subscriber?.user?.name ||
+    subscriber?.user?.fullName ||
+    "Assinante sem nome"
+  );
+}
+
+function getSubscriberEmail(subscriber) {
+  return subscriber?.email || subscriber?.user?.email || "Sem e-mail";
+}
+
+function getSubscriberStatus(subscriber) {
+  const status = String(
+    subscriber?.status ||
+      subscriber?.subscriptionStatus ||
+      subscriber?.planStatus ||
+      "active",
+  ).toLowerCase();
+
+  if (["active", "ativo", "paid", "pago", "enabled"].includes(status)) {
+    return "active";
+  }
+
+  if (["inactive", "inativo", "canceled", "cancelado", "expired"].includes(status)) {
+    return "inactive";
+  }
+
+  if (["pending", "aguardando", "pending_payment"].includes(status)) {
+    return "warning";
+  }
+
+  return "neutral";
 }
 
 export default function AdminSubscribers() {
-  const [items, setItems] = useState([]);
+  const [subscribers, setSubscribers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setError("");
-        const response = await api.get("/users");
-        const users = getUsersList(response);
-        setItems(users.filter((user) => user?.role === "ADMIN" || user?.role === "OWNER"));
-      } catch (err) {
-        setItems([]);
-        setError(err?.response?.data?.message || "Não foi possível carregar os usuários administrativos.");
-      }
-    };
+    let mounted = true;
 
-    load();
+    async function loadSubscribers() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const token = localStorage.getItem(TOKEN_KEY);
+        const response = await fetch(`${API_BASE}/subscribers`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha ao buscar assinantes (${response.status})`);
+        }
+
+        const data = await response.json();
+        const normalized = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.subscribers)
+          ? data.subscribers
+          : Array.isArray(data?.data)
+          ? data.data
+          : [];
+
+        if (mounted) setSubscribers(normalized);
+      } catch (error) {
+        if (mounted) {
+          setSubscribers([]);
+          setError(error?.message || "Não foi possível carregar os assinantes.");
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    loadSubscribers();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] border border-[#1f2937] bg-[#121821] p-6 shadow-lg shadow-black/20">
-        <p className="text-sm text-[#9ca3af]">Administração</p>
-        <h1 className="mt-1 text-3xl font-bold text-[#f3f4f6]">Usuários administrativos</h1>
-        <p className="mt-2 text-sm text-[#9ca3af]">
-          Esta tela mostra apenas usuários retornados pela API atual.
-        </p>
-      </div>
+  const totalSubscribers = useMemo(() => subscribers.length, [subscribers]);
 
-      <div className="rounded-[2rem] border border-[#1f2937] bg-[#121821] p-6">
-        {error ? <p className="mb-4 text-sm text-rose-300">{error}</p> : null}
-        {items.length === 0 ? (
-          <p className="text-[#9ca3af]">Nenhum usuário ADMIN ou OWNER encontrado.</p>
-        ) : (
-          <div className="space-y-3">
-            {items.map((item) => (
-              <div key={item.id} className="rounded-2xl border border-[#1f2937] bg-[#0f141c] p-4">
-                <p className="font-semibold text-[#f3f4f6]">{item.username || item.email}</p>
-                <p className="text-sm text-[#9ca3af]">{item.email}</p>
-                <p className="text-xs text-[#6b7280]">role: {item.role}</p>
-              </div>
-            ))}
+  return (
+    <PageShell>
+      <div className="page-stack">
+        <SectionCard
+          title="Assinantes"
+          subtitle="Lista dos assinantes retornados pela API."
+          action={<StatusBadge variant="neutral">{totalSubscribers} total</StatusBadge>}
+        >
+          {loading ? (
+            <div className="table-skeleton">Carregando...</div>
+          ) : error ? (
+            <EmptyState
+              title="Falha ao carregar assinantes"
+              description={error}
+              buttonLabel="Tentar novamente"
+              onClick={() => window.location.reload()}
+            />
+          ) : subscribers.length === 0 ? (
+            <EmptyState
+              title="Nenhum assinante encontrado"
+              description="Não há assinantes para exibir no momento."
+            />
+          ) : (
+            <div className="subscriber-list">
+              {subscribers.map((subscriber, index) => (
+                <article className="subscriber-row" key={subscriber?.id || `${getSubscriberEmail(subscriber)}-${index}`}>
+                  <div className="subscriber-row__main">
+                    <div className="subscriber-row__name">{getSubscriberName(subscriber)}</div>
+                    <div className="subscriber-row__email">{getSubscriberEmail(subscriber)}</div>
+                  </div>
+                  <StatusBadge variant={getSubscriberStatus(subscriber)}>
+                    {String(subscriber?.status || "ativo")}
+                  </StatusBadge>
+                </article>
+              ))}
+            </div>
+          )}
+        </SectionCard>
+
+        <SectionCard title="Ações rápidas" subtitle="Operações administrativas disponíveis.">
+          <div className="page-actions">
+            <ActionButton variant="secondary" onClick={() => window.location.reload()}>
+              Atualizar
+            </ActionButton>
           </div>
-        )}
+        </SectionCard>
       </div>
-    </div>
+    </PageShell>
   );
 }
