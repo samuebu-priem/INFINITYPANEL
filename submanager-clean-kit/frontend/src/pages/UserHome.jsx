@@ -3,7 +3,7 @@ import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
 import { UserHomeFooter } from "../components/layout/UserHomeFooter.jsx";
-import AppShell from "../layouts/AppShell";
+
 
 function getPlansList(response) {
   if (Array.isArray(response)) return response;
@@ -573,5 +573,5 @@ export default function UserHome() {
     </div>
   );
 
-  return user?.role ? <AppShell>{content}</AppShell> : content;
+  return  content;
 }

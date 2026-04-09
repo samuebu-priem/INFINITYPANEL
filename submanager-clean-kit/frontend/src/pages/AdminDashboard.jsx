@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AppShell from "../layouts/AppShell";
+
 
 const API_BASE = "/api";
 const TOKEN_KEY = "submanager_token";
@@ -534,7 +534,7 @@ export default function AdminDashboard() {
   const latestPlans = useMemo(() => sortNewestPlans(plans).slice(0, 4), [plans]);
 
   return (
-    <AppShell>
+    
       <div
         style={{
           display: "grid",
@@ -809,6 +809,5 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
-    </AppShell>
   );
 }

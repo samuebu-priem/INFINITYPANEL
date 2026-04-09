@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api.js";
-import AppShell from "../layouts/AppShell";
+
 
 function getUsersList(response) {
   if (Array.isArray(response)) return response;
@@ -303,7 +303,7 @@ export default function AdminSubscribers() {
   const ownerCount = items.filter((item) => item?.role === "OWNER").length;
 
   return (
-    <AppShell>
+    
       <div style={{ display: "grid", gap: 20 }}>
         <style>{`
           .admin-users-stats-grid {
@@ -452,6 +452,6 @@ export default function AdminSubscribers() {
           )}
         </SectionCard>
       </div>
-    </AppShell>
+    
   );
 }

@@ -7,7 +7,7 @@ import {
   deactivatePlan,
   deletePlan,
 } from "../lib/adminAction.js";
-import AppShell from "../layouts/AppShell";
+
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-BR", {
@@ -927,5 +927,5 @@ export default function Plans() {
     </div>
   );
 
-  return user?.role ? <AppShell>{content}</AppShell> : content;
+  return content;
 }
