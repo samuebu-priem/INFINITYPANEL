@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -11,6 +12,7 @@ export default function Login() {
     emailOrUsername: "",
     password: "",
   });
+
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(event) {
@@ -29,10 +31,9 @@ export default function Login() {
 
       if (role === "ADMIN" || role === "OWNER") {
         navigate("/admin");
-        return;
+      } else {
+        navigate("/dashboard");
       }
-
-      navigate("/user-home");
     } catch (error) {
       toast.error(error?.response?.data?.message || "Não foi possível entrar.");
     } finally {
@@ -47,202 +48,43 @@ export default function Login() {
         background:
           "radial-gradient(circle at top, rgba(99,102,241,0.12) 0%, rgba(11,15,20,0) 34%), #0b0f14",
         color: "#f3f4f6",
-        padding: "24px",
+        padding: "16px",
       }}
     >
       <div
         style={{
-          maxWidth: 1200,
+          maxWidth: 1180,
           margin: "0 auto",
-          minHeight: "calc(100vh - 48px)",
+          minHeight: "calc(100vh - 32px)",
           display: "grid",
           alignItems: "center",
         }}
       >
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1.05fr 0.95fr",
-            overflow: "hidden",
-            borderRadius: 36,
-            border: "1px solid #1f2937",
-            background:
-              "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
-          }}
-        >
-          <div
-            style={{
-              padding: "48px 42px",
-              background:
-                "linear-gradient(135deg, rgba(99,102,241,0.96) 0%, rgba(79,70,229,0.95) 55%, rgba(109,40,217,0.92) 100%)",
-              color: "#ffffff",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              minHeight: 620,
-            }}
-            className="login-hero"
-          >
+        <div className="auth-grid">
+          {/* LADO VISUAL */}
+          <div className="auth-hero">
             <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 900,
-                  letterSpacing: "0.28em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,0.78)",
-                }}
-              >
-                InfinityPainel
-              </div>
-
-              <h1
-                style={{
-                  margin: "28px 0 0",
-                  fontSize: 48,
-                  lineHeight: 1.05,
-                  fontWeight: 900,
-                  maxWidth: 420,
-                }}
-              >
-                Entre para gerenciar planos e assinaturas.
+              <div className="auth-badge">InfinityPainel</div>
+              <h1 className="auth-title">
+                Acesse sua conta e controle tudo em um só lugar.
               </h1>
-
-              <p
-                style={{
-                  margin: "22px 0 0",
-                  maxWidth: 430,
-                  fontSize: 16,
-                  lineHeight: 1.7,
-                  color: "rgba(255,255,255,0.84)",
-                }}
-              >
-                Acesse sua conta para visualizar sua área, acompanhar planos e
-                seguir com o fluxo da plataforma.
+              <p className="auth-text">
+                Entre para gerenciar planos, assinaturas e acompanhar seu painel.
               </p>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gap: 14,
-                marginTop: 40,
-              }}
-            >
-              <div
-                style={{
-                  padding: "16px 18px",
-                  borderRadius: 20,
-                  background: "rgba(255,255,255,0.10)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 800,
-                    marginBottom: 6,
-                  }}
-                >
-                  Acesso rápido
-                </div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    color: "rgba(255,255,255,0.82)",
-                  }}
-                >
-                  Login direto com e-mail ou usuário.
-                </div>
-              </div>
-
-              <div
-                style={{
-                  padding: "16px 18px",
-                  borderRadius: 20,
-                  background: "rgba(255,255,255,0.10)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(8px)",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: 14,
-                    fontWeight: 800,
-                    marginBottom: 6,
-                  }}
-                >
-                  Fluxo real
-                </div>
-                <div
-                  style={{
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    color: "rgba(255,255,255,0.82)",
-                  }}
-                >
-                  Admin vai para o painel. Jogador vai para a área inicial.
-                </div>
-              </div>
             </div>
           </div>
 
-          <div
-            style={{
-              padding: "48px 40px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
+          {/* FORM */}
+          <div className="auth-panel">
             <div style={{ width: "100%", maxWidth: 430 }}>
               <div style={{ marginBottom: 28 }}>
-                <div
-                  style={{
-                    color: "#9ca3af",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Acesso
-                </div>
-
-                <h2
-                  style={{
-                    margin: "10px 0 0",
-                    fontSize: 34,
-                    lineHeight: 1.08,
-                    fontWeight: 900,
-                    color: "#f3f4f6",
-                  }}
-                >
-                  Entrar
-                </h2>
+                <div className="auth-section-label">Acesso</div>
+                <h2 className="auth-panel-title">Entrar</h2>
               </div>
 
-              <form
-                onSubmit={handleSubmit}
-                style={{
-                  display: "grid",
-                  gap: 18,
-                }}
-              >
+              <form onSubmit={handleSubmit} style={{ display: "grid", gap: 18 }}>
                 <label style={{ display: "grid", gap: 8 }}>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: "#e5e7eb",
-                    }}
-                  >
-                    E-mail ou usuário
-                  </span>
-
+                  <span className="auth-label">E-mail ou usuário</span>
                   <input
                     id="emailOrUsername"
                     name="emailOrUsername"
@@ -257,29 +99,12 @@ export default function Login() {
                       }))
                     }
                     placeholder="Digite seu e-mail ou usuário"
-                    style={{
-                      height: 54,
-                      borderRadius: 18,
-                      border: "1px solid #1f2937",
-                      background: "rgba(255,255,255,0.03)",
-                      color: "#f3f4f6",
-                      padding: "0 16px",
-                      outline: "none",
-                    }}
+                    className="auth-input"
                   />
                 </label>
 
                 <label style={{ display: "grid", gap: 8 }}>
-                  <span
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: "#e5e7eb",
-                    }}
-                  >
-                    Senha
-                  </span>
-
+                  <span className="auth-label">Senha</span>
                   <input
                     id="password"
                     name="password"
@@ -294,56 +119,18 @@ export default function Login() {
                       }))
                     }
                     placeholder="Digite sua senha"
-                    style={{
-                      height: 54,
-                      borderRadius: 18,
-                      border: "1px solid #1f2937",
-                      background: "rgba(255,255,255,0.03)",
-                      color: "#f3f4f6",
-                      padding: "0 16px",
-                      outline: "none",
-                    }}
+                    className="auth-input"
                   />
                 </label>
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  style={{
-                    height: 54,
-                    borderRadius: 18,
-                    border: "1px solid rgba(99,102,241,0.55)",
-                    background:
-                      "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
-                    color: "#ffffff",
-                    fontSize: 15,
-                    fontWeight: 800,
-                    cursor: loading ? "not-allowed" : "pointer",
-                    opacity: loading ? 0.7 : 1,
-                    boxShadow: "0 0 30px rgba(99,102,241,0.22)",
-                  }}
-                >
+                <button type="submit" disabled={loading} className="auth-submit">
                   {loading ? "Entrando..." : "Entrar"}
                 </button>
               </form>
 
-              <p
-                style={{
-                  marginTop: 20,
-                  color: "#9ca3af",
-                  fontSize: 14,
-                  lineHeight: 1.6,
-                }}
-              >
+              <p className="auth-footer-text">
                 Não tem conta?{" "}
-                <Link
-                  to="/register"
-                  style={{
-                    color: "#818cf8",
-                    fontWeight: 700,
-                    textDecoration: "none",
-                  }}
-                >
+                <Link to="/register" className="auth-link">
                   Criar conta
                 </Link>
               </p>
@@ -352,10 +139,109 @@ export default function Login() {
         </div>
       </div>
 
+      {/* CSS */}
       <style>{`
-        @media (max-width: 980px) {
-          .login-hero {
-            display: none !important;
+        .auth-grid {
+          display: grid;
+          grid-template-columns: 1.05fr 0.95fr;
+          border-radius: 36px;
+          overflow: hidden;
+          border: 1px solid #1f2937;
+          background: linear-gradient(180deg, rgba(18,24,33,0.98), rgba(11,15,20,0.98));
+          box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+        }
+
+        .auth-hero {
+          padding: 48px;
+          background: linear-gradient(135deg, #6366f1, #4f46e5, #6d28d9);
+          display: flex;
+          align-items: center;
+          color: white;
+        }
+
+        .auth-badge {
+          font-size: 12px;
+          font-weight: 900;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          opacity: 0.8;
+        }
+
+        .auth-title {
+          margin-top: 20px;
+          font-size: 42px;
+          font-weight: 900;
+          line-height: 1.1;
+        }
+
+        .auth-text {
+          margin-top: 16px;
+          opacity: 0.85;
+        }
+
+        .auth-panel {
+          padding: 40px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .auth-panel-title {
+          font-size: 32px;
+          font-weight: 900;
+        }
+
+        .auth-label {
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .auth-input {
+          height: 52px;
+          border-radius: 16px;
+          border: 1px solid #1f2937;
+          background: rgba(255,255,255,0.04);
+          color: #fff;
+          padding: 0 14px;
+        }
+
+        .auth-submit {
+          height: 52px;
+          border-radius: 16px;
+          border: none;
+          background: #6366f1;
+          color: white;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .auth-footer-text {
+          margin-top: 20px;
+          font-size: 14px;
+          color: #9ca3af;
+        }
+
+        .auth-link {
+          color: #818cf8;
+          font-weight: 700;
+        }
+
+        /* MOBILE */
+        @media (max-width: 900px) {
+          .auth-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .auth-hero {
+            padding: 24px;
+          }
+
+          .auth-title {
+            font-size: 28px;
+          }
+
+          .auth-panel {
+            padding: 24px;
           }
         }
       `}</style>
