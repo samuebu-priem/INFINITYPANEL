@@ -1,93 +1,155 @@
 import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
 
+function isActiveStatus(status: string) {
+  return status === "ACTIVE";
+}
+
 export const subscriptionsService = {
   getMySubscription: async (userId: string) => {
-    const admin = await prisma.adminProfile.findUnique({
-      where: { userId },
-      select: { id: true },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
     });
 
-    if (!admin) throw new ApiError(403, "Admin profile required");
+    if (!user) {
+      throw new ApiError(404, "User not found");
+    }
 
-    const now = new Date();
     const subscription = await prisma.subscription.findFirst({
       where: {
-        adminId: admin.id,
-        status: "ACTIVE",
-        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+        userId: user.id,
       },
-      orderBy: { createdAt: "desc" },
       include: {
-        plan: {
-          select: {
-            id: true,
-            name: true,
-            amount: true,
-            billingCycle: true,
-            currency: true,
-          },
-        },
+        plan: true,
       },
+      orderBy: [
+        { createdAt: "desc" },
+        { updatedAt: "desc" },
+      ],
     });
 
     if (!subscription) {
-      return { subscription: null };
+      return {
+        userId: user.id,
+        role: user.role,
+        subscription: null,
+      };
     }
 
     return {
+      userId: user.id,
+      role: user.role,
       subscription: {
         id: subscription.id,
         status: subscription.status,
+        isActive: isActiveStatus(subscription.status),
         startsAt: subscription.startsAt,
         endsAt: subscription.endsAt,
-        approvedAt: subscription.approvedAt ?? null,
-        createdAt: subscription.createdAt,
-        plan: subscription.plan,
-        isActive: subscription.status === "ACTIVE" && (!subscription.endsAt || subscription.endsAt > now),
+        plan: {
+          id: subscription.plan.id,
+          name: subscription.plan.name,
+          billingCycle: subscription.plan.billingCycle,
+        },
       },
     };
   },
 
-  /**
-   * Creates a Subscription record in PENDING state.
-   * Checkout creation is handled by /checkout/create and references plan/admin.
-   * This endpoint exists to match the requested contract and to support future flows.
-   */
   startSubscription: async (userId: string, planId: string) => {
-    const admin = await prisma.adminProfile.findUnique({
-      where: { userId },
-      select: { id: true },
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
     });
 
-    if (!admin) throw new ApiError(403, "Admin profile required");
-
-    const plan = await prisma.subscriptionPlan.findUnique({ where: { id: planId } });
-    if (!plan || !plan.isActive) throw new ApiError(404, "Plan not found");
-
-    const active = await prisma.subscription.findFirst({
-      where: { adminId: admin.id, status: "ACTIVE" },
-      select: { id: true },
-    });
-
-    if (active) {
-      throw new ApiError(409, "Active subscription already exists");
+    if (!user) {
+      throw new ApiError(404, "User not found");
     }
 
-    const subscription = await prisma.subscription.create({
+    if (user.role !== "PLAYER") {
+      throw new ApiError(403, "Only PLAYER users can subscribe");
+    }
+
+    const plan = await prisma.subscriptionPlan.findUnique({
+      where: { id: planId },
+      select: {
+        id: true,
+        name: true,
+        billingCycle: true,
+        amount: true,
+        currency: true,
+        isActive: true,
+      },
+    });
+
+    if (!plan || !plan.isActive) {
+      throw new ApiError(404, "Plan not found");
+    }
+
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        userId: user.id,
+        status: "ACTIVE",
+      },
+      include: {
+        plan: true,
+      },
+      orderBy: [
+        { updatedAt: "desc" },
+        { createdAt: "desc" },
+      ],
+    });
+
+    if (activeSubscription) {
+      return {
+        userId: user.id,
+        role: user.role,
+        subscription: {
+          id: activeSubscription.id,
+          status: activeSubscription.status,
+          isActive: true,
+          startsAt: activeSubscription.startsAt,
+          endsAt: activeSubscription.endsAt,
+          plan: {
+            id: activeSubscription.plan.id,
+            name: activeSubscription.plan.name,
+            billingCycle: activeSubscription.plan.billingCycle,
+          },
+        },
+      };
+    }
+
+    const created = await prisma.subscription.create({
       data: {
-        adminId: admin.id,
+        userId: user.id,
+        adminId: user.id,
         planId: plan.id,
         status: "PENDING",
-        metadata: { createdBy: "subscriptions/start" },
+      },
+      include: {
+        plan: true,
       },
     });
 
     return {
+      userId: user.id,
+      role: user.role,
       subscription: {
-        id: subscription.id,
-        status: subscription.status,
-        createdAt: subscription.createdAt,
+        id: created.id,
+        status: created.status,
+        isActive: isActiveStatus(created.status),
+        startsAt: created.startsAt,
+        endsAt: created.endsAt,
+        plan: {
+          id: created.plan.id,
+          name: created.plan.name,
+          billingCycle: created.plan.billingCycle,
+        },
       },
     };
   },

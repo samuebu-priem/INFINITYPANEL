@@ -6,7 +6,7 @@ type CheckoutSessionStatus = "PENDING" | "OPEN" | "COMPLETED" | "EXPIRED" | "CAN
 type PaymentTransactionStatus = "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED" | "EXPIRED" | "REFUNDED";
 
 export type CreateCheckoutInput = {
-  adminProfileId: string;
+  userId: string;
   planId: string;
 };
 
@@ -58,20 +58,28 @@ export const checkoutService = {
       throw new ApiError(404, "Plan not found");
     }
 
-    const admin = await prisma.adminProfile.findUnique({
-      where: { id: input.adminProfileId },
-      select: { id: true, userId: true },
+    const user = await prisma.user.findUnique({
+      where: { id: input.userId },
+      select: { id: true, role: true },
     });
 
-    if (!admin) {
-      throw new ApiError(404, "Admin profile not found");
+    if (!user) {
+      throw new ApiError(404, "User not found");
     }
 
-    // Idempotency: if there is an existing usable session for this admin+plan, reuse it.
-    // BUT: if the existing session doesn't have MP artifacts yet (checkoutUrl/qr), recreate it.
+    if (user.role !== "PLAYER") {
+      throw new ApiError(403, "Only PLAYER users can subscribe");
+    }
+
+    const adminProfile = await prisma.adminProfile.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+
+    // Idempotency: reuse the latest usable session for this player+plan, regardless of legacy field shape.
     const existing = await prisma.checkoutSession.findFirst({
       where: {
-        adminId: admin.id,
+        userId: user.id,
         planId: plan.id,
         status: { in: ["PENDING", "OPEN"] },
       },
@@ -113,13 +121,14 @@ export const checkoutService = {
 
     const pending = await prisma.checkoutSession.create({
       data: {
-        adminId: admin.id,
+        userId: user.id,
+        adminId: adminProfile?.id ?? user.id,
         planId: plan.id,
         provider: "MERCADO_PAGO",
         status: "PENDING",
         amount: plan.amount,
         currency: plan.currency,
-        metadata: { planBillingCycle: plan.billingCycle },
+        metadata: { planBillingCycle: plan.billingCycle, subscriberUserId: user.id },
       },
     });
 
@@ -133,7 +142,7 @@ export const checkoutService = {
       expiresAt: pending.expiresAt ?? undefined,
       metadata: {
         checkoutSessionId: pending.id,
-        adminUserId: admin.userId,
+        userId: user.id,
         planId: plan.id,
         payerEmail: (env as any).MERCADO_PAGO_PAYER_EMAIL,
       },
@@ -171,7 +180,8 @@ export const checkoutService = {
 
     // Create a PaymentTransaction record to track payment lifecycle (still PENDING at this stage).
     const txData = {
-      adminId: admin.id,
+      userId: user.id,
+      adminId: adminProfile?.id ?? user.id,
       checkoutSessionId: updated.id,
       provider: updated.provider,
       status: mapProviderStatusToPaymentStatus(providerResponse.status),

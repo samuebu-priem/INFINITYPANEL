@@ -1,4 +1,3 @@
-
 import { X } from "lucide-react";
 
 export function TermsModal({ isOpen, onClose, title, content }) {
@@ -80,14 +79,7 @@ export function TermsModal({ isOpen, onClose, title, content }) {
             padding: "22px",
           }}
         >
-          <div
-            style={{
-              display: "grid",
-              gap: 18,
-            }}
-          >
-            {content}
-          </div>
+          {content}
         </div>
       </div>
     </div>
