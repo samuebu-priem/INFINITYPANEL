@@ -529,7 +529,7 @@ export default function UserHome() {
                   ? "Seu acesso atual"
                   : subscriptionError
                   ? subscriptionError
-                  : "Nenhuma assinatura foi retornada pela API no momento."}
+                  : "Nenhuma assinatura encontrada no momento."}
               </div>
             </div>
           </SectionCard>
@@ -538,7 +538,7 @@ export default function UserHome() {
 
       <SectionCard
         title="Planos disponíveis"
-        subtitle="Catálogo retornado por /api/plans."
+        subtitle=" Confira os planos ativos que você pode assinar no momento."
       >
         {loadingPlans ? (
           <div
