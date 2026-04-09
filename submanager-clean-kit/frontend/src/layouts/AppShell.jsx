@@ -1,3 +1,4 @@
+
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -19,11 +20,16 @@ export default function AppShell({ children, showHeader = true }) {
   const links = [
     ...(isAdmin
       ? [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard }]
-      : [{ to: "/user-home", label: "Início", icon: Home }]),
+      : [{ to: "/dashboard", label: "Início", icon: Home }]),
+
     ...(isAdmin ? [{ to: "/plans", label: "Planos", icon: FileText }] : []),
+
     ...(isAdmin
       ? [{ to: "/admin/subscribers", label: "Assinaturas", icon: Users }]
       : []),
+
+    // ✅ Termos como link normal
+    { to: "/termos-de-uso", label: "Termos", icon: FileText },
   ];
 
   return (
@@ -58,6 +64,7 @@ export default function AppShell({ children, showHeader = true }) {
               flexWrap: "wrap",
             }}
           >
+            {/* LOGO */}
             <div
               style={{
                 display: "flex",
@@ -107,6 +114,7 @@ export default function AppShell({ children, showHeader = true }) {
               </div>
             </div>
 
+            {/* NAV */}
             <nav
               style={{
                 display: "flex",
@@ -117,6 +125,7 @@ export default function AppShell({ children, showHeader = true }) {
             >
               {links.map((link) => {
                 const Icon = link.icon;
+
                 const active =
                   location.pathname === link.to ||
                   location.pathname.startsWith(`${link.to}/`);
@@ -152,6 +161,7 @@ export default function AppShell({ children, showHeader = true }) {
                 );
               })}
 
+              {/* SAIR */}
               <button
                 type="button"
                 onClick={() => {
@@ -180,6 +190,7 @@ export default function AppShell({ children, showHeader = true }) {
         </header>
       ) : null}
 
+      {/* CONTEÚDO */}
       <main
         style={{
           maxWidth: 1400,

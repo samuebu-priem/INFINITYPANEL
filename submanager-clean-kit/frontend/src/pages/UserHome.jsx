@@ -458,7 +458,7 @@ export default function UserHome() {
         <div className="user-home-top-grid">
           <SectionCard
             title="Assinatura atual"
-            subtitle="Resumo do acesso retornado pela API."
+            subtitle="Resumo do acesso atual"
           >
             <div className="user-home-stats-grid">
               <StatCard
@@ -526,7 +526,7 @@ export default function UserHome() {
                 }}
               >
                 {subscription
-                  ? "Seu acesso foi identificado com base na assinatura retornada pela API."
+                  ? "Seu acesso atual"
                   : subscriptionError
                   ? subscriptionError
                   : "Nenhuma assinatura foi retornada pela API no momento."}

@@ -1,15 +1,37 @@
+
 import { Instagram, MessageCircleMore, Shield, FileText } from "lucide-react";
 import { useState } from "react";
-import { financialTermsSections, privacyPolicySections } from "../../lib/terms.js";
+import {
+  financialTermsSections,
+  privacyPolicySections,
+} from "../../lib/terms.js";
 import { TermsModal } from "../ui/TermsModal.jsx";
 
 function TermsContent({ terms }) {
   return (
-    <div className="space-y-4">
+    <div style={{ display: "grid", gap: 18 }}>
       {terms.map((term) => (
         <section key={term.title}>
-          <h3 className="text-lg font-semibold text-white">{term.title}</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-300">{term.body}</p>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 18,
+              fontWeight: 800,
+              color: "#f3f4f6",
+            }}
+          >
+            {term.title}
+          </h3>
+          <p
+            style={{
+              margin: "10px 0 0",
+              fontSize: 14,
+              lineHeight: 1.8,
+              color: "#d1d5db",
+            }}
+          >
+            {term.body}
+          </p>
         </section>
       ))}
     </div>
@@ -23,9 +45,20 @@ function SocialIconLink({ href, label, children }) {
       target="_blank"
       rel="noreferrer"
       aria-label={label}
-      className="group inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-800 bg-slate-900 text-slate-300 transition duration-200 hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-300"
+      style={{
+        display: "inline-flex",
+        width: 44,
+        height: 44,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 16,
+        border: "1px solid #1f2937",
+        background: "rgba(255,255,255,0.03)",
+        color: "#d1d5db",
+        textDecoration: "none",
+      }}
     >
-      <span className="transition duration-200 group-hover:scale-110">{children}</span>
+      {children}
     </a>
   );
 }
@@ -35,45 +68,159 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
 
   return (
     <>
-      <footer className="mt-6 rounded-[2rem] border border-slate-800 bg-slate-900/95 px-5 py-5 shadow-lg shadow-black/20 sm:px-6">
-        <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-slate-700 bg-slate-800 text-sky-400">
-                <Shield className="h-4 w-4" />
+      <footer
+        style={{
+          marginTop: 6,
+          borderRadius: 28,
+          border: "1px solid #1f2937",
+          background:
+            "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+          padding: "20px 22px",
+          boxShadow: "0 14px 32px rgba(0,0,0,0.20)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 18,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 18,
+              flexWrap: "wrap",
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  display: "grid",
+                  placeItems: "center",
+                  borderRadius: 16,
+                  border: "1px solid #1f2937",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#6366f1",
+                  boxShadow: "0 0 24px rgba(99,102,241,0.16)",
+                }}
+              >
+                <Shield size={16} />
               </div>
+
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-400">InfinityPainel</p>
-                <p className="text-sm text-slate-400">Proteção, transparência e suporte em um só lugar.</p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 11,
+                    fontWeight: 900,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.22em",
+                    color: "#818cf8",
+                  }}
+                >
+                  InfinityPainel
+                </p>
+
+                <p
+                  style={{
+                    margin: "6px 0 0",
+                    fontSize: 14,
+                    color: "#9ca3af",
+                  }}
+                >
+                  Proteção, transparência e suporte em um só lugar.
+                </p>
               </div>
             </div>
-          </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setActiveTerms({ title: "Política de Privacidade", content: <TermsContent terms={privacyPolicySections} /> })}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-300"
+            <div
+              style={{
+                display: "flex",
+                gap: 10,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
             >
-              <FileText className="h-4 w-4" />
-              Política de Privacidade
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTerms({ title: "Termos Financeiros", content: <TermsContent terms={financialTermsSections} /> })}
-              className="inline-flex items-center gap-2 rounded-2xl border border-slate-800 bg-slate-950 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-sky-500 hover:bg-sky-500/10 hover:text-sky-300"
-            >
-              <FileText className="h-4 w-4" />
-              Termos Financeiros
-            </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTerms({
+                    title: "Política de Privacidade",
+                    content: <TermsContent terms={privacyPolicySections} />,
+                  })
+                }
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: 42,
+                  padding: "0 14px",
+                  borderRadius: 16,
+                  border: "1px solid #1f2937",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#e5e7eb",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <FileText size={16} />
+                Política de Privacidade
+              </button>
 
-            <div className="ml-0 flex items-center gap-2 sm:ml-2">
-              <SocialIconLink href={discordUrl} label="Abrir Discord">
-                <MessageCircleMore className="h-4 w-4" />
-              </SocialIconLink>
-              <SocialIconLink href={instagramUrl} label="Abrir Instagram">
-                <Instagram className="h-4 w-4" />
-              </SocialIconLink>
+              <button
+                type="button"
+                onClick={() =>
+                  setActiveTerms({
+                    title: "Termos Financeiros",
+                    content: <TermsContent terms={financialTermsSections} />,
+                  })
+                }
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  height: 42,
+                  padding: "0 14px",
+                  borderRadius: 16,
+                  border: "1px solid #1f2937",
+                  background: "rgba(255,255,255,0.03)",
+                  color: "#e5e7eb",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                <FileText size={16} />
+                Termos Financeiros
+              </button>
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <SocialIconLink href={discordUrl} label="Abrir Discord">
+                  <MessageCircleMore size={16} />
+                </SocialIconLink>
+
+                <SocialIconLink href={instagramUrl} label="Abrir Instagram">
+                  <Instagram size={16} />
+                </SocialIconLink>
+              </div>
             </div>
           </div>
         </div>
