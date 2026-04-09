@@ -58,7 +58,7 @@ export default function UserHome() {
 
   return (
     <PageShell>
-      <div className="page-stack">
+      <div className="layout-stack">
         <SectionCard
           title="Minha conta"
           subtitle="Visão geral da sua assinatura e acesso."
@@ -78,7 +78,7 @@ export default function UserHome() {
               onClick={() => window.location.reload()}
             />
           ) : profile ? (
-            <div className="user-home-grid">
+            <div className="layout-grid-3 user-home-grid">
               <div className="user-home-panel">
                 <div className="user-home-panel__label">Nome</div>
                 <div className="user-home-panel__value">
@@ -107,7 +107,7 @@ export default function UserHome() {
         </SectionCard>
 
         <SectionCard title="Ações rápidas" subtitle="Fluxo principal da conta.">
-          <div className="page-actions">
+          <div className="layout-grid-2 page-actions">
             <ActionButton variant="primary" onClick={() => navigate("/plans")}>
               Escolher plano
             </ActionButton>

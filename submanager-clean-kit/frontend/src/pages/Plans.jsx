@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import PageShell from "../components/ui/PageShell";
 import SectionCard from "../components/ui/SectionCard";
 import ActionButton from "../components/ui/ActionButton";
 import StatusBadge from "../components/ui/StatusBadge";
 import EmptyState from "../components/ui/EmptyState";
-import { useNavigate } from "react-router-dom";
 
 const API_BASE = "/api";
 const TOKEN_KEY = "submanager_token";
@@ -140,7 +140,7 @@ export default function Plans() {
 
   return (
     <PageShell>
-      <div className="page-stack">
+      <div className="layout-stack">
         <SectionCard
           title="Planos"
           subtitle="Escolha um plano disponível."
@@ -151,7 +151,7 @@ export default function Plans() {
           }
         >
           {loading ? (
-            <div className="plan-grid">
+            <div className="layout-grid-3 plan-grid">
               {[1, 2, 3].map((item) => (
                 <div key={item} className="plan-card plan-card--skeleton" />
               ))}
@@ -169,7 +169,7 @@ export default function Plans() {
               description="Não há planos para exibir no momento."
             />
           ) : (
-            <div className="plan-grid">
+            <div className="layout-grid-3 plan-grid">
               {visiblePlans.map((plan, index) => (
                 <PlanCard
                   key={plan?.id || `${getPlanTitle(plan)}-${index}`}

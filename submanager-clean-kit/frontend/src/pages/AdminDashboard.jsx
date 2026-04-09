@@ -204,7 +204,7 @@ export default function AdminDashboard() {
 
   return (
     <PageShell>
-      <div className="page-stack">
+      <div className="layout-stack">
         <SectionCard
           title="Admin Dashboard"
           subtitle="Painel com os dados reais dos planos retornados pela API."
@@ -219,7 +219,7 @@ export default function AdminDashboard() {
             </div>
           }
         >
-          <div className="dashboard-stats">
+          <div className="layout-grid-4 dashboard-stats">
             <StatCard
               title="Total de planos"
               value={loadingPlans ? "..." : stats.totalPlans}
@@ -247,7 +247,7 @@ export default function AdminDashboard() {
           </div>
         </SectionCard>
 
-        <div className="dashboard-grid">
+        <div className="layout-grid dashboard-grid">
           <SectionCard title="Planos disponíveis" subtitle="Lista com os planos reais recebidos da API.">
             {loadingPlans ? (
               <div className="dashboard-skeleton-grid">

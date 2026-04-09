@@ -50,7 +50,7 @@ export default function Login() {
 
   return (
     <PageShell>
-      <div className="auth-page">
+      <div className="layout-stack auth-shell">
         <SectionCard
           className="auth-card"
           title="Entrar"
