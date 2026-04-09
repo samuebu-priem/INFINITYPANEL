@@ -5,10 +5,14 @@ import { api } from "../services/api.js";
 
 export default function Register() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "", password: "" });
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (event) => {
+  async function handleSubmit(event) {
     event.preventDefault();
     setLoading(true);
 
@@ -22,87 +26,359 @@ export default function Register() {
         },
         { auth: false }
       );
+
       toast.success("Conta criada.");
       navigate("/login");
     } catch (error) {
-      toast.error(error?.response?.data?.message || "Não foi possível criar a conta.");
+      toast.error(
+        error?.response?.data?.message || "Não foi possível criar a conta."
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-[#0b0f14] px-4 py-10 text-[#f3f4f6]">
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
-        <div className="grid w-full overflow-hidden rounded-[2.5rem] border border-[#1f2937] bg-[#121821] shadow-2xl shadow-black/40 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="hidden flex-col justify-between bg-gradient-to-br from-indigo-600 via-indigo-500 to-violet-500 p-10 text-white lg:flex">
+    <div
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, rgba(99,102,241,0.12) 0%, rgba(11,15,20,0) 34%), #0b0f14",
+        color: "#f3f4f6",
+        padding: "24px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          minHeight: "calc(100vh - 48px)",
+          display: "grid",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "0.95fr 1.05fr",
+            overflow: "hidden",
+            borderRadius: 36,
+            border: "1px solid #1f2937",
+            background:
+              "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
+          }}
+        >
+          <div
+            style={{
+              padding: "48px 42px",
+              background:
+                "linear-gradient(135deg, rgba(99,102,241,0.96) 0%, rgba(79,70,229,0.95) 55%, rgba(109,40,217,0.92) 100%)",
+              color: "#ffffff",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              minHeight: 620,
+            }}
+            className="register-hero"
+          >
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-white/80">SubManager</p>
-              <h1 className="mt-6 max-w-md text-5xl font-black leading-tight">
-                Crie sua conta e comece a acessar a plataforma.
-              </h1>
-            </div>
-            <p className="max-w-md text-base font-medium text-white/80">
-              Cadastro rápido para acessar a área do usuário e acompanhar sua assinatura.
-            </p>
-          </div>
-
-          <div className="flex items-center justify-center p-8 sm:p-10">
-            <div className="w-full max-w-md">
-              <div className="mb-8">
-                <p className="text-sm text-[#9ca3af]">Cadastro</p>
-                <h2 className="mt-2 text-3xl font-bold text-[#f3f4f6]">Criar conta</h2>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 900,
+                  letterSpacing: "0.28em",
+                  textTransform: "uppercase",
+                  color: "rgba(255,255,255,0.78)",
+                }}
+              >
+                InfinityPainel
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <label className="block">
-                  <span className="mb-2 block text-sm text-[#e5e7eb]">Nome de usuário</span>
+              <h1
+                style={{
+                  margin: "28px 0 0",
+                  fontSize: 48,
+                  lineHeight: 1.05,
+                  fontWeight: 900,
+                  maxWidth: 430,
+                }}
+              >
+                Crie sua conta e acesse a plataforma.
+              </h1>
+
+              <p
+                style={{
+                  margin: "22px 0 0",
+                  maxWidth: 430,
+                  fontSize: 16,
+                  lineHeight: 1.7,
+                  color: "rgba(255,255,255,0.84)",
+                }}
+              >
+                Cadastro direto para entrar no sistema e seguir com o fluxo da
+                sua conta.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 14,
+                marginTop: 40,
+              }}
+            >
+              <div
+                style={{
+                  padding: "16px 18px",
+                  borderRadius: 20,
+                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 800,
+                    marginBottom: 6,
+                  }}
+                >
+                  Cadastro rápido
+                </div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    color: "rgba(255,255,255,0.82)",
+                  }}
+                >
+                  Nome de usuário, e-mail e senha.
+                </div>
+              </div>
+
+              <div
+                style={{
+                  padding: "16px 18px",
+                  borderRadius: 20,
+                  background: "rgba(255,255,255,0.10)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 800,
+                    marginBottom: 6,
+                  }}
+                >
+                  Entrada liberada
+                </div>
+                <div
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                    color: "rgba(255,255,255,0.82)",
+                  }}
+                >
+                  Depois do cadastro, é só entrar na tela de login.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: "48px 40px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <div style={{ width: "100%", maxWidth: 430 }}>
+              <div style={{ marginBottom: 28 }}>
+                <div
+                  style={{
+                    color: "#9ca3af",
+                    fontSize: 13,
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Cadastro
+                </div>
+
+                <h2
+                  style={{
+                    margin: "10px 0 0",
+                    fontSize: 34,
+                    lineHeight: 1.08,
+                    fontWeight: 900,
+                    color: "#f3f4f6",
+                  }}
+                >
+                  Criar conta
+                </h2>
+              </div>
+
+              <form
+                onSubmit={handleSubmit}
+                style={{
+                  display: "grid",
+                  gap: 18,
+                }}
+              >
+                <label style={{ display: "grid", gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#e5e7eb",
+                    }}
+                  >
+                    Nome de usuário
+                  </span>
+
                   <input
+                    id="username"
+                    name="username"
                     type="text"
                     required
-                    className="field"
+                    autoComplete="username"
                     value={form.username}
-                    onChange={(event) => setForm((current) => ({ ...current, username: event.target.value }))}
-                    placeholder="Seu username"
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        username: event.target.value,
+                      }))
+                    }
+                    placeholder="Digite seu username"
+                    style={{
+                      height: 54,
+                      borderRadius: 18,
+                      border: "1px solid #1f2937",
+                      background: "rgba(255,255,255,0.03)",
+                      color: "#f3f4f6",
+                      padding: "0 16px",
+                      outline: "none",
+                    }}
                   />
                 </label>
 
-                <label className="block">
-                  <span className="mb-2 block text-sm text-[#e5e7eb]">E-mail</span>
+                <label style={{ display: "grid", gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#e5e7eb",
+                    }}
+                  >
+                    E-mail
+                  </span>
+
                   <input
+                    id="email"
+                    name="email"
                     type="email"
                     required
-                    className="field"
+                    autoComplete="email"
                     value={form.email}
-                    onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                    placeholder="seuemail@exemplo.com"
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                    placeholder="Digite seu e-mail"
+                    style={{
+                      height: 54,
+                      borderRadius: 18,
+                      border: "1px solid #1f2937",
+                      background: "rgba(255,255,255,0.03)",
+                      color: "#f3f4f6",
+                      padding: "0 16px",
+                      outline: "none",
+                    }}
                   />
                 </label>
 
-                <label className="block">
-                  <span className="mb-2 block text-sm text-[#e5e7eb]">Senha</span>
+                <label style={{ display: "grid", gap: 8 }}>
+                  <span
+                    style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: "#e5e7eb",
+                    }}
+                  >
+                    Senha
+                  </span>
+
                   <input
+                    id="password"
+                    name="password"
                     type="password"
                     required
-                    className="field"
+                    autoComplete="new-password"
                     value={form.password}
-                    onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        password: event.target.value,
+                      }))
+                    }
                     placeholder="Crie uma senha"
+                    style={{
+                      height: 54,
+                      borderRadius: 18,
+                      border: "1px solid #1f2937",
+                      background: "rgba(255,255,255,0.03)",
+                      color: "#f3f4f6",
+                      padding: "0 16px",
+                      outline: "none",
+                    }}
                   />
                 </label>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex w-full items-center justify-center rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                  style={{
+                    height: 54,
+                    borderRadius: 18,
+                    border: "1px solid rgba(99,102,241,0.55)",
+                    background:
+                      "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+                    color: "#ffffff",
+                    fontSize: 15,
+                    fontWeight: 800,
+                    cursor: loading ? "not-allowed" : "pointer",
+                    opacity: loading ? 0.7 : 1,
+                    boxShadow: "0 0 30px rgba(99,102,241,0.22)",
+                  }}
                 >
                   {loading ? "Criando..." : "Criar conta"}
                 </button>
               </form>
 
-              <p className="mt-6 text-sm text-[#9ca3af]">
+              <p
+                style={{
+                  marginTop: 20,
+                  color: "#9ca3af",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
                 Já tem conta?{" "}
-                <Link to="/login" className="font-semibold text-indigo-400 hover:text-indigo-300">
+                <Link
+                  to="/login"
+                  style={{
+                    color: "#818cf8",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                  }}
+                >
                   Entrar
                 </Link>
               </p>
@@ -110,6 +386,14 @@ export default function Register() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 980px) {
+          .register-hero {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

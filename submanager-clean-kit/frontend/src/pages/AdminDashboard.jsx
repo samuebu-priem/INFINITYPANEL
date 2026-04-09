@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AppShell from "../layouts/AppShell";
 
 const API_BASE = "/api";
 const TOKEN_KEY = "submanager_token";
@@ -38,7 +39,11 @@ function getPlanValidity(plan) {
 
 function getPlanStock(plan) {
   return (
-    plan?.stock ?? plan?.quantity ?? plan?.availableQuantity ?? plan?.limit ?? null
+    plan?.stock ??
+    plan?.quantity ??
+    plan?.availableQuantity ??
+    plan?.limit ??
+    null
   );
 }
 
@@ -72,7 +77,7 @@ function sortNewestPlans(plans) {
   });
 }
 
-function StatCard({ title, value, hint, accent = "primary" }) {
+function StatCard({ title, value, accent = "primary" }) {
   const themes = {
     primary: {
       chip: "rgba(99, 102, 241, 0.14)",
@@ -123,7 +128,7 @@ function StatCard({ title, value, hint, accent = "primary" }) {
           background: theme.chip,
           color: "#cbd5e1",
           fontSize: 12,
-          fontWeight: 700,
+          fontWeight: 800,
           marginBottom: 14,
         }}
       >
@@ -138,21 +143,61 @@ function StatCard({ title, value, hint, accent = "primary" }) {
         />
         {title}
       </div>
+
       <div
         style={{
           color: "#f3f4f6",
           fontSize: 32,
           lineHeight: 1.05,
           fontWeight: 900,
-          marginBottom: 8,
         }}
       >
         {value}
       </div>
-      <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.55 }}>
-        {hint}
-      </div>
     </div>
+  );
+}
+
+function ActionButton({ children, onClick, variant = "secondary" }) {
+  const styles = {
+    primary: {
+      background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+      color: "#ffffff",
+      border: "1px solid rgba(99, 102, 241, 0.65)",
+      boxShadow: "0 0 30px rgba(99,102,241,0.28)",
+    },
+    secondary: {
+      background: "rgba(99, 102, 241, 0.08)",
+      color: "#e5e7eb",
+      border: "1px solid rgba(99, 102, 241, 0.18)",
+      boxShadow: "none",
+    },
+  };
+
+  const current = styles[variant] || styles.secondary;
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        ...current,
+        borderRadius: 16,
+        padding: "12px 16px",
+        fontSize: 14,
+        fontWeight: 800,
+        cursor: "pointer",
+        transition: "transform 0.2s ease, opacity 0.2s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = "translateY(-1px)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0)";
+      }}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -190,7 +235,13 @@ function SectionCard({ title, subtitle, action, children }) {
             {title}
           </h2>
           {subtitle ? (
-            <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14 }}>
+            <p
+              style={{
+                margin: "8px 0 0",
+                color: "#9ca3af",
+                fontSize: 14,
+              }}
+            >
               {subtitle}
             </p>
           ) : null}
@@ -201,49 +252,6 @@ function SectionCard({ title, subtitle, action, children }) {
 
       {children}
     </section>
-  );
-}
-
-function ActionButton({ children, onClick, variant = "secondary" }) {
-  const styles = {
-    primary: {
-      background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
-      color: "#ffffff",
-      border: "1px solid rgba(99, 102, 241, 0.65)",
-      boxShadow: "0 0 30px rgba(99,102,241,0.28)",
-    },
-    secondary: {
-      background: "rgba(99, 102, 241, 0.08)",
-      color: "#e5e7eb",
-      border: "1px solid rgba(99, 102, 241, 0.18)",
-      boxShadow: "none",
-    },
-  };
-
-  const current = styles[variant] || styles.secondary;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-1px)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-      }}
-      style={{
-        ...current,
-        borderRadius: 16,
-        padding: "12px 16px",
-        fontSize: 14,
-        fontWeight: 800,
-        cursor: "pointer",
-        transition: "transform 0.2s ease, opacity 0.2s ease",
-      }}
-    >
-      {children}
-    </button>
   );
 }
 
@@ -276,7 +284,14 @@ function EmptyState({ title, description, buttonLabel, onClick }) {
         ✦
       </div>
 
-      <h3 style={{ margin: 0, color: "#f3f4f6", fontSize: 18, fontWeight: 900 }}>
+      <h3
+        style={{
+          margin: 0,
+          color: "#f3f4f6",
+          fontSize: 18,
+          fontWeight: 900,
+        }}
+      >
         {title}
       </h3>
 
@@ -313,7 +328,7 @@ function PlanRow({ plan }) {
       className="admin-dashboard-plan-row"
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1.6fr) 0.9fr 0.8fr 0.8fr auto",
+        gridTemplateColumns: "minmax(0, 1.6fr) 0.9fr 0.8fr 0.8fr",
         gap: 14,
         alignItems: "center",
         padding: "16px 18px",
@@ -336,6 +351,7 @@ function PlanRow({ plan }) {
         >
           {title}
         </div>
+
         <div
           style={{
             marginTop: 6,
@@ -380,17 +396,6 @@ function PlanRow({ plan }) {
 
       <div style={{ color: "#cbd5e1", fontSize: 14 }}>
         {stock !== null && stock !== undefined ? stock : "—"}
-      </div>
-
-      <div
-        style={{
-          color: "#94a3b8",
-          fontSize: 12,
-          fontWeight: 800,
-          textAlign: "right",
-        }}
-      >
-        Plano
       </div>
     </div>
   );
@@ -498,7 +503,9 @@ export default function AdminDashboard() {
       } catch (error) {
         if (mounted) {
           setPlans([]);
-          setPlansError(error?.message || "Não foi possível carregar os planos.");
+          setPlansError(
+            error?.message || "Não foi possível carregar os planos."
+          );
         }
       } finally {
         if (mounted) setLoadingPlans(false);
@@ -527,69 +534,64 @@ export default function AdminDashboard() {
   const latestPlans = useMemo(() => sortNewestPlans(plans).slice(0, 4), [plans]);
 
   return (
-    <div
-      style={{
-        minHeight: "100%",
-        background:
-          "radial-gradient(circle at top, rgba(99,102,241,0.10) 0%, rgba(11,15,20,0) 32%), #0b0f14",
-        padding: 24,
-      }}
-    >
-      <style>{`
-        .admin-dashboard-grid {
-          display: grid;
-          grid-template-columns: 1.5fr 0.95fr;
-          gap: 20px;
-        }
-
-        .admin-dashboard-stats {
-          display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 16px;
-        }
-
-        .admin-dashboard-quick-actions {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-        }
-
-        @media (max-width: 1180px) {
-          .admin-dashboard-stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .admin-dashboard-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 860px) {
-          .admin-dashboard-quick-actions {
-            grid-template-columns: 1fr;
-          }
-
-          .admin-dashboard-plan-row {
-            grid-template-columns: 1fr;
-            text-align: left;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .admin-dashboard-stats {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
+    <AppShell>
       <div
         style={{
-          maxWidth: 1400,
-          margin: "0 auto",
           display: "grid",
           gap: 20,
         }}
       >
+        <style>{`
+          .admin-dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 16px;
+          }
+
+          .admin-dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.45fr 0.95fr;
+            gap: 20px;
+          }
+
+          .admin-dashboard-quick-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 14px;
+          }
+
+          @media (max-width: 1180px) {
+            .admin-dashboard-stats {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .admin-dashboard-grid {
+              grid-template-columns: 1fr;
+            }
+          }
+
+          @media (max-width: 860px) {
+            .admin-dashboard-quick-actions {
+              grid-template-columns: 1fr;
+            }
+
+            .admin-dashboard-plan-row {
+              grid-template-columns: 1fr;
+            }
+          }
+
+          @media (max-width: 640px) {
+            .admin-dashboard-stats {
+              grid-template-columns: 1fr;
+            }
+          }
+
+          @keyframes pulse {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0 50%; }
+          }
+        `}</style>
+
         <header
           style={{
             position: "relative",
@@ -624,34 +626,6 @@ export default function AdminDashboard() {
             }}
           >
             <div>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 14,
-                  padding: "7px 12px",
-                  borderRadius: 999,
-                  background: "rgba(99,102,241,0.10)",
-                  border: "1px solid rgba(99,102,241,0.18)",
-                  color: "#c7d2fe",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: 0.8,
-                }}
-              >
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#6366f1",
-                    boxShadow: "0 0 16px rgba(99,102,241,0.95)",
-                  }}
-                />
-                visão geral
-              </div>
-
               <h1
                 style={{
                   margin: 0,
@@ -670,20 +644,24 @@ export default function AdminDashboard() {
                   margin: "12px 0 0",
                   color: "#9ca3af",
                   fontSize: 15,
-                  maxWidth: 700,
-                  lineHeight: 1.65,
                 }}
               >
-                Painel focado nos dados reais dos planos retornados pela API.
+                Planos, status e visão rápida.
               </p>
             </div>
 
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <ActionButton variant="secondary" onClick={() => window.location.reload()}>
-                Atualizar painel
+              <ActionButton
+                variant="secondary"
+                onClick={() => window.location.reload()}
+              >
+                Atualizar
               </ActionButton>
 
-              <ActionButton variant="primary" onClick={() => navigate("/plans")}>
+              <ActionButton
+                variant="primary"
+                onClick={() => navigate("/plans")}
+              >
                 Ver planos
               </ActionButton>
             </div>
@@ -694,25 +672,21 @@ export default function AdminDashboard() {
           <StatCard
             title="Total de planos"
             value={loadingPlans ? "..." : stats.totalPlans}
-            hint="Quantidade de planos carregados do backend."
             accent="primary"
           />
           <StatCard
             title="Planos ativos"
             value={loadingPlans ? "..." : stats.activePlans}
-            hint="Itens disponíveis no momento."
             accent="success"
           />
           <StatCard
             title="Planos inativos"
             value={loadingPlans ? "..." : stats.inactivePlans}
-            hint="Planos retornados com status inativo."
             accent="danger"
           />
           <StatCard
             title="Estoque somado"
             value={loadingPlans ? "..." : stats.totalStock}
-            hint="Soma do estoque informado nos planos retornados."
             accent="neutral"
           />
         </div>
@@ -720,10 +694,13 @@ export default function AdminDashboard() {
         <div className="admin-dashboard-grid">
           <SectionCard
             title="Planos disponíveis"
-            subtitle="Lista com os planos reais recebidos da API."
+            subtitle="Lista retornada pela API."
             action={
-              <ActionButton variant="secondary" onClick={() => navigate("/plans")}>
-                Gerenciar planos
+              <ActionButton
+                variant="secondary"
+                onClick={() => navigate("/plans")}
+              >
+                Gerenciar
               </ActionButton>
             }
           >
@@ -761,17 +738,17 @@ export default function AdminDashboard() {
             ) : (
               <div style={{ display: "grid", gap: 12 }}>
                 {sortNewestPlans(plans).map((plan, index) => (
-                  <PlanRow key={plan?.id || `${getPlanTitle(plan)}-${index}`} plan={plan} />
+                  <PlanRow
+                    key={plan?.id || `${getPlanTitle(plan)}-${index}`}
+                    plan={plan}
+                  />
                 ))}
               </div>
             )}
           </SectionCard>
 
           <div style={{ display: "grid", gap: 20, alignContent: "start" }}>
-            <SectionCard
-              title="Planos recentes"
-              subtitle="Últimos itens retornados pela API."
-            >
+            <SectionCard title="Planos recentes" subtitle="Últimos retornados.">
               {loadingPlans ? (
                 <div style={{ display: "grid", gap: 12 }}>
                   {[1, 2, 3].map((item) => (
@@ -790,8 +767,8 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : latestPlans.length === 0 ? (
-                <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
-                  Sem planos recentes para mostrar.
+                <div style={{ color: "#9ca3af", fontSize: 14 }}>
+                  Sem planos recentes.
                 </div>
               ) : (
                 <div style={{ display: "grid", gap: 12 }}>
@@ -805,24 +782,33 @@ export default function AdminDashboard() {
               )}
             </SectionCard>
 
-            <SectionCard title="Ações rápidas" subtitle="Atalhos para o fluxo principal.">
+            <SectionCard title="Ações rápidas" subtitle="Atalhos do painel.">
               <div className="admin-dashboard-quick-actions">
-                <ActionButton variant="primary" onClick={() => navigate("/plans")}>
+                <ActionButton
+                  variant="primary"
+                  onClick={() => navigate("/plans")}
+                >
                   Ver planos
                 </ActionButton>
 
-                <ActionButton variant="secondary" onClick={() => navigate("/plans")}>
-                  Atualizar catálogo
+                <ActionButton
+                  variant="secondary"
+                  onClick={() => window.location.reload()}
+                >
+                  Recarregar
                 </ActionButton>
 
-                <ActionButton variant="secondary" onClick={() => navigate("/admin/subscribers")}>
-                  Ver assinantes
+                <ActionButton
+                  variant="secondary"
+                  onClick={() => navigate("/admin/subscribers")}
+                >
+                  Assinaturas
                 </ActionButton>
               </div>
             </SectionCard>
           </div>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 }

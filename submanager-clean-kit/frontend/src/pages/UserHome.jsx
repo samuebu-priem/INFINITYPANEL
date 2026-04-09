@@ -3,6 +3,7 @@ import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
 import { UserHomeFooter } from "../components/layout/UserHomeFooter.jsx";
+import AppShell from "../layouts/AppShell";
 
 function getPlansList(response) {
   if (Array.isArray(response)) return response;
@@ -43,6 +44,169 @@ function getPlanName(subscription) {
     subscription?.planName ||
     subscription?.plan?.label ||
     "Plano ativo"
+  );
+}
+
+function SectionCard({ title, subtitle, children, action }) {
+  return (
+    <section
+      style={{
+        background:
+          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+        border: "1px solid #1f2937",
+        borderRadius: 28,
+        padding: 22,
+        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
+      }}
+    >
+      {(title || subtitle || action) && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 16,
+            alignItems: "flex-start",
+            marginBottom: 18,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            {title ? (
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: "#f3f4f6",
+                }}
+              >
+                {title}
+              </h2>
+            ) : null}
+
+            {subtitle ? (
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  color: "#9ca3af",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+
+          {action ? <div>{action}</div> : null}
+        </div>
+      )}
+
+      {children}
+    </section>
+  );
+}
+
+function StatCard({ label, value, helpText }) {
+  return (
+    <div
+      style={{
+        border: "1px solid #1f2937",
+        borderRadius: 22,
+        background: "rgba(255,255,255,0.02)",
+        padding: 18,
+      }}
+    >
+      <div
+        style={{
+          color: "#9ca3af",
+          fontSize: 12,
+          fontWeight: 800,
+          textTransform: "uppercase",
+          letterSpacing: "0.12em",
+          marginBottom: 10,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          color: "#f3f4f6",
+          fontSize: 34,
+          lineHeight: 1.05,
+          fontWeight: 900,
+        }}
+      >
+        {value}
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          color: "#9ca3af",
+          fontSize: 14,
+          lineHeight: 1.5,
+        }}
+      >
+        {helpText}
+      </div>
+    </div>
+  );
+}
+
+function EmptyState({ title, description }) {
+  return (
+    <div
+      style={{
+        border: "1px dashed rgba(99, 102, 241, 0.22)",
+        borderRadius: 24,
+        padding: 28,
+        textAlign: "center",
+        background:
+          "linear-gradient(180deg, rgba(99,102,241,0.05) 0%, rgba(11,15,20,0.4) 100%)",
+      }}
+    >
+      <div
+        style={{
+          width: 58,
+          height: 58,
+          borderRadius: 18,
+          margin: "0 auto 14px",
+          background: "rgba(99, 102, 241, 0.12)",
+          display: "grid",
+          placeItems: "center",
+          fontSize: 24,
+          color: "#c7d2fe",
+          boxShadow: "0 0 30px rgba(99,102,241,0.18)",
+        }}
+      >
+        ✦
+      </div>
+
+      <h3
+        style={{
+          margin: 0,
+          color: "#f3f4f6",
+          fontSize: 18,
+          fontWeight: 900,
+        }}
+      >
+        {title}
+      </h3>
+
+      <p
+        style={{
+          margin: "10px auto 0",
+          maxWidth: 480,
+          color: "#9ca3af",
+          fontSize: 14,
+          lineHeight: 1.6,
+        }}
+      >
+        {description}
+      </p>
+    </div>
   );
 }
 
@@ -89,122 +253,318 @@ export default function UserHome() {
     const endDate = new Date(endsAt);
     if (Number.isNaN(endDate.getTime())) return null;
 
-    const diff = Math.ceil((endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    const diff = Math.ceil(
+      (endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+
     return Math.max(diff, 0);
   }, [subscription]);
 
   const visiblePlans = useMemo(() => plans.filter(isPlanActive), [plans]);
 
-  return (
-    <div className="space-y-6">
-      <div className="rounded-[2rem] border border-[#1f2937] bg-[#121821] p-6 shadow-lg shadow-black/20 sm:p-7">
-        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-3">
-            <div className="inline-flex items-center rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-indigo-300">
-              SubManager
+  const content = (
+    <div style={{ display: "grid", gap: 20 }}>
+      <style>{`
+        .user-home-top-grid {
+          display: grid;
+          gap: 20px;
+          grid-template-columns: 1.15fr 0.85fr;
+        }
+
+        .user-home-stats-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .user-home-plans-grid {
+          display: grid;
+          gap: 20px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        @media (max-width: 1180px) {
+          .user-home-top-grid,
+          .user-home-plans-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 860px) {
+          .user-home-top-grid,
+          .user-home-stats-grid,
+          .user-home-plans-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+      <section
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: 30,
+          padding: 28,
+          border: "1px solid rgba(99, 102, 241, 0.18)",
+          background:
+            "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+          boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(circle at 85% 15%, rgba(99,102,241,0.22), transparent 24%)",
+          }}
+        />
+
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 20,
+            flexWrap: "wrap",
+            alignItems: "flex-end",
+          }}
+        >
+          <div style={{ maxWidth: 720 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 14,
+                padding: "7px 12px",
+                borderRadius: 999,
+                background: "rgba(99,102,241,0.10)",
+                border: "1px solid rgba(99,102,241,0.18)",
+                color: "#c7d2fe",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+              }}
+            >
+              Área do usuário
             </div>
-            <div>
-              <p className="text-sm text-[#9ca3af]">
-                Bem-vindo,{" "}
-                <span className="font-semibold text-[#f3f4f6]">
-                  {user?.username || user?.name || "usuário"}
-                </span>
-              </p>
-              <h1 className="mt-1 text-3xl font-bold text-[#f3f4f6] sm:text-4xl">
-                Painel da assinatura
-              </h1>
-            </div>
-            <p className="max-w-2xl text-sm leading-6 text-[#9ca3af]">
-              A página usa apenas os planos retornados por /api/plans e, quando disponível,
-              a assinatura de /api/subscriptions/me.
+
+            <h1
+              style={{
+                margin: 0,
+                color: "#f3f4f6",
+                fontSize: 38,
+                lineHeight: 1.05,
+                fontWeight: 900,
+                letterSpacing: -0.5,
+              }}
+            >
+              Bem-vindo, {user?.username || user?.name || "usuário"}
+            </h1>
+
+            <p
+              style={{
+                margin: "14px 0 0",
+                color: "#9ca3af",
+                fontSize: 15,
+                lineHeight: 1.7,
+                maxWidth: 680,
+              }}
+            >
+              Veja sua assinatura atual, acompanhe o prazo restante e confira
+              os planos disponíveis no momento.
             </p>
           </div>
 
           {subscription ? (
-            <div className="grid grid-cols-2 gap-3 sm:min-w-[240px]">
-              <div className="rounded-2xl border border-[#1f2937] bg-[#0f141c] px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-[#6b7280]">Status</p>
-                <p className="mt-1 text-sm font-semibold text-[#f3f4f6]">Ativa</p>
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                minWidth: 260,
+              }}
+            >
+              <div
+                style={{
+                  borderRadius: 20,
+                  border: "1px solid #1f2937",
+                  background: "rgba(255,255,255,0.04)",
+                  padding: "14px 16px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#9ca3af",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    fontWeight: 800,
+                    marginBottom: 6,
+                  }}
+                >
+                  Status
+                </div>
+                <div
+                  style={{
+                    color: "#86efac",
+                    fontWeight: 800,
+                    fontSize: 15,
+                  }}
+                >
+                  Ativa
+                </div>
               </div>
-              <div className="rounded-2xl border border-[#1f2937] bg-[#0f141c] px-4 py-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-[#6b7280]">Plano</p>
-                <p className="mt-1 text-sm font-semibold text-[#f3f4f6]">{getPlanName(subscription)}</p>
+
+              <div
+                style={{
+                  borderRadius: 20,
+                  border: "1px solid #1f2937",
+                  background: "rgba(255,255,255,0.04)",
+                  padding: "14px 16px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#9ca3af",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    fontWeight: 800,
+                    marginBottom: 6,
+                  }}
+                >
+                  Plano
+                </div>
+                <div
+                  style={{
+                    color: "#f3f4f6",
+                    fontWeight: 800,
+                    fontSize: 15,
+                  }}
+                >
+                  {getPlanName(subscription)}
+                </div>
               </div>
             </div>
           ) : null}
         </div>
-      </div>
+      </section>
 
-      {subscription || subscriptionError || loadingSubscription ? (
-        <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="rounded-[2rem] border border-[#1f2937] bg-[#121821] p-6">
-            <p className="text-sm text-[#9ca3af]">Dias restantes</p>
-            <div className="mt-3 rounded-2xl border border-[#1f2937] bg-[#0f141c] px-5 py-4">
-              <p className="text-4xl font-bold text-[#f3f4f6]">
-                {loadingSubscription ? "..." : remainingDays ?? "—"}
-              </p>
-              <p className="mt-1 text-sm text-[#9ca3af]">
-                {loadingSubscription
-                  ? "Carregando assinatura..."
-                  : remainingDays === null
-                  ? "Sem data final disponível."
-                  : remainingDays === 1
-                  ? "dia"
-                  : "dias"}
-              </p>
+      {(subscription || subscriptionError || loadingSubscription) && (
+        <div className="user-home-top-grid">
+          <SectionCard
+            title="Assinatura atual"
+            subtitle="Resumo do acesso retornado pela API."
+          >
+            <div className="user-home-stats-grid">
+              <StatCard
+                label="Dias restantes"
+                value={loadingSubscription ? "..." : remainingDays ?? "—"}
+                helpText={
+                  loadingSubscription
+                    ? "Carregando assinatura..."
+                    : remainingDays === null
+                    ? "Sem data final disponível."
+                    : remainingDays === 1
+                    ? "1 dia restante"
+                    : `${remainingDays} dias restantes`
+                }
+              />
+
+              <StatCard
+                label="Plano"
+                value={
+                  subscription
+                    ? getPlanName(subscription)
+                    : loadingSubscription
+                    ? "..."
+                    : "—"
+                }
+                helpText={
+                  subscription
+                    ? "Seu acesso está ativo no momento."
+                    : "Nenhuma assinatura retornada."
+                }
+              />
             </div>
-            {subscriptionError ? (
-              <p className="mt-4 text-sm text-[#9ca3af]">
-                {subscriptionError}
-              </p>
-            ) : (
-              <p className="mt-4 text-sm text-[#9ca3af]">
-                Baseado na data final retornada pela assinatura.
-              </p>
-            )}
-          </div>
+          </SectionCard>
 
-          <div className="rounded-[2rem] border border-[#1f2937] bg-[#121821] p-6">
-            <p className="text-sm text-[#9ca3af]">Seu acesso</p>
-            <h2 className="mt-1 text-xl font-semibold text-[#f3f4f6]">Assinatura atual</h2>
-            <div className="mt-4 rounded-2xl border border-[#1f2937] bg-[#0f141c] p-4">
-              <p className="text-sm text-[#9ca3af]">
-                {subscription ? getPlanName(subscription) : "Nenhuma assinatura ativa"}
-              </p>
-              <p className="mt-2 text-sm text-[#9ca3af]">
+          <SectionCard
+            title="Seu acesso"
+            subtitle="Situação atual da assinatura."
+          >
+            <div
+              style={{
+                borderRadius: 22,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.03)",
+                padding: 18,
+              }}
+            >
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontSize: 18,
+                  fontWeight: 800,
+                  marginBottom: 10,
+                }}
+              >
                 {subscription
-                  ? "Seu acesso está ativo."
+                  ? getPlanName(subscription)
+                  : "Nenhuma assinatura ativa"}
+              </div>
+
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                }}
+              >
+                {subscription
+                  ? "Seu acesso foi identificado com base na assinatura retornada pela API."
+                  : subscriptionError
+                  ? subscriptionError
                   : "Nenhuma assinatura foi retornada pela API no momento."}
-              </p>
+              </div>
             </div>
-          </div>
+          </SectionCard>
         </div>
-      ) : null}
+      )}
 
-      <div className="rounded-[2rem] border border-[#1f2937] bg-[#121821] p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm text-[#9ca3af]">Planos</p>
-            <h2 className="mt-1 text-xl font-semibold text-[#f3f4f6]">Disponíveis para assinatura</h2>
-          </div>
-        </div>
-
+      <SectionCard
+        title="Planos disponíveis"
+        subtitle="Catálogo retornado por /api/plans."
+      >
         {loadingPlans ? (
-          <div className="mt-5 rounded-[2rem] border border-[#1f2937] bg-[#0f141c] p-6 text-[#9ca3af]">
+          <div
+            style={{
+              borderRadius: 22,
+              border: "1px solid #1f2937",
+              background: "rgba(255,255,255,0.03)",
+              padding: 20,
+              color: "#9ca3af",
+            }}
+          >
             Carregando planos...
           </div>
         ) : visiblePlans.length === 0 ? (
-          <div className="mt-5 rounded-[2rem] border border-[#1f2937] bg-[#0f141c] p-6 text-[#9ca3af]">
-            Nenhum plano disponível.
-          </div>
+          <EmptyState
+            title="Nenhum plano disponível"
+            description="Não há planos ativos para exibir no momento."
+          />
         ) : (
-          <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="user-home-plans-grid">
             {visiblePlans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} user={user} showCheckout />
             ))}
           </div>
         )}
-      </div>
+      </SectionCard>
 
       <UserHomeFooter
         discordUrl={import.meta.env.VITE_DISCORD_URL || "#"}
@@ -212,4 +572,6 @@ export default function UserHome() {
       />
     </div>
   );
+
+  return user?.role ? <AppShell>{content}</AppShell> : content;
 }
