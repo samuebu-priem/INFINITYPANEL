@@ -25,7 +25,7 @@ export default function AppShell({ children, showHeader = true }) {
     ...(isAdmin ? [{ to: "/plans", label: "Planos", icon: FileText }] : []),
 
     ...(isAdmin
-      ? [{ to: "/admin/subscribers", label: "Assinaturas", icon: Users }]
+      ? [{ to: "/admin/subscribers", label: "Usuários", icon: Users }]
       : []),
 
     // ✅ Termos como link normal

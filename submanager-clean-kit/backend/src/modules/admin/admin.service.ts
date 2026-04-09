@@ -74,30 +74,24 @@ export const adminService = {
         username: true,
         email: true,
         role: true,
-        adminProfile: {
+        subscriptions: {
+          where: {
+            OR: [
+              { status: "ACTIVE" },
+              { endsAt: { gt: now } },
+            ],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 1,
           select: {
             id: true,
-            subscriptions: {
-              where: {
-                OR: [
-                  { status: "ACTIVE" },
-                  { endsAt: { gt: now } },
-                  { isActive: true },
-                ],
-              },
-              orderBy: { createdAt: "desc" },
-              take: 1,
+            status: true,
+            startsAt: true,
+            endsAt: true,
+            plan: {
               select: {
                 id: true,
-                status: true,
-                startsAt: true,
-                endsAt: true,
-                plan: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
+                name: true,
               },
             },
           },
@@ -111,12 +105,15 @@ export const adminService = {
 
     for (const user of users) {
       if (user.role === "PLAYER") {
-        const subscriptionRecord = user.adminProfile?.subscriptions[0] ?? null;
+        const subscriptionRecord = user.subscriptions[0] ?? null;
         const subscription = mapSubscription(subscriptionRecord);
+
         const isOnline =
           subscription?.isActive === true ||
           subscription?.status === "ACTIVE" ||
-          (subscription?.endsAt !== null && subscription?.endsAt !== undefined && subscription.endsAt > now);
+          (subscription?.endsAt !== null &&
+            subscription?.endsAt !== undefined &&
+            subscription.endsAt > now);
 
         clients.push({
           id: user.id,
