@@ -555,8 +555,8 @@ export default function AdminSubscribers() {
               maxWidth: 720,
             }}
           >
-            Staff retorna Owner e Admin. Clientes retornam Player com status
-            da assinatura em online ou offline.
+            Controle de clientes e Staff retornam (Assinatura com status
+            de online ou offline.)
           </p>
         </div>
       </section>

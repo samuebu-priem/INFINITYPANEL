@@ -69,7 +69,7 @@ export default function Login() {
                 Acesse sua conta e controle tudo em um só lugar.
               </h1>
               <p className="auth-text">
-                Entre para gerenciar planos, assinaturas e acompanhar seu painel.
+                Entre para gerenciar planos, assinaturas e acompanhar seu lucro.
               </p>
             </div>
           </div>
