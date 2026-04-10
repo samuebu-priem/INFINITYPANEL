@@ -4,7 +4,6 @@ import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
 import { UserHomeFooter } from "../components/layout/UserHomeFooter.jsx";
 
-
 function getPlansList(response) {
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.plans)) return response.plans;
@@ -21,10 +20,19 @@ function isPlanActive(plan) {
 
 function getSubscriptionObject(response) {
   if (!response) return null;
-  if (response.subscription) return response.subscription;
-  if (response.data?.subscription) return response.data.subscription;
-  if (response.data) return response.data;
-  return response;
+
+  if (Object.prototype.hasOwnProperty.call(response, "subscription")) {
+    return response.subscription ?? null;
+  }
+
+  if (
+    response.data &&
+    Object.prototype.hasOwnProperty.call(response.data, "subscription")
+  ) {
+    return response.data.subscription ?? null;
+  }
+
+  return null;
 }
 
 function getSubscriptionEndsAt(subscription) {
@@ -43,7 +51,7 @@ function getPlanName(subscription) {
     subscription?.plan?.title ||
     subscription?.planName ||
     subscription?.plan?.label ||
-    "Plano ativo"
+    "Nenhuma assinatura"
   );
 }
 
@@ -262,7 +270,7 @@ export default function UserHome() {
 
   const visiblePlans = useMemo(() => plans.filter(isPlanActive), [plans]);
 
-  const content = (
+  return (
     <div style={{ display: "grid", gap: 20 }}>
       <style>{`
         .user-home-top-grid {
@@ -380,77 +388,75 @@ export default function UserHome() {
             </p>
           </div>
 
-          {subscription ? (
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              minWidth: 260,
+            }}
+          >
             <div
               style={{
-                display: "grid",
-                gap: 12,
-                minWidth: 260,
+                borderRadius: 20,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.04)",
+                padding: "14px 16px",
               }}
             >
               <div
                 style={{
-                  borderRadius: 20,
-                  border: "1px solid #1f2937",
-                  background: "rgba(255,255,255,0.04)",
-                  padding: "14px 16px",
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  fontWeight: 800,
+                  marginBottom: 6,
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#9ca3af",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.12em",
-                    fontWeight: 800,
-                    marginBottom: 6,
-                  }}
-                >
-                  Status
-                </div>
-                <div
-                  style={{
-                    color: "#86efac",
-                    fontWeight: 800,
-                    fontSize: 15,
-                  }}
-                >
-                  Ativa
-                </div>
+                Status
               </div>
-
               <div
                 style={{
-                  borderRadius: 20,
-                  border: "1px solid #1f2937",
-                  background: "rgba(255,255,255,0.04)",
-                  padding: "14px 16px",
+                  color: subscription ? "#86efac" : "#fca5a5",
+                  fontWeight: 800,
+                  fontSize: 15,
                 }}
               >
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#9ca3af",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.12em",
-                    fontWeight: 800,
-                    marginBottom: 6,
-                  }}
-                >
-                  Plano
-                </div>
-                <div
-                  style={{
-                    color: "#f3f4f6",
-                    fontWeight: 800,
-                    fontSize: 15,
-                  }}
-                >
-                  {getPlanName(subscription)}
-                </div>
+                {subscription ? "Ativa" : "Inativa"}
               </div>
             </div>
-          ) : null}
+
+            <div
+              style={{
+                borderRadius: 20,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.04)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  fontWeight: 800,
+                  marginBottom: 6,
+                }}
+              >
+                Plano
+              </div>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontWeight: 800,
+                  fontSize: 15,
+                }}
+              >
+                {subscription ? getPlanName(subscription) : "Nenhuma assinatura"}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -482,12 +488,12 @@ export default function UserHome() {
                     ? getPlanName(subscription)
                     : loadingSubscription
                     ? "..."
-                    : "—"
+                    : "Nenhuma"
                 }
                 helpText={
                   subscription
                     ? "Seu acesso está ativo no momento."
-                    : "Nenhuma assinatura retornada."
+                    : "Você ainda não possui assinatura ativa."
                 }
               />
             </div>
@@ -526,10 +532,12 @@ export default function UserHome() {
                 }}
               >
                 {subscription
-                  ? "Seu acesso atual"
+                  ? "Sua assinatura está ativa e vinculada à sua conta."
+                  : loadingSubscription
+                  ? "Carregando dados da assinatura..."
                   : subscriptionError
                   ? subscriptionError
-                  : "Nenhuma assinatura encontrada no momento."}
+                  : "Ative um plano para liberar seu acesso."}
               </div>
             </div>
           </SectionCard>
@@ -538,7 +546,7 @@ export default function UserHome() {
 
       <SectionCard
         title="Planos disponíveis"
-        subtitle=" Confira os planos ativos que você pode assinar no momento."
+        subtitle="Escolha um plano para ativar ou renovar seu acesso."
       >
         {loadingPlans ? (
           <div
@@ -546,7 +554,7 @@ export default function UserHome() {
               borderRadius: 22,
               border: "1px solid #1f2937",
               background: "rgba(255,255,255,0.03)",
-              padding: 20,
+              padding: 22,
               color: "#9ca3af",
             }}
           >
@@ -555,7 +563,7 @@ export default function UserHome() {
         ) : visiblePlans.length === 0 ? (
           <EmptyState
             title="Nenhum plano disponível"
-            description="Não há planos ativos para exibir no momento."
+            description="No momento não há planos ativos para contratação."
           />
         ) : (
           <div className="user-home-plans-grid">
@@ -572,6 +580,4 @@ export default function UserHome() {
       />
     </div>
   );
-
-  return  content;
 }
