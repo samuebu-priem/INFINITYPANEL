@@ -8,7 +8,7 @@ export const checkoutRouter = Router();
 checkoutRouter.post(
   "/create",
   requireAuth,
-  requireRole("ADMIN", "OWNER"),
+  requireRole("PLAYER", "ADMIN", "OWNER"),
   checkoutController.create,
 );
 

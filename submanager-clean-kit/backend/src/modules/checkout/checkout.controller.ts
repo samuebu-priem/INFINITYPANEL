@@ -1,7 +1,6 @@
 import type { Request, Response } from "express";
 
 import { prisma } from "../../config/prisma.js";
-import { ApiError } from "../../shared/utils/ApiError.js";
 import { asyncHandler } from "../../shared/utils/asyncHandler.js";
 import { checkoutService } from "./checkout.service.js";
 
@@ -15,15 +14,22 @@ export const checkoutController = {
       return;
     }
 
+    if (auth.role === "PLAYER") {
+      const result = await checkoutService.createPlayerSubscriptionCheckout({
+        userId: auth.id,
+        planId,
+      });
+
+      res.status(201).json(result);
+      return;
+    }
+
     let adminProfile = await prisma.adminProfile.findUnique({
       where: { userId: auth.id },
       select: { id: true },
     });
 
     if (!adminProfile) {
-      // If the user has ADMIN/OWNER role but does not have an AdminProfile yet,
-      // create one automatically to allow subscription checkout.
-      // (AdminProfile.weeklyFee is required, so we default to 0.00)
       adminProfile = await prisma.adminProfile.create({
         data: {
           userId: auth.id,
