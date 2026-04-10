@@ -21,5 +21,4 @@ apiRouter.use("/admin", adminRouter);
 
 apiRouter.use("/payments", paymentsRouter);
 apiRouter.use("/internal/matches", internalMatchesRouter);
-
 apiRouter.use("/dev/payments", devPaymentsRouter);

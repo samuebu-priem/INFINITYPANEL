@@ -1,155 +1,93 @@
 import { prisma } from "../../config/prisma.js";
 import { ApiError } from "../../shared/utils/ApiError.js";
 
-function isActiveStatus(status: string) {
-  return status === "ACTIVE";
-}
-
 export const subscriptionsService = {
   getMySubscription: async (userId: string) => {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-      },
+    const admin = await prisma.adminProfile.findUnique({
+      where: { userId },
+      select: { id: true },
     });
 
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
+    if (!admin) throw new ApiError(403, "Admin profile required");
 
+    const now = new Date();
     const subscription = await prisma.subscription.findFirst({
       where: {
-        userId: user.id,
+        adminId: admin.id,
+        status: "ACTIVE",
+        OR: [{ endsAt: null }, { endsAt: { gt: now } }],
       },
+      orderBy: { createdAt: "desc" },
       include: {
-        plan: true,
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            amount: true,
+            billingCycle: true,
+            currency: true,
+          },
+        },
       },
-      orderBy: [
-        { createdAt: "desc" },
-        { updatedAt: "desc" },
-      ],
     });
 
     if (!subscription) {
-      return {
-        userId: user.id,
-        role: user.role,
-        subscription: null,
-      };
+      return { subscription: null };
     }
 
     return {
-      userId: user.id,
-      role: user.role,
       subscription: {
         id: subscription.id,
         status: subscription.status,
-        isActive: isActiveStatus(subscription.status),
         startsAt: subscription.startsAt,
         endsAt: subscription.endsAt,
-        plan: {
-          id: subscription.plan.id,
-          name: subscription.plan.name,
-          billingCycle: subscription.plan.billingCycle,
-        },
+        approvedAt: subscription.approvedAt ?? null,
+        createdAt: subscription.createdAt,
+        plan: subscription.plan,
+        isActive:
+          subscription.status === "ACTIVE" &&
+          (!subscription.endsAt || subscription.endsAt > now),
       },
     };
   },
 
   startSubscription: async (userId: string, planId: string) => {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-      },
+    const admin = await prisma.adminProfile.findUnique({
+      where: { userId },
+      select: { id: true },
     });
 
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
-
-    if (user.role !== "PLAYER") {
-      throw new ApiError(403, "Only PLAYER users can subscribe");
-    }
+    if (!admin) throw new ApiError(403, "Admin profile required");
 
     const plan = await prisma.subscriptionPlan.findUnique({
       where: { id: planId },
-      select: {
-        id: true,
-        name: true,
-        billingCycle: true,
-        amount: true,
-        currency: true,
-        isActive: true,
-      },
     });
 
-    if (!plan || !plan.isActive) {
-      throw new ApiError(404, "Plan not found");
-    }
+    if (!plan || !plan.isActive) throw new ApiError(404, "Plan not found");
 
-    const activeSubscription = await prisma.subscription.findFirst({
-      where: {
-        userId: user.id,
-        status: "ACTIVE",
-      },
-      include: {
-        plan: true,
-      },
-      orderBy: [
-        { updatedAt: "desc" },
-        { createdAt: "desc" },
-      ],
+    const active = await prisma.subscription.findFirst({
+      where: { adminId: admin.id, status: "ACTIVE" },
+      select: { id: true },
     });
 
-    if (activeSubscription) {
-      return {
-        userId: user.id,
-        role: user.role,
-        subscription: {
-          id: activeSubscription.id,
-          status: activeSubscription.status,
-          isActive: true,
-          startsAt: activeSubscription.startsAt,
-          endsAt: activeSubscription.endsAt,
-          plan: {
-            id: activeSubscription.plan.id,
-            name: activeSubscription.plan.name,
-            billingCycle: activeSubscription.plan.billingCycle,
-          },
-        },
-      };
+    if (active) {
+      throw new ApiError(409, "Active subscription already exists");
     }
 
-    const created = await prisma.subscription.create({
+    const subscription = await prisma.subscription.create({
       data: {
-        userId: user.id,
-        adminId: user.id,
+        adminId: admin.id,
         planId: plan.id,
         status: "PENDING",
-      },
-      include: {
-        plan: true,
+        metadata: { createdBy: "subscriptions/start" },
       },
     });
 
     return {
-      userId: user.id,
-      role: user.role,
       subscription: {
-        id: created.id,
-        status: created.status,
-        isActive: isActiveStatus(created.status),
-        startsAt: created.startsAt,
-        endsAt: created.endsAt,
-        plan: {
-          id: created.plan.id,
-          name: created.plan.name,
-          billingCycle: created.plan.billingCycle,
-        },
+        id: subscription.id,
+        status: subscription.status,
+        createdAt: subscription.createdAt,
       },
     };
   },

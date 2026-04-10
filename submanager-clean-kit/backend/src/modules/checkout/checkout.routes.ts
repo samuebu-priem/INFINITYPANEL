@@ -1,15 +1,20 @@
 import { Router } from "express";
-
 import { requireAuth } from "../../middlewares/auth.middleware.js";
 import { requireRole } from "../../middlewares/role.middleware.js";
-import { subscriptionsController } from "./subscriptions.controller.js";
+import { checkoutController } from "./checkout.controller.js";
 
-export const subscriptionsRouter = Router();
+export const checkoutRouter = Router();
 
-subscriptionsRouter.get("/me", requireAuth, subscriptionsController.me);
-subscriptionsRouter.post(
-  "/start",
+checkoutRouter.post(
+  "/create",
   requireAuth,
   requireRole("ADMIN", "OWNER"),
-  subscriptionsController.start,
+  checkoutController.create,
+);
+
+checkoutRouter.get(
+  "/:id",
+  requireAuth,
+  requireRole("ADMIN", "OWNER"),
+  checkoutController.getById,
 );
