@@ -7,9 +7,4 @@ import { subscriptionsController } from "./subscriptions.controller.js";
 export const subscriptionsRouter = Router();
 
 subscriptionsRouter.get("/me", requireAuth, subscriptionsController.me);
-subscriptionsRouter.post(
-  "/start",
-  requireAuth,
-  requireRole("ADMIN", "OWNER"),
-  subscriptionsController.start,
-);
+subscriptionsRouter.post("/start", requireAuth, requireRole("PLAYER"), subscriptionsController.start);
