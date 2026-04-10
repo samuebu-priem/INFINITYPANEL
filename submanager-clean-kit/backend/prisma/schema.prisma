@@ -8,25 +8,28 @@ datasource db {
 }
 
 model User {
-  id                  String         @id @default(cuid())
-  email               String         @unique
-  username            String         @unique
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  username            String               @unique
   passwordHash        String
   role                Role
-  discordId           String?        @unique
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  discordId           String?              @unique
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
   adminProfile        AdminProfile?
-  adminMatches        Match[]        @relation("MatchAdmin")
-  playerOneMatches    Match[]        @relation("MatchPlayerOne")
-  playerTwoMatches    Match[]        @relation("MatchPlayerTwo")
-  wonMatches          Match[]        @relation("MatchWinner")
+  subscriptions       Subscription[]       @relation("UserSubscriptions")
+  checkoutSessions    CheckoutSession[]    @relation("UserCheckoutSessions")
+  paymentTransactions PaymentTransaction[] @relation("UserPaymentTransactions")
+  adminMatches        Match[]              @relation("MatchAdmin")
+  playerOneMatches    Match[]              @relation("MatchPlayerOne")
+  playerTwoMatches    Match[]              @relation("MatchPlayerTwo")
+  wonMatches          Match[]              @relation("MatchWinner")
   playerProfile       PlayerProfile?
-  acceptedQueues      Queue[]        @relation("AcceptedQueues")
-  createdQueues       Queue[]        @relation("CreatedQueues")
+  acceptedQueues      Queue[]              @relation("AcceptedQueues")
+  createdQueues       Queue[]              @relation("CreatedQueues")
   rankings            Ranking[]
-  transactionsAsAdmin Transaction[]  @relation("TransactionAdmin")
-  transactionsAsPayer Transaction[]  @relation("TransactionPayer")
+  transactionsAsAdmin Transaction[]        @relation("TransactionAdmin")
+  transactionsAsPayer Transaction[]        @relation("TransactionPayer")
 }
 
 model AdminProfile {
@@ -139,6 +142,7 @@ model SubscriptionPlan {
 model Subscription {
   id                  String               @id @default(cuid())
   adminId             String
+  userId              String?
   startsAt            DateTime?
   endsAt              DateTime?
   createdAt           DateTime             @default(now())
@@ -151,15 +155,18 @@ model Subscription {
   checkoutSessions    CheckoutSession[]
   paymentTransactions PaymentTransaction[]
   admin               AdminProfile         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user                User?                @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
   plan                SubscriptionPlan     @relation(fields: [planId], references: [id])
 
   @@index([adminId, status])
+  @@index([userId, status])
   @@index([status, endsAt])
 }
 
 model CheckoutSession {
   id                  String                @id @default(cuid())
   adminId             String
+  userId              String?
   planId              String
   subscriptionId      String?
   provider            PaymentProvider       @default(MERCADO_PAGO)
@@ -178,17 +185,20 @@ model CheckoutSession {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
   admin               AdminProfile          @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user                User?                 @relation("UserCheckoutSessions", fields: [userId], references: [id], onDelete: Cascade)
   plan                SubscriptionPlan      @relation(fields: [planId], references: [id])
   subscription        Subscription?         @relation(fields: [subscriptionId], references: [id])
   paymentTransactions PaymentTransaction[]
 
   @@index([adminId, status, createdAt])
+  @@index([userId])
   @@index([externalCheckoutId])
 }
 
 model PaymentTransaction {
   id                  String                   @id @default(cuid())
   adminId             String
+  userId              String?
   subscriptionId      String?
   checkoutSessionId   String?
   provider            PaymentProvider          @default(MERCADO_PAGO)
@@ -205,10 +215,12 @@ model PaymentTransaction {
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
   admin               AdminProfile             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user                User?                    @relation("UserPaymentTransactions", fields: [userId], references: [id], onDelete: Cascade)
   checkoutSession     CheckoutSession?         @relation(fields: [checkoutSessionId], references: [id])
   subscription        Subscription?            @relation(fields: [subscriptionId], references: [id])
 
   @@index([adminId, status, createdAt])
+  @@index([userId])
   @@index([externalPaymentId])
   @@index([externalCheckoutId])
 }
@@ -261,13 +273,6 @@ enum PaymentStatus {
   CONFIRMED
   RELEASED
   REFUNDED
-}
-
-enum SubscriptionStatus {
-  PENDING
-  ACTIVE
-  EXPIRED
-  CANCELLED
 }
 
 enum TransactionType {
