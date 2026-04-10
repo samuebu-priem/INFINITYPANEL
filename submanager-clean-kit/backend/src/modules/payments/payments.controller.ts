@@ -23,12 +23,28 @@ function mpStatusToTxStatus(status?: string) {
   return "PENDING" as const;
 }
 
-function txStatusToCheckoutStatus(status: ReturnType<typeof mpStatusToTxStatus>) {
+function txStatusToCheckoutStatus(
+  status: ReturnType<typeof mpStatusToTxStatus>,
+) {
   if (status === "APPROVED") return "COMPLETED" as const;
   if (status === "CANCELLED") return "CANCELLED" as const;
   if (status === "EXPIRED") return "EXPIRED" as const;
   if (status === "REJECTED") return "CANCELLED" as const;
   return "OPEN" as const;
+}
+
+function computeEndsAt(billingCycle: "WEEKLY" | "MONTHLY" | "YEARLY", now: Date) {
+  const endsAt = new Date(now);
+
+  if (billingCycle === "WEEKLY") {
+    endsAt.setDate(endsAt.getDate() + 7);
+  } else if (billingCycle === "MONTHLY") {
+    endsAt.setMonth(endsAt.getMonth() + 1);
+  } else {
+    endsAt.setFullYear(endsAt.getFullYear() + 1);
+  }
+
+  return endsAt;
 }
 
 export const paymentsController = {
@@ -67,29 +83,23 @@ export const paymentsController = {
     });
   }),
 
-  /**
-   * Mercado Pago webhook endpoint.
-   *
-   * Flow:
-   * 1) Parse webhook to get payment id
-   * 2) Query Mercado Pago API for canonical payment status + external_reference
-   * 3) Map external_reference -> CheckoutSession.id
-   * 4) Update CheckoutSession + latest PaymentTransaction
-   * 5) On APPROVED, create/activate Subscription
-   */
   webhookMercadoPago: asyncHandler(async (req: Request, res: Response) => {
     const provider = getPaymentProvider();
-    const parsed = await provider.parseWebhook(req.headers as Record<string, string | string[] | undefined>, req.body);
+    const parsed = await provider.parseWebhook(
+      req.headers as Record<string, string | string[] | undefined>,
+      req.body,
+    );
 
     const accessToken = env.MERCADO_PAGO_ACCESS_TOKEN;
-    if (!accessToken) throw new ApiError(500, "Mercado Pago access token not configured");
+    if (!accessToken) {
+      throw new ApiError(500, "Mercado Pago access token not configured");
+    }
 
     if (!parsed.externalPaymentId) {
       res.status(200).json({ ok: true, ignored: "missing_payment_id" });
       return;
     }
 
-    // Get canonical payment info from Mercado Pago
     const mp = (await import("mercadopago")) as unknown as {
       MercadoPagoConfig: new (opts: { accessToken: string }) => unknown;
       Payment: new (client: unknown) => {
@@ -100,18 +110,20 @@ export const paymentsController = {
     const client = new mp.MercadoPagoConfig({ accessToken });
     const payment = new mp.Payment(client);
 
-    const paymentInfo = await payment.get({ id: String(parsed.externalPaymentId) });
+    const paymentInfo = await payment.get({
+      id: String(parsed.externalPaymentId),
+    });
 
     const txStatus = mpStatusToTxStatus(paymentInfo?.status);
-    const checkoutSessionId = paymentInfo?.external_reference ? String(paymentInfo.external_reference) : null;
+    const checkoutSessionId = paymentInfo?.external_reference
+      ? String(paymentInfo.external_reference)
+      : null;
 
     if (!checkoutSessionId) {
-      // No way to link to our DB; acknowledge to avoid retries.
       res.status(200).json({ ok: true, ignored: "missing_external_reference" });
       return;
     }
 
-    // Update checkout session + transaction atomically
     await prisma.$transaction(async (tx: any) => {
       const checkout = await tx.checkoutSession.findUnique({
         where: { id: checkoutSessionId },
@@ -122,18 +134,18 @@ export const paymentsController = {
 
       const nextCheckoutStatus = txStatusToCheckoutStatus(txStatus);
 
-      // Update checkout session
       await tx.checkoutSession.update({
         where: { id: checkout.id },
         data: {
           status: nextCheckoutStatus,
-          externalCheckoutId: String(paymentInfo?.id ?? checkout.externalCheckoutId ?? ""),
-          paymentMethod: paymentInfo?.payment_method_id ?? checkout.paymentMethod ?? null,
-          // keep URL/QR as-is (already stored on creation)
+          externalCheckoutId: String(
+            paymentInfo?.id ?? checkout.externalCheckoutId ?? "",
+          ),
+          paymentMethod:
+            paymentInfo?.payment_method_id ?? checkout.paymentMethod ?? null,
         },
       });
 
-      // Update the latest transaction for this checkout, or create one if missing
       const latestTx = await tx.paymentTransaction.findFirst({
         where: { checkoutSessionId: checkout.id },
         orderBy: { createdAt: "desc" },
@@ -142,11 +154,15 @@ export const paymentsController = {
       const txPayload = {
         status: txStatus,
         externalPaymentId: String(paymentInfo?.id ?? parsed.externalPaymentId),
-        externalCheckoutId: String(paymentInfo?.id ?? checkout.externalCheckoutId ?? ""),
+        externalCheckoutId: String(
+          paymentInfo?.id ?? checkout.externalCheckoutId ?? "",
+        ),
         paymentMethod: paymentInfo?.payment_method_id ?? null,
         approvedAt: txStatus === "APPROVED" ? new Date() : null,
         metadata: {
-          ...(latestTx?.metadata && typeof latestTx.metadata === "object" ? (latestTx.metadata as any) : {}),
+          ...(latestTx?.metadata && typeof latestTx.metadata === "object"
+            ? (latestTx.metadata as any)
+            : {}),
           mpWebhook: { receivedAt: new Date().toISOString() },
           mpPayment: paymentInfo ?? null,
         } as any,
@@ -160,7 +176,8 @@ export const paymentsController = {
       } else {
         await tx.paymentTransaction.create({
           data: {
-            adminId: checkout.adminId,
+            adminId: checkout.adminId ?? null,
+            userId: checkout.userId ?? null,
             checkoutSessionId: checkout.id,
             provider: checkout.provider,
             status: txStatus,
@@ -175,38 +192,150 @@ export const paymentsController = {
         });
       }
 
-      if (txStatus === "APPROVED") {
-        // Activate subscription
+      if (txStatus !== "APPROVED") {
+        return;
+      }
+
+      const now = new Date();
+      const endsAt = computeEndsAt(checkout.plan.billingCycle, now);
+
+      // Fluxo novo: PLAYER por userId
+      if (checkout.userId) {
         const existingActive = await tx.subscription.findFirst({
-          where: { adminId: checkout.adminId, status: "ACTIVE" },
+          where: {
+            userId: checkout.userId,
+            status: "ACTIVE",
+            OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+          },
           select: { id: true },
         });
 
         if (!existingActive) {
-          const now = new Date();
-
-          // Compute endsAt based on billing cycle
-          const endsAt = new Date(now);
-          const cycle = checkout.plan.billingCycle;
-          if (cycle === "WEEKLY") endsAt.setDate(endsAt.getDate() + 7);
-          else if (cycle === "MONTHLY") endsAt.setMonth(endsAt.getMonth() + 1);
-          else endsAt.setFullYear(endsAt.getFullYear() + 1);
-
-          const sub = await tx.subscription.create({
-            data: {
-              adminId: checkout.adminId,
+          const pendingSubscription = await tx.subscription.findFirst({
+            where: {
+              userId: checkout.userId,
               planId: checkout.planId,
-              status: "ACTIVE",
-              startsAt: now,
-              endsAt,
-              approvedAt: now,
-              metadata: { activatedBy: "mp-webhook", checkoutSessionId: checkout.id },
+              status: "PENDING",
             },
+            orderBy: { createdAt: "desc" },
           });
+
+          let subscriptionId: string;
+
+          if (pendingSubscription) {
+            const updatedSubscription = await tx.subscription.update({
+              where: { id: pendingSubscription.id },
+              data: {
+                status: "ACTIVE",
+                startsAt: now,
+                endsAt,
+                approvedAt: now,
+                metadata: {
+                  ...(pendingSubscription.metadata &&
+                  typeof pendingSubscription.metadata === "object"
+                    ? pendingSubscription.metadata
+                    : {}),
+                  activatedBy: "mp-webhook",
+                  checkoutSessionId: checkout.id,
+                },
+              },
+            });
+
+            subscriptionId = updatedSubscription.id;
+          } else {
+            const createdSubscription = await tx.subscription.create({
+              data: {
+                userId: checkout.userId,
+                adminId: checkout.adminId ?? null,
+                planId: checkout.planId,
+                status: "ACTIVE",
+                startsAt: now,
+                endsAt,
+                approvedAt: now,
+                metadata: {
+                  activatedBy: "mp-webhook",
+                  checkoutSessionId: checkout.id,
+                },
+              },
+            });
+
+            subscriptionId = createdSubscription.id;
+          }
 
           await tx.checkoutSession.update({
             where: { id: checkout.id },
-            data: { subscriptionId: sub.id },
+            data: { subscriptionId },
+          });
+        }
+
+        return;
+      }
+
+      // Fluxo legado: ADMIN por adminId
+      if (checkout.adminId) {
+        const existingActive = await tx.subscription.findFirst({
+          where: {
+            adminId: checkout.adminId,
+            status: "ACTIVE",
+            OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+          },
+          select: { id: true },
+        });
+
+        if (!existingActive) {
+          const pendingSubscription = await tx.subscription.findFirst({
+            where: {
+              adminId: checkout.adminId,
+              planId: checkout.planId,
+              status: "PENDING",
+            },
+            orderBy: { createdAt: "desc" },
+          });
+
+          let subscriptionId: string;
+
+          if (pendingSubscription) {
+            const updatedSubscription = await tx.subscription.update({
+              where: { id: pendingSubscription.id },
+              data: {
+                status: "ACTIVE",
+                startsAt: now,
+                endsAt,
+                approvedAt: now,
+                metadata: {
+                  ...(pendingSubscription.metadata &&
+                  typeof pendingSubscription.metadata === "object"
+                    ? pendingSubscription.metadata
+                    : {}),
+                  activatedBy: "mp-webhook",
+                  checkoutSessionId: checkout.id,
+                },
+              },
+            });
+
+            subscriptionId = updatedSubscription.id;
+          } else {
+            const createdSubscription = await tx.subscription.create({
+              data: {
+                adminId: checkout.adminId,
+                planId: checkout.planId,
+                status: "ACTIVE",
+                startsAt: now,
+                endsAt,
+                approvedAt: now,
+                metadata: {
+                  activatedBy: "mp-webhook",
+                  checkoutSessionId: checkout.id,
+                },
+              },
+            });
+
+            subscriptionId = createdSubscription.id;
+          }
+
+          await tx.checkoutSession.update({
+            where: { id: checkout.id },
+            data: { subscriptionId },
           });
         }
       }
@@ -215,7 +344,6 @@ export const paymentsController = {
     res.status(200).json({ ok: true });
   }),
 
-  // Kept for backwards compatibility; routes will point to webhookMercadoPago
   webhookPlaceholder: asyncHandler(async (_req: Request, res: Response) => {
     res.status(410).json({ ok: false, message: "Deprecated webhook endpoint" });
   }),
