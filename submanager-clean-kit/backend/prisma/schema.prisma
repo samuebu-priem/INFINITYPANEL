@@ -141,7 +141,7 @@ model SubscriptionPlan {
 
 model Subscription {
   id                  String               @id @default(cuid())
-  adminId             String
+  adminId             String?
   userId              String?
   startsAt            DateTime?
   endsAt              DateTime?
@@ -154,7 +154,7 @@ model Subscription {
   status              SubscriptionState    @default(PENDING)
   checkoutSessions    CheckoutSession[]
   paymentTransactions PaymentTransaction[]
-  admin               AdminProfile         @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin               AdminProfile?        @relation(fields: [adminId], references: [id], onDelete: Cascade)
   user                User?                @relation("UserSubscriptions", fields: [userId], references: [id], onDelete: Cascade)
   plan                SubscriptionPlan     @relation(fields: [planId], references: [id])
 
@@ -165,7 +165,7 @@ model Subscription {
 
 model CheckoutSession {
   id                  String                @id @default(cuid())
-  adminId             String
+  adminId             String?
   userId              String?
   planId              String
   subscriptionId      String?
@@ -184,7 +184,7 @@ model CheckoutSession {
   metadata            Json?
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
-  admin               AdminProfile          @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin               AdminProfile?          @relation(fields: [adminId], references: [id], onDelete: Cascade)
   user                User?                 @relation("UserCheckoutSessions", fields: [userId], references: [id], onDelete: Cascade)
   plan                SubscriptionPlan      @relation(fields: [planId], references: [id])
   subscription        Subscription?         @relation(fields: [subscriptionId], references: [id])
@@ -197,7 +197,7 @@ model CheckoutSession {
 
 model PaymentTransaction {
   id                  String                   @id @default(cuid())
-  adminId             String
+  adminId             String?
   userId              String?
   subscriptionId      String?
   checkoutSessionId   String?
@@ -214,7 +214,7 @@ model PaymentTransaction {
   metadata            Json?
   createdAt           DateTime                 @default(now())
   updatedAt           DateTime                 @updatedAt
-  admin               AdminProfile             @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  admin               AdminProfile?            @relation(fields: [adminId], references: [id], onDelete: Cascade)
   user                User?                    @relation("UserPaymentTransactions", fields: [userId], references: [id], onDelete: Cascade)
   checkoutSession     CheckoutSession?         @relation(fields: [checkoutSessionId], references: [id])
   subscription        Subscription?            @relation(fields: [subscriptionId], references: [id])
