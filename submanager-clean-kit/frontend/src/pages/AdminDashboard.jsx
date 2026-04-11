@@ -32,13 +32,19 @@ function getPlanValidity(plan) {
     plan?.validityDays ??
     plan?.days ??
     plan?.duration ??
+    plan?.metadata?.validityDays ??
+    plan?.metadata?.days ??
     null
   );
 }
 
 function getPlanStock(plan) {
   return (
-    plan?.stock ?? plan?.quantity ?? plan?.availableQuantity ?? plan?.limit ?? null
+    plan?.stock ??
+    plan?.quantity ??
+    plan?.availableQuantity ??
+    plan?.limit ??
+    null
   );
 }
 
@@ -90,20 +96,14 @@ function normalizePaymentStatus(payment) {
 }
 
 function normalizePaymentDate(payment) {
-  return (
-    payment?.approvedAt ||
-    payment?.createdAt ||
-    payment?.updatedAt ||
-    null
-  );
+  return payment?.approvedAt || payment?.createdAt || null;
 }
 
 function buildRevenueSeries(payments) {
   const grouped = new Map();
 
   for (const payment of payments) {
-    const status = normalizePaymentStatus(payment);
-    if (status !== "APPROVED") continue;
+    if (normalizePaymentStatus(payment) !== "APPROVED") continue;
 
     const rawDate = normalizePaymentDate(payment);
     if (!rawDate) continue;
@@ -124,6 +124,7 @@ function buildRevenueSeries(payments) {
 function formatShortDate(value) {
   const date = new Date(`${value}T00:00:00`);
   if (Number.isNaN(date.getTime())) return value;
+
   return date.toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "2-digit",
@@ -163,6 +164,7 @@ function RevenueChart({ data }) {
       data.length === 1
         ? width / 2
         : padding + (index * (width - padding * 2)) / (data.length - 1);
+
     const y =
       height -
       padding -
@@ -358,7 +360,7 @@ function StatCard({ title, value, hint, accent = "primary" }) {
   );
 }
 
-function SectionCard({ title, subtitle, action, children }) {
+function SectionCard({ title, subtitle, children }) {
   return (
     <section
       style={{
@@ -370,294 +372,26 @@ function SectionCard({ title, subtitle, action, children }) {
         boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 16,
-          alignItems: "flex-start",
-          marginBottom: 18,
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: 22,
-              fontWeight: 900,
-              color: "#f3f4f6",
-            }}
-          >
-            {title}
-          </h2>
-          {subtitle ? (
-            <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14 }}>
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
-
-        {action ? <div>{action}</div> : null}
+      <div style={{ marginBottom: 18 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 900,
+            color: "#f3f4f6",
+          }}
+        >
+          {title}
+        </h2>
+        {subtitle ? (
+          <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14 }}>
+            {subtitle}
+          </p>
+        ) : null}
       </div>
 
       {children}
     </section>
-  );
-}
-
-function ActionButton({ children, onClick, variant = "secondary" }) {
-  const styles = {
-    primary: {
-      background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
-      color: "#ffffff",
-      border: "1px solid rgba(99, 102, 241, 0.65)",
-      boxShadow: "0 0 30px rgba(99,102,241,0.28)",
-    },
-    secondary: {
-      background: "rgba(99, 102, 241, 0.08)",
-      color: "#e5e7eb",
-      border: "1px solid rgba(99, 102, 241, 0.18)",
-      boxShadow: "none",
-    },
-  };
-
-  const current = styles[variant] || styles.secondary;
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = "translateY(-1px)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0)";
-      }}
-      style={{
-        ...current,
-        borderRadius: 16,
-        padding: "12px 16px",
-        fontSize: 14,
-        fontWeight: 800,
-        cursor: "pointer",
-        transition: "transform 0.2s ease, opacity 0.2s ease",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
-
-function EmptyState({ title, description, buttonLabel, onClick }) {
-  return (
-    <div
-      style={{
-        border: "1px dashed rgba(99, 102, 241, 0.22)",
-        borderRadius: 24,
-        padding: 28,
-        textAlign: "center",
-        background:
-          "linear-gradient(180deg, rgba(99,102,241,0.05) 0%, rgba(11,15,20,0.4) 100%)",
-      }}
-    >
-      <div
-        style={{
-          width: 58,
-          height: 58,
-          borderRadius: 18,
-          margin: "0 auto 14px",
-          background: "rgba(99, 102, 241, 0.12)",
-          display: "grid",
-          placeItems: "center",
-          fontSize: 24,
-          color: "#c7d2fe",
-          boxShadow: "0 0 30px rgba(99,102,241,0.18)",
-        }}
-      >
-        ✦
-      </div>
-
-      <h3 style={{ margin: 0, color: "#f3f4f6", fontSize: 18, fontWeight: 900 }}>
-        {title}
-      </h3>
-
-      <p
-        style={{
-          margin: "10px auto 18px",
-          maxWidth: 480,
-          color: "#9ca3af",
-          fontSize: 14,
-          lineHeight: 1.6,
-        }}
-      >
-        {description}
-      </p>
-
-      {buttonLabel ? (
-        <ActionButton onClick={onClick} variant="primary">
-          {buttonLabel}
-        </ActionButton>
-      ) : null}
-    </div>
-  );
-}
-
-function PlanRow({ plan }) {
-  const title = getPlanTitle(plan);
-  const price = getPlanPrice(plan);
-  const validity = getPlanValidity(plan);
-  const stock = getPlanStock(plan);
-  const active = isPlanActive(plan);
-
-  return (
-    <div
-      className="admin-dashboard-plan-row"
-      style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 1.6fr) 0.9fr 0.8fr 0.8fr auto",
-        gap: 14,
-        alignItems: "center",
-        padding: "16px 18px",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid #1f2937",
-        borderRadius: 20,
-      }}
-    >
-      <div style={{ minWidth: 0 }}>
-        <div
-          title={title}
-          style={{
-            color: "#f3f4f6",
-            fontWeight: 800,
-            fontSize: 15,
-            whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-          }}
-        >
-          {title}
-        </div>
-        <div
-          style={{
-            marginTop: 6,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "5px 10px",
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 800,
-            color: active ? "#86efac" : "#fca5a5",
-            background: active
-              ? "rgba(34,197,94,0.10)"
-              : "rgba(239,68,68,0.10)",
-            border: active
-              ? "1px solid rgba(34,197,94,0.18)"
-              : "1px solid rgba(239,68,68,0.18)",
-          }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: active ? "#22c55e" : "#ef4444",
-              boxShadow: active
-                ? "0 0 12px rgba(34,197,94,0.8)"
-                : "0 0 12px rgba(239,68,68,0.8)",
-            }}
-          />
-          {active ? "Ativo" : "Inativo"}
-        </div>
-      </div>
-
-      <div style={{ color: "#e5e7eb", fontWeight: 700, fontSize: 14 }}>
-        {formatPrice(price)}
-      </div>
-
-      <div style={{ color: "#cbd5e1", fontSize: 14 }}>
-        {validity ? `${validity} dias` : "—"}
-      </div>
-
-      <div style={{ color: "#cbd5e1", fontSize: 14 }}>
-        {stock !== null && stock !== undefined ? stock : "—"}
-      </div>
-
-      <div
-        style={{
-          color: "#94a3b8",
-          fontSize: 12,
-          fontWeight: 800,
-          textAlign: "right",
-        }}
-      >
-        Plano
-      </div>
-    </div>
-  );
-}
-
-function MiniPlanCard({ plan }) {
-  const title = getPlanTitle(plan);
-  const price = formatPrice(getPlanPrice(plan));
-  const validity = getPlanValidity(plan);
-  const active = isPlanActive(plan);
-
-  return (
-    <div
-      style={{
-        border: "1px solid #1f2937",
-        borderRadius: 20,
-        padding: 16,
-        background: "rgba(255,255,255,0.02)",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "center",
-        }}
-      >
-        <strong style={{ color: "#f3f4f6", fontSize: 14, lineHeight: 1.4 }}>
-          {title}
-        </strong>
-
-        <span
-          style={{
-            padding: "5px 10px",
-            borderRadius: 999,
-            fontSize: 11,
-            fontWeight: 900,
-            color: active ? "#86efac" : "#fca5a5",
-            background: active
-              ? "rgba(34,197,94,0.10)"
-              : "rgba(239,68,68,0.10)",
-            border: active
-              ? "1px solid rgba(34,197,94,0.18)"
-              : "1px solid rgba(239,68,68,0.18)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {active ? "ATIVO" : "INATIVO"}
-        </span>
-      </div>
-
-      <div
-        style={{
-          marginTop: 12,
-          color: "#cbd5e1",
-          fontSize: 13,
-          display: "grid",
-          gap: 6,
-        }}
-      >
-        <span>Preço: {price}</span>
-        <span>Validade: {validity ? `${validity} dias` : "—"}</span>
-      </div>
-    </div>
   );
 }
 
@@ -667,17 +401,12 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loadingPayments, setLoadingPayments] = useState(true);
-  const [plansError, setPlansError] = useState("");
-  const [paymentsError, setPaymentsError] = useState("");
 
   useEffect(() => {
     let mounted = true;
 
     async function loadPlans() {
       try {
-        setLoadingPlans(true);
-        setPlansError("");
-
         const token = localStorage.getItem(TOKEN_KEY);
         const response = await fetch(`${API_BASE}/plans`, {
           headers: {
@@ -685,10 +414,6 @@ export default function AdminDashboard() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-
-        if (!response.ok) {
-          throw new Error(`Falha ao buscar planos (${response.status})`);
-        }
 
         const data = await response.json();
         const normalized = Array.isArray(data)
@@ -700,11 +425,6 @@ export default function AdminDashboard() {
           : [];
 
         if (mounted) setPlans(normalized);
-      } catch (error) {
-        if (mounted) {
-          setPlans([]);
-          setPlansError(error?.message || "Não foi possível carregar os planos.");
-        }
       } finally {
         if (mounted) setLoadingPlans(false);
       }
@@ -712,9 +432,6 @@ export default function AdminDashboard() {
 
     async function loadPayments() {
       try {
-        setLoadingPayments(true);
-        setPaymentsError("");
-
         const token = localStorage.getItem(TOKEN_KEY);
         const response = await fetch(`${API_BASE}/payments/me`, {
           headers: {
@@ -723,74 +440,43 @@ export default function AdminDashboard() {
           },
         });
 
-        if (!response.ok) {
-          throw new Error(`Falha ao buscar pagamentos (${response.status})`);
-        }
-
         const data = await response.json();
-        const normalized = getPaymentsList(data);
-
-        if (mounted) setPayments(normalized);
-      } catch (error) {
-        if (mounted) {
-          setPayments([]);
-          setPaymentsError(error?.message || "Não foi possível carregar os pagamentos.");
-        }
+        if (mounted) setPayments(getPaymentsList(data));
       } finally {
         if (mounted) setLoadingPayments(false);
       }
     }
 
-    loadPlans();
-    loadPayments();
+    async function loadAll() {
+      await Promise.all([loadPlans(), loadPayments()]);
+    }
+
+    loadAll();
+    const interval = window.setInterval(loadAll, 15000);
 
     return () => {
       mounted = false;
+      window.clearInterval(interval);
     };
   }, []);
 
-  const planStats = useMemo(() => {
-    const totalPlans = plans.length;
-    const activePlans = plans.filter((plan) => isPlanActive(plan)).length;
-    const inactivePlans = totalPlans - activePlans;
-    const totalStock = plans.reduce((acc, plan) => {
-      const stock = Number(getPlanStock(plan));
-      return acc + (Number.isFinite(stock) ? stock : 0);
-    }, 0);
-
-    return { totalPlans, activePlans, inactivePlans, totalStock };
-  }, [plans]);
-
-  const paymentStats = useMemo(() => {
-    const approved = payments.filter(
-      (payment) => normalizePaymentStatus(payment) === "APPROVED"
-    );
-    const pending = payments.filter(
-      (payment) => normalizePaymentStatus(payment) === "PENDING"
-    );
-    const rejectedOrCancelled = payments.filter((payment) =>
-      ["REJECTED", "CANCELLED", "EXPIRED"].includes(
-        normalizePaymentStatus(payment)
-      )
-    );
-
-    const totalRevenue = approved.reduce(
-      (acc, payment) => acc + normalizePaymentAmount(payment),
-      0
-    );
-
-    return {
-      totalRevenue,
-      approvedCount: approved.length,
-      pendingCount: pending.length,
-      rejectedCount: rejectedOrCancelled.length,
-    };
+  const totalRevenue = useMemo(() => {
+    return payments
+      .filter((payment) => normalizePaymentStatus(payment) === "APPROVED")
+      .reduce((acc, payment) => acc + normalizePaymentAmount(payment), 0);
   }, [payments]);
 
-  const latestPlans = useMemo(() => sortNewestPlans(plans).slice(0, 4), [plans]);
-  const revenueSeries = useMemo(() => buildRevenueSeries(payments), [payments]);
+  const approvedCount = useMemo(() => {
+    return payments.filter(
+      (payment) => normalizePaymentStatus(payment) === "APPROVED"
+    ).length;
+  }, [payments]);
 
-  const loadingAny = loadingPlans || loadingPayments;
+  const activePlans = useMemo(() => {
+    return plans.filter((plan) => isPlanActive(plan)).length;
+  }, [plans]);
+
+  const revenueSeries = useMemo(() => buildRevenueSeries(payments), [payments]);
 
   return (
     <div
@@ -802,129 +488,54 @@ export default function AdminDashboard() {
       }}
     >
       <style>{`
-        .admin-dashboard-grid {
-          display: grid;
-          grid-template-columns: 1.25fr 0.95fr;
-          gap: 20px;
-        }
-
         .admin-dashboard-stats {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 16px;
         }
 
-        .admin-dashboard-finance-grid {
+        .admin-dashboard-grid {
           display: grid;
-          grid-template-columns: 1.1fr 0.9fr;
+          grid-template-columns: 1.2fr 0.8fr;
           gap: 20px;
         }
 
-        .admin-dashboard-quick-actions {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 14px;
-        }
-
         @media (max-width: 1180px) {
-          .admin-dashboard-stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .admin-dashboard-grid,
-          .admin-dashboard-finance-grid {
-            grid-template-columns: 1fr;
+          .admin-dashboard-stats,
+          .admin-dashboard-grid {
+            grid-template-columns: 1fr 1fr;
           }
         }
 
         @media (max-width: 860px) {
-          .admin-dashboard-quick-actions {
-            grid-template-columns: 1fr;
-          }
-
-          .admin-dashboard-plan-row {
-            grid-template-columns: 1fr;
-            text-align: left;
-          }
-        }
-
-        @media (max-width: 640px) {
-          .admin-dashboard-stats {
+          .admin-dashboard-stats,
+          .admin-dashboard-grid {
             grid-template-columns: 1fr;
           }
         }
       `}</style>
 
-      <div
-        style={{
-          maxWidth: 1400,
-          margin: "0 auto",
-          display: "grid",
-          gap: 20,
-        }}
-      >
-        <header
+      <div style={{ maxWidth: 1400, margin: "0 auto", display: "grid", gap: 20 }}>
+        <section
           style={{
-            position: "relative",
-            overflow: "hidden",
-            background:
-              "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-            border: "1px solid rgba(99, 102, 241, 0.18)",
             borderRadius: 30,
             padding: 28,
+            border: "1px solid rgba(99, 102, 241, 0.18)",
+            background:
+              "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
             boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
           }}
         >
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              background:
-                "radial-gradient(circle at 85% 15%, rgba(99,102,241,0.22), transparent 24%)",
-              pointerEvents: "none",
-            }}
-          />
-
-          <div
-            style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "flex-start",
               gap: 20,
               flexWrap: "wrap",
-              position: "relative",
-              zIndex: 1,
+              alignItems: "center",
             }}
           >
             <div>
-              <div
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 14,
-                  padding: "7px 12px",
-                  borderRadius: 999,
-                  background: "rgba(99,102,241,0.10)",
-                  border: "1px solid rgba(99,102,241,0.18)",
-                  color: "#c7d2fe",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  letterSpacing: 0.8,
-                }}
-              >
-                <span
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: "#6366f1",
-                    boxShadow: "0 0 16px rgba(99,102,241,0.95)",
-                  }}
-                />
-                visão geral
-              </div>
-
               <h1
                 style={{
                   margin: 0,
@@ -932,96 +543,84 @@ export default function AdminDashboard() {
                   fontSize: 36,
                   lineHeight: 1.05,
                   fontWeight: 900,
-                  letterSpacing: -0.5,
                 }}
               >
                 Admin Dashboard
               </h1>
-
               <p
                 style={{
                   margin: "12px 0 0",
                   color: "#9ca3af",
                   fontSize: 15,
-                  maxWidth: 700,
-                  lineHeight: 1.65,
+                  lineHeight: 1.7,
                 }}
               >
-                Painel administrativo com visão de planos, pagamentos e lucro.
+                Visão geral de lucro, pagamentos e planos.
               </p>
             </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-              <ActionButton variant="secondary" onClick={() => window.location.reload()}>
-                Atualizar painel
-              </ActionButton>
-
-              <ActionButton variant="primary" onClick={() => navigate("/plans")}>
-                Ver planos
-              </ActionButton>
-            </div>
+            <button
+              type="button"
+              onClick={() => navigate("/admin/subscribers")}
+              style={{
+                borderRadius: 16,
+                padding: "12px 16px",
+                fontSize: 14,
+                fontWeight: 800,
+                color: "#fff",
+                border: "1px solid rgba(99,102,241,0.45)",
+                background:
+                  "linear-gradient(135deg, #6366f1 0%, #4f46e5 55%, #4338ca 100%)",
+                cursor: "pointer",
+              }}
+            >
+              Usuários
+            </button>
           </div>
-        </header>
+        </section>
 
         <div className="admin-dashboard-stats">
           <StatCard
             title="Valor lucrado"
-            value={loadingPayments ? "..." : formatPrice(paymentStats.totalRevenue)}
-            hint="Total confirmado em pagamentos aprovados."
+            value={loadingPayments ? "..." : formatPrice(totalRevenue)}
+            hint="Total consolidado em pagamentos aprovados."
             accent="success"
           />
           <StatCard
-            title="Pagamentos aprovados"
-            value={loadingPayments ? "..." : paymentStats.approvedCount}
-            hint="Quantidade de pagamentos com status aprovado."
+            title="Aprovados"
+            value={loadingPayments ? "..." : approvedCount}
+            hint="Pagamentos confirmados."
             accent="primary"
           />
           <StatCard
-            title="Pendentes"
-            value={loadingPayments ? "..." : paymentStats.pendingCount}
-            hint="Pagamentos aguardando confirmação."
+            title="Planos ativos"
+            value={loadingPlans ? "..." : activePlans}
+            hint="Planos disponíveis."
             accent="neutral"
           />
           <StatCard
-            title="Planos ativos"
-            value={loadingPlans ? "..." : planStats.activePlans}
-            hint="Planos disponíveis no momento."
-            accent="success"
+            title="Planos totais"
+            value={loadingPlans ? "..." : plans.length}
+            hint="Todos os planos cadastrados."
+            accent="primary"
           />
         </div>
 
-        <div className="admin-dashboard-finance-grid">
+        <div className="admin-dashboard-grid">
           <SectionCard
             title="Gráfico de lucro"
-            subtitle="Evolução dinâmica dos pagamentos aprovados por data."
+            subtitle="Pagamentos aprovados por data."
           >
             {loadingPayments ? (
-              <div
-                style={{
-                  height: 260,
-                  borderRadius: 24,
-                  border: "1px solid #1f2937",
-                  background:
-                    "linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 37%, rgba(255,255,255,0.03) 63%)",
-                  backgroundSize: "400% 100%",
-                  animation: "pulse 1.8s ease infinite",
-                }}
-              />
-            ) : paymentsError ? (
-              <EmptyState
-                title="Falha ao carregar lucro"
-                description={paymentsError}
-                buttonLabel="Tentar novamente"
-                onClick={() => window.location.reload()}
-              />
+              <div style={{ color: "#9ca3af" }}>Carregando gráfico...</div>
             ) : (
               <RevenueChart data={revenueSeries} />
             )}
           </SectionCard>
 
           <SectionCard
-            title="Resumo financeiro"
-            subtitle="Indicadores rápidos do fluxo de pagamentos."
+            title="Resumo"
+            subtitle="Indicadores rápidos do painel."
           >
             <div style={{ display: "grid", gap: 14 }}>
               <div
@@ -1055,182 +654,16 @@ export default function AdminDashboard() {
                     textShadow: "0 0 18px rgba(34,197,94,0.22)",
                   }}
                 >
-                  {loadingPayments ? "..." : formatPrice(paymentStats.totalRevenue)}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 8,
-                    color: "#9ca3af",
-                    fontSize: 14,
-                    lineHeight: 1.5,
-                  }}
-                >
-                  Valor confirmado e já consolidado no painel.
+                  {loadingPayments ? "..." : formatPrice(totalRevenue)}
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: 14,
-                }}
-              >
-                <div
-                  style={{
-                    borderRadius: 20,
-                    border: "1px solid #1f2937",
-                    background: "rgba(255,255,255,0.02)",
-                    padding: 16,
-                  }}
-                >
-                  <div style={{ color: "#9ca3af", fontSize: 12, fontWeight: 800 }}>
-                    Rejeitados / cancelados
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#fca5a5",
-                      fontSize: 24,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {loadingPayments ? "..." : paymentStats.rejectedCount}
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    borderRadius: 20,
-                    border: "1px solid #1f2937",
-                    background: "rgba(255,255,255,0.02)",
-                    padding: 16,
-                  }}
-                >
-                  <div style={{ color: "#9ca3af", fontSize: 12, fontWeight: 800 }}>
-                    Total de planos
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 8,
-                      color: "#f3f4f6",
-                      fontSize: 24,
-                      fontWeight: 900,
-                    }}
-                  >
-                    {loadingPlans ? "..." : planStats.totalPlans}
-                  </div>
-                </div>
+              <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
+                O gráfico e o valor acima atualizam automaticamente conforme novas
+                assinaturas forem aprovadas.
               </div>
             </div>
           </SectionCard>
-        </div>
-
-        <div className="admin-dashboard-grid">
-          <SectionCard
-            title="Planos disponíveis"
-            subtitle="Lista completa dos planos cadastrados na plataforma."
-            action={
-              <ActionButton variant="secondary" onClick={() => navigate("/plans")}>
-                Gerenciar planos
-              </ActionButton>
-            }
-          >
-            {loadingPlans ? (
-              <div style={{ display: "grid", gap: 12 }}>
-                {[1, 2, 3, 4].map((item) => (
-                  <div
-                    key={item}
-                    style={{
-                      height: 86,
-                      borderRadius: 20,
-                      background:
-                        "linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 37%, rgba(255,255,255,0.03) 63%)",
-                      backgroundSize: "400% 100%",
-                      animation: "pulse 1.8s ease infinite",
-                      border: "1px solid rgba(31,41,55,1)",
-                    }}
-                  />
-                ))}
-              </div>
-            ) : plansError ? (
-              <EmptyState
-                title="Falha ao carregar planos"
-                description={plansError}
-                buttonLabel="Tentar novamente"
-                onClick={() => window.location.reload()}
-              />
-            ) : plans.length === 0 ? (
-              <EmptyState
-                title="Nenhum plano cadastrado"
-                description="Não há planos para exibir no momento."
-                buttonLabel="Atualizar"
-                onClick={() => window.location.reload()}
-              />
-            ) : (
-              <div style={{ display: "grid", gap: 12 }}>
-                {sortNewestPlans(plans).map((plan, index) => (
-                  <PlanRow key={plan?.id || `${getPlanTitle(plan)}-${index}`} plan={plan} />
-                ))}
-              </div>
-            )}
-          </SectionCard>
-
-          <div style={{ display: "grid", gap: 20, alignContent: "start" }}>
-            <SectionCard
-              title="Planos recentes"
-              subtitle="Últimos planos adicionados ou atualizados na plataforma."
-            >
-              {loadingPlans ? (
-                <div style={{ display: "grid", gap: 12 }}>
-                  {[1, 2, 3].map((item) => (
-                    <div
-                      key={item}
-                      style={{
-                        height: 92,
-                        borderRadius: 20,
-                        background:
-                          "linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.06) 37%, rgba(255,255,255,0.03) 63%)",
-                        backgroundSize: "400% 100%",
-                        animation: "pulse 1.8s ease infinite",
-                        border: "1px solid rgba(31,41,55,1)",
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : latestPlans.length === 0 ? (
-                <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
-                  Sem planos recentes para mostrar.
-                </div>
-              ) : (
-                <div style={{ display: "grid", gap: 12 }}>
-                  {latestPlans.map((plan, index) => (
-                    <MiniPlanCard
-                      key={plan?.id || `${getPlanTitle(plan)}-mini-${index}`}
-                      plan={plan}
-                    />
-                  ))}
-                </div>
-              )}
-            </SectionCard>
-
-            <SectionCard title="Ações rápidas" subtitle="Atalhos para o fluxo principal.">
-              <div className="admin-dashboard-quick-actions">
-                <ActionButton variant="primary" onClick={() => navigate("/plans")}>
-                  Ver planos
-                </ActionButton>
-
-                <ActionButton variant="secondary" onClick={() => navigate("/admin/subscribers")}>
-                  Usuários
-                </ActionButton>
-
-                <ActionButton variant="secondary" onClick={() => window.location.reload()}>
-                  Atualizar dados
-                </ActionButton>
-              </div>
-            </SectionCard>
-          </div>
         </div>
       </div>
     </div>

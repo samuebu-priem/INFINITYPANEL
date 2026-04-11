@@ -33,17 +33,50 @@ function txStatusToCheckoutStatus(
   return "OPEN" as const;
 }
 
-function computeEndsAt(billingCycle: "WEEKLY" | "MONTHLY" | "YEARLY", now: Date) {
-  const endsAt = new Date(now);
+function resolvePlanDurationDays(plan: {
+  billingCycle: "WEEKLY" | "MONTHLY" | "YEARLY";
+  metadata?: unknown;
+  days?: number | null;
+  durationDays?: number | null;
+}) {
+  const metadata =
+    plan?.metadata && typeof plan.metadata === "object"
+      ? (plan.metadata as Record<string, unknown>)
+      : {};
 
-  if (billingCycle === "WEEKLY") {
-    endsAt.setDate(endsAt.getDate() + 7);
-  } else if (billingCycle === "MONTHLY") {
-    endsAt.setMonth(endsAt.getMonth() + 1);
-  } else {
-    endsAt.setFullYear(endsAt.getFullYear() + 1);
+  const candidates = [
+    Number(metadata.validityDays),
+    Number(metadata.days),
+    Number(metadata.durationDays),
+    Number(plan?.days),
+    Number(plan?.durationDays),
+  ];
+
+  const customDays = candidates.find(
+    (value) => Number.isFinite(value) && value > 0,
+  );
+
+  if (customDays) {
+    return Math.floor(customDays);
   }
 
+  if (plan.billingCycle === "WEEKLY") return 7;
+  if (plan.billingCycle === "MONTHLY") return 30;
+  return 365;
+}
+
+function computeEndsAt(
+  plan: {
+    billingCycle: "WEEKLY" | "MONTHLY" | "YEARLY";
+    metadata?: unknown;
+    days?: number | null;
+    durationDays?: number | null;
+  },
+  baseDate: Date,
+) {
+  const durationDays = resolvePlanDurationDays(plan);
+  const endsAt = new Date(baseDate);
+  endsAt.setDate(baseDate.getDate() + durationDays);
   return endsAt;
 }
 
@@ -51,20 +84,13 @@ export const paymentsController = {
   me: asyncHandler(async (req: Request, res: Response) => {
     const auth = req.auth!;
 
-    const admin = await prisma.adminProfile.findUnique({
-      where: { userId: auth.id },
-      select: { id: true },
-    });
-
-    if (!admin) {
-      res.json({ payments: [] });
-      return;
+    if (!["ADMIN", "OWNER"].includes(auth.role)) {
+      throw new ApiError(403, "Forbidden");
     }
 
     const payments = await prisma.paymentTransaction.findMany({
-      where: { adminId: admin.id },
       orderBy: { createdAt: "desc" },
-      take: 50,
+      take: 300,
     });
 
     res.json({
@@ -79,6 +105,8 @@ export const paymentsController = {
         externalCheckoutId: p.externalCheckoutId,
         approvedAt: p.approvedAt,
         createdAt: p.createdAt,
+        userId: p.userId,
+        adminId: p.adminId,
       })),
     });
   }),
@@ -132,6 +160,12 @@ export const paymentsController = {
 
       if (!checkout) return;
 
+      const latestTx = await tx.paymentTransaction.findFirst({
+        where: { checkoutSessionId: checkout.id },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const wasAlreadyApproved = latestTx?.status === "APPROVED";
       const nextCheckoutStatus = txStatusToCheckoutStatus(txStatus);
 
       await tx.checkoutSession.update({
@@ -144,11 +178,6 @@ export const paymentsController = {
           paymentMethod:
             paymentInfo?.payment_method_id ?? checkout.paymentMethod ?? null,
         },
-      });
-
-      const latestTx = await tx.paymentTransaction.findFirst({
-        where: { checkoutSessionId: checkout.id },
-        orderBy: { createdAt: "desc" },
       });
 
       const txPayload = {
@@ -192,14 +221,29 @@ export const paymentsController = {
         });
       }
 
-      if (txStatus !== "APPROVED") {
+      // evita processar duas vezes
+      if (txStatus !== "APPROVED" || wasAlreadyApproved) {
         return;
       }
 
       const now = new Date();
-      const endsAt = computeEndsAt(checkout.plan.billingCycle, now);
 
-      // Fluxo novo: PLAYER por userId
+      // estoque: decrementa uma vez só quando aprova
+      if (
+        Number.isFinite(checkout.plan.quantity) &&
+        checkout.plan.quantity > 0
+      ) {
+        await tx.subscriptionPlan.update({
+          where: { id: checkout.planId },
+          data: {
+            quantity: {
+              decrement: 1,
+            },
+          },
+        });
+      }
+
+      // PLAYER com tempo corrido
       if (checkout.userId) {
         const existingActive = await tx.subscription.findFirst({
           where: {
@@ -207,10 +251,39 @@ export const paymentsController = {
             status: "ACTIVE",
             OR: [{ endsAt: null }, { endsAt: { gt: now } }],
           },
-          select: { id: true },
+          orderBy: { createdAt: "desc" },
         });
 
-        if (!existingActive) {
+        const baseDate =
+          existingActive?.endsAt && existingActive.endsAt > now
+            ? existingActive.endsAt
+            : now;
+
+        const endsAt = computeEndsAt(checkout.plan, baseDate);
+
+        let subscriptionId: string | null = null;
+
+        if (existingActive) {
+          const updatedActive = await tx.subscription.update({
+            where: { id: existingActive.id },
+            data: {
+              endsAt,
+              approvedAt: now,
+              metadata: {
+                ...(existingActive.metadata &&
+                typeof existingActive.metadata === "object"
+                  ? existingActive.metadata
+                  : {}),
+                extendedBy: "mp-webhook",
+                checkoutSessionId: checkout.id,
+                cycle: checkout.plan.billingCycle,
+                durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+              },
+            },
+          });
+
+          subscriptionId = updatedActive.id;
+        } else {
           const pendingSubscription = await tx.subscription.findFirst({
             where: {
               userId: checkout.userId,
@@ -219,8 +292,6 @@ export const paymentsController = {
             },
             orderBy: { createdAt: "desc" },
           });
-
-          let subscriptionId: string;
 
           if (pendingSubscription) {
             const updatedSubscription = await tx.subscription.update({
@@ -237,6 +308,8 @@ export const paymentsController = {
                     : {}),
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
+                  cycle: checkout.plan.billingCycle,
+                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
@@ -255,13 +328,17 @@ export const paymentsController = {
                 metadata: {
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
+                  cycle: checkout.plan.billingCycle,
+                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
 
             subscriptionId = createdSubscription.id;
           }
+        }
 
+        if (subscriptionId) {
           await tx.checkoutSession.update({
             where: { id: checkout.id },
             data: { subscriptionId },
@@ -271,7 +348,7 @@ export const paymentsController = {
         return;
       }
 
-      // Fluxo legado: ADMIN por adminId
+      // legado ADMIN
       if (checkout.adminId) {
         const existingActive = await tx.subscription.findFirst({
           where: {
@@ -279,10 +356,39 @@ export const paymentsController = {
             status: "ACTIVE",
             OR: [{ endsAt: null }, { endsAt: { gt: now } }],
           },
-          select: { id: true },
+          orderBy: { createdAt: "desc" },
         });
 
-        if (!existingActive) {
+        const baseDate =
+          existingActive?.endsAt && existingActive.endsAt > now
+            ? existingActive.endsAt
+            : now;
+
+        const endsAt = computeEndsAt(checkout.plan, baseDate);
+
+        let subscriptionId: string | null = null;
+
+        if (existingActive) {
+          const updatedActive = await tx.subscription.update({
+            where: { id: existingActive.id },
+            data: {
+              endsAt,
+              approvedAt: now,
+              metadata: {
+                ...(existingActive.metadata &&
+                typeof existingActive.metadata === "object"
+                  ? existingActive.metadata
+                  : {}),
+                extendedBy: "mp-webhook",
+                checkoutSessionId: checkout.id,
+                cycle: checkout.plan.billingCycle,
+                durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+              },
+            },
+          });
+
+          subscriptionId = updatedActive.id;
+        } else {
           const pendingSubscription = await tx.subscription.findFirst({
             where: {
               adminId: checkout.adminId,
@@ -291,8 +397,6 @@ export const paymentsController = {
             },
             orderBy: { createdAt: "desc" },
           });
-
-          let subscriptionId: string;
 
           if (pendingSubscription) {
             const updatedSubscription = await tx.subscription.update({
@@ -309,6 +413,8 @@ export const paymentsController = {
                     : {}),
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
+                  cycle: checkout.plan.billingCycle,
+                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
@@ -326,13 +432,17 @@ export const paymentsController = {
                 metadata: {
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
+                  cycle: checkout.plan.billingCycle,
+                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
 
             subscriptionId = createdSubscription.id;
           }
+        }
 
+        if (subscriptionId) {
           await tx.checkoutSession.update({
             where: { id: checkout.id },
             data: { subscriptionId },
