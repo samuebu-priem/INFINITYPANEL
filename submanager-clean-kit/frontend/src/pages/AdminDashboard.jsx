@@ -1130,7 +1130,7 @@ export default function AdminDashboard() {
         <div className="admin-dashboard-grid">
           <SectionCard
             title="Planos disponíveis"
-            subtitle="Lista com os planos reais recebidos da API."
+            subtitle="Lista completa dos planos cadastrados na plataforma."
             action={
               <ActionButton variant="secondary" onClick={() => navigate("/plans")}>
                 Gerenciar planos
@@ -1180,7 +1180,7 @@ export default function AdminDashboard() {
           <div style={{ display: "grid", gap: 20, alignContent: "start" }}>
             <SectionCard
               title="Planos recentes"
-              subtitle="Últimos itens retornados pela API."
+              subtitle="Últimos planos adicionados ou atualizados na plataforma."
             >
               {loadingPlans ? (
                 <div style={{ display: "grid", gap: 12 }}>
