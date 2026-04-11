@@ -1,4 +1,6 @@
-import { prisma } from "../src/config/prisma.js";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
 
 function resolvePlanDurationDays(plan) {
   const metadata =
@@ -29,6 +31,8 @@ async function main() {
     include: { plan: true },
   });
 
+  let updated = 0;
+
   for (const sub of subs) {
     const durationDays = resolvePlanDurationDays(sub.plan);
 
@@ -47,7 +51,7 @@ async function main() {
 
     const newMetadata = {
       ...currentMetadata,
-      fixedBy: "script",
+      fixedBy: "fix-active-subscriptions-validity",
       durationDaysApplied: durationDays,
       fixedAt: new Date().toISOString(),
     };
@@ -60,15 +64,19 @@ async function main() {
       },
     });
 
-    console.log("FIXED:", sub.id);
+    updated += 1;
+    console.log("FIXED:", sub.id, "->", nextEndsAt.toISOString());
   }
 
-  console.log("DONE");
+  console.log(`DONE: ${updated} subscriptions updated`);
 }
 
 main()
-  .then(() => prisma.$disconnect())
-  .catch((err) => {
-    console.error(err);
-    prisma.$disconnect();
+  .then(async () => {
+    await prisma.$disconnect();
+  })
+  .catch(async (err) => {
+    console.error("SCRIPT ERROR:", err);
+    await prisma.$disconnect();
+    process.exit(1);
   });
