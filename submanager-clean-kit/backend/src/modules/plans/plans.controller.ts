@@ -1,16 +1,18 @@
 import { Request, Response } from "express";
 import { prisma } from "../../config/prisma.js";
 
-/**
- * Plans are owned by the system (organization) and represent admin subscription tiers.
- * Provider-specific data is intentionally not exposed here.
- */
 function normalizeQuantity(input: unknown): number {
-  if (typeof input === "number" && Number.isFinite(input) && input >= 0) return Math.floor(input);
+  if (typeof input === "number" && Number.isFinite(input) && input >= 0) {
+    return Math.floor(input);
+  }
+
   if (typeof input === "string" && input.trim() !== "") {
     const value = Number(input);
-    if (Number.isFinite(value) && value >= 0) return Math.floor(value);
+    if (Number.isFinite(value) && value >= 0) {
+      return Math.floor(value);
+    }
   }
+
   return 0;
 }
 
@@ -30,10 +32,52 @@ function buildPlanSelect() {
   } as const;
 }
 
+function normalizeMetadata(input: unknown, quantity: number) {
+  const metadata =
+    input && typeof input === "object" && !Array.isArray(input)
+      ? { ...(input as Record<string, unknown>) }
+      : {};
+
+  const validityCandidates = [
+    Number(metadata.validityDays),
+    Number(metadata.days),
+    Number(metadata.durationDays),
+  ];
+
+  const validity = validityCandidates.find(
+    (value) => Number.isFinite(value) && value > 0,
+  );
+
+  if (validity) {
+    metadata.validityDays = Math.floor(validity);
+    metadata.days = Math.floor(validity);
+    metadata.durationDays = Math.floor(validity);
+  } else {
+    delete metadata.validityDays;
+    delete metadata.days;
+    delete metadata.durationDays;
+  }
+
+  metadata.stock = quantity;
+
+  const originalAmount = Number(metadata.originalAmount);
+  if (!(Number.isFinite(originalAmount) && originalAmount > 0)) {
+    delete metadata.originalAmount;
+  }
+
+  return metadata;
+}
+
 function normalizePlan(plan: any) {
+  const metadata =
+    plan?.metadata && typeof plan.metadata === "object" && !Array.isArray(plan.metadata)
+      ? plan.metadata
+      : {};
+
   return {
     ...plan,
     quantity: normalizeQuantity(plan?.quantity),
+    metadata,
   };
 }
 
@@ -48,7 +92,15 @@ export const plansController = {
   },
 
   create: async (req: Request, res: Response) => {
-    const { name, description, amount, billingCycle, currency, metadata, quantity } = req.body as {
+    const {
+      name,
+      description,
+      amount,
+      billingCycle,
+      currency,
+      metadata,
+      quantity,
+    } = req.body as {
       name?: string;
       description?: string | null;
       amount?: number;
@@ -69,19 +121,22 @@ export const plansController = {
     }
 
     const cycle = typeof billingCycle === "string" ? billingCycle : "MONTHLY";
-    const curr = typeof currency === "string" && currency.trim() ? currency.trim() : "BRL";
+    const curr =
+      typeof currency === "string" && currency.trim() ? currency.trim() : "BRL";
     const qty = normalizeQuantity(quantity);
+    const normalizedMetadata = normalizeMetadata(metadata, qty);
 
     const plan = await prisma.subscriptionPlan.create({
       data: {
         name: name.trim(),
-        description: typeof description === "string" ? description : description ?? null,
+        description:
+          typeof description === "string" ? description : description ?? null,
         amount,
         billingCycle: cycle as any,
         currency: curr,
         isActive: true,
         quantity: qty,
-        ...(typeof metadata !== "undefined" ? { metadata: metadata as any } : {}),
+        metadata: normalizedMetadata as any,
       },
       select: buildPlanSelect(),
     });
@@ -98,7 +153,15 @@ export const plansController = {
       return;
     }
 
-    const { name, description, amount, billingCycle, currency, metadata, quantity } = req.body as {
+    const {
+      name,
+      description,
+      amount,
+      billingCycle,
+      currency,
+      metadata,
+      quantity,
+    } = req.body as {
       name?: string;
       description?: string | null;
       amount?: number;
@@ -115,14 +178,31 @@ export const plansController = {
     }
 
     const data: Record<string, unknown> = {};
+
     if (typeof name === "string") data.name = name.trim();
-    if (typeof description === "string" || description === null) data.description = description;
-    if (typeof amount === "number" && Number.isFinite(amount) && amount >= 0) data.amount = amount;
+    if (typeof description === "string" || description === null) {
+      data.description = description;
+    }
+    if (typeof amount === "number" && Number.isFinite(amount) && amount >= 0) {
+      data.amount = amount;
+    }
     if (typeof billingCycle === "string") data.billingCycle = billingCycle;
     if (typeof currency === "string") data.currency = currency;
-    if (typeof metadata !== "undefined") data.metadata = metadata;
-    const qty = normalizeQuantity(quantity);
-    if (typeof quantity !== "undefined") data.quantity = qty;
+
+    const nextQuantity =
+      typeof quantity !== "undefined"
+        ? normalizeQuantity(quantity)
+        : normalizeQuantity(existing.quantity);
+
+    if (typeof quantity !== "undefined") {
+      data.quantity = nextQuantity;
+    }
+
+    if (typeof metadata !== "undefined") {
+      data.metadata = normalizeMetadata(metadata, nextQuantity) as any;
+    } else if (typeof quantity !== "undefined") {
+      data.metadata = normalizeMetadata(existing.metadata, nextQuantity) as any;
+    }
 
     if (Object.keys(data).length === 0) {
       res.status(400).json({ message: "No valid fields to update" });
@@ -181,19 +261,27 @@ export const plansController = {
       where: { id },
       select: { id: true },
     });
+
     if (!existing) {
       res.status(404).json({ message: "Plan not found" });
       return;
     }
 
-    const linkedSubscriptions = await prisma.subscription.count({ where: { planId: id } });
+    const linkedSubscriptions = await prisma.subscription.count({
+      where: { planId: id },
+    });
 
     if (linkedSubscriptions > 0) {
-      await prisma.subscriptionPlan.update({ where: { id }, data: { isActive: false } });
+      await prisma.subscriptionPlan.update({
+        where: { id },
+        data: { isActive: false },
+      });
+
       res.status(200).json({
         deleted: false,
         deactivated: true,
-        message: "Plan is linked to subscriptions and cannot be deleted. It was deactivated instead.",
+        message:
+          "Plan is linked to subscriptions and cannot be deleted. It was deactivated instead.",
       });
       return;
     }

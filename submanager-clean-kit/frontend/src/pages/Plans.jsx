@@ -8,7 +8,6 @@ import {
   deletePlan,
 } from "../lib/adminAction.js";
 
-
 function formatCurrency(value) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -52,6 +51,7 @@ function getPlanDuration(plan) {
   return (
     plan?.metadata?.validityDays ??
     plan?.metadata?.days ??
+    plan?.metadata?.durationDays ??
     plan?.days ??
     plan?.durationDays ??
     plan?.duration ??
@@ -63,7 +63,19 @@ function getPlanStock(plan) {
   return plan?.quantity ?? plan?.metadata?.stock ?? null;
 }
 
-function ActionButton({ children, onClick, variant = "secondary", type = "button", disabled = false }) {
+function normalizePositiveInteger(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return 0;
+  return Math.floor(number);
+}
+
+function ActionButton({
+  children,
+  onClick,
+  variant = "secondary",
+  type = "button",
+  disabled = false,
+}) {
   const styles = {
     primary: {
       background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
@@ -461,9 +473,7 @@ export default function Plans() {
           ""
       ),
       originalAmount: String(
-        plan.originalAmount ??
-          plan.oldAmount ??
-          normalizedMetadata.originalAmount ??
+        normalizedMetadata.originalAmount ??
           normalizedMetadata.oldAmount ??
           normalizedMetadata.promotionalPrice ??
           ""
@@ -478,21 +488,32 @@ export default function Plans() {
     setSaving(true);
     setMessage("");
 
+    const quantity = normalizePositiveInteger(form.quantity);
+    const durationDays = normalizePositiveInteger(form.durationDays);
+    const originalAmount = Number(form.originalAmount || 0);
+
+    const metadata = {
+      ...(durationDays > 0
+        ? {
+            validityDays: durationDays,
+            days: durationDays,
+            durationDays,
+          }
+        : {}),
+      ...(Number.isFinite(originalAmount) && originalAmount > 0
+        ? { originalAmount }
+        : {}),
+      stock: quantity,
+    };
+
     const payload = {
       name: form.name,
       description: form.description || null,
       amount: Number(form.amount || 0),
       billingCycle: form.billingCycle,
       currency: form.currency,
-      quantity: Number(form.quantity || 0),
-      metadata: {
-        ...(Number(form.durationDays) > 0
-          ? { validityDays: Number(form.durationDays) }
-          : {}),
-        ...(Number(form.originalAmount) > 0
-          ? { originalAmount: Number(form.originalAmount) }
-          : {}),
-      },
+      quantity,
+      metadata,
     };
 
     try {
