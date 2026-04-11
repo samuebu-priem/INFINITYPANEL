@@ -15,24 +15,29 @@ function isPlanActive(plan) {
   if (typeof plan?.active === "boolean") return plan.active;
   if (typeof plan?.isActive === "boolean") return plan.isActive;
   if (typeof plan?.enabled === "boolean") return plan.enabled;
+  if (typeof plan?.available === "boolean") return plan.available;
   return true;
 }
 
-function getSubscriptionObject(response) {
-  if (!response) return null;
-
-  if (Object.prototype.hasOwnProperty.call(response, "subscription")) {
-    return response.subscription ?? null;
+function getSubscriptionsList(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.subscriptions)) return response.subscriptions;
+  if (Array.isArray(response?.data?.subscriptions)) {
+    return response.data.subscriptions;
   }
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+}
 
-  if (
-    response.data &&
-    Object.prototype.hasOwnProperty.call(response.data, "subscription")
-  ) {
-    return response.data.subscription ?? null;
-  }
-
-  return null;
+function getPlanName(subscription) {
+  return (
+    subscription?.plan?.name ||
+    subscription?.plan?.title ||
+    subscription?.planName ||
+    subscription?.plan?.label ||
+    "Plano ativo"
+  );
 }
 
 function getSubscriptionEndsAt(subscription) {
@@ -45,14 +50,77 @@ function getSubscriptionEndsAt(subscription) {
   );
 }
 
-function getPlanName(subscription) {
-  return (
-    subscription?.plan?.name ||
-    subscription?.plan?.title ||
-    subscription?.planName ||
-    subscription?.plan?.label ||
-    "Nenhuma assinatura"
-  );
+function isSubscriptionActive(subscription) {
+  if (!subscription) return false;
+  if (subscription?.isActive === true) return true;
+
+  const status = String(subscription?.status || "").toUpperCase();
+  if (status !== "ACTIVE") return false;
+
+  const endsAt = getSubscriptionEndsAt(subscription);
+  if (!endsAt) return false;
+
+  const endDate = new Date(endsAt);
+  if (Number.isNaN(endDate.getTime())) return false;
+
+  return endDate.getTime() > Date.now();
+}
+
+function buildCountdown(endsAt, nowTs) {
+  if (!endsAt) {
+    return {
+      expired: true,
+      totalMs: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      label: "Expirada",
+    };
+  }
+
+  const endDate = new Date(endsAt);
+  if (Number.isNaN(endDate.getTime())) {
+    return {
+      expired: true,
+      totalMs: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      label: "Expirada",
+    };
+  }
+
+  const diffMs = endDate.getTime() - nowTs;
+
+  if (diffMs <= 0) {
+    return {
+      expired: true,
+      totalMs: 0,
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      label: "Expirada",
+    };
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    expired: false,
+    totalMs: diffMs,
+    days,
+    hours,
+    minutes,
+    seconds,
+    label: `${days}d ${hours}h ${minutes}m ${seconds}s`,
+  };
 }
 
 function SectionCard({ title, subtitle, children, action }) {
@@ -115,13 +183,28 @@ function SectionCard({ title, subtitle, children, action }) {
   );
 }
 
-function StatCard({ label, value, helpText }) {
+function StatCard({ label, value, helpText, accent = "primary" }) {
+  const accents = {
+    primary: {
+      value: "#f3f4f6",
+      border: "rgba(99,102,241,0.16)",
+      bg: "rgba(255,255,255,0.02)",
+    },
+    success: {
+      value: "#86efac",
+      border: "rgba(34,197,94,0.18)",
+      bg: "rgba(34,197,94,0.05)",
+    },
+  };
+
+  const theme = accents[accent] || accents.primary;
+
   return (
     <div
       style={{
-        border: "1px solid #1f2937",
+        border: `1px solid ${theme.border}`,
         borderRadius: 22,
-        background: "rgba(255,255,255,0.02)",
+        background: theme.bg,
         padding: 18,
       }}
     >
@@ -140,7 +223,7 @@ function StatCard({ label, value, helpText }) {
 
       <div
         style={{
-          color: "#f3f4f6",
+          color: theme.value,
           fontSize: 34,
           lineHeight: 1.05,
           fontWeight: 900,
@@ -218,13 +301,187 @@ function EmptyState({ title, description }) {
   );
 }
 
+function ActiveSubscriptionCard({ subscription, nowTs }) {
+  const endsAt = getSubscriptionEndsAt(subscription);
+  const countdown = buildCountdown(endsAt, nowTs);
+  const active = isSubscriptionActive(subscription);
+
+  return (
+    <div
+      style={{
+        border: "1px solid #1f2937",
+        borderRadius: 24,
+        background:
+          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
+        padding: 20,
+        boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+        display: "grid",
+        gap: 14,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color: "#f3f4f6",
+              fontSize: 18,
+              fontWeight: 800,
+              lineHeight: 1.25,
+            }}
+          >
+            {getPlanName(subscription)}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#9ca3af",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            Acesso liberado por assinatura individual deste plano.
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            width: "fit-content",
+            padding: "6px 10px",
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 900,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: active ? "#86efac" : "#fca5a5",
+            background: active
+              ? "rgba(34,197,94,0.10)"
+              : "rgba(239,68,68,0.10)",
+            border: active
+              ? "1px solid rgba(34,197,94,0.18)"
+              : "1px solid rgba(239,68,68,0.18)",
+          }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: active ? "#22c55e" : "#ef4444",
+              boxShadow: active
+                ? "0 0 12px rgba(34,197,94,0.75)"
+                : "0 0 10px rgba(239,68,68,0.45)",
+            }}
+          />
+          {active ? "Ativo" : "Expirado"}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gap: 14,
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid rgba(34,197,94,0.18)",
+            background: "rgba(34,197,94,0.05)",
+            padding: "14px 16px",
+          }}
+        >
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              marginBottom: 8,
+            }}
+          >
+            Tempo restante
+          </div>
+
+          <div
+            style={{
+              color: active ? "#86efac" : "#fca5a5",
+              fontSize: 20,
+              fontWeight: 900,
+              lineHeight: 1.2,
+            }}
+          >
+            {countdown.label}
+          </div>
+        </div>
+
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid #1f2937",
+            background: "rgba(255,255,255,0.02)",
+            padding: "14px 16px",
+          }}
+        >
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              marginBottom: 8,
+            }}
+          >
+            Expira em
+          </div>
+
+          <div
+            style={{
+              color: "#f3f4f6",
+              fontSize: 15,
+              fontWeight: 800,
+              lineHeight: 1.5,
+            }}
+          >
+            {endsAt ? new Date(endsAt).toLocaleString("pt-BR") : "—"}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function UserHome() {
   const { user } = useAuth();
+
   const [plans, setPlans] = useState([]);
-  const [subscription, setSubscription] = useState(null);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
-  const [loadingSubscription, setLoadingSubscription] = useState(true);
-  const [subscriptionError, setSubscriptionError] = useState("");
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
+  const [subscriptionsError, setSubscriptionsError] = useState("");
+  const [nowTs, setNowTs] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setNowTs(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const loadPlans = async () => {
@@ -238,37 +495,44 @@ export default function UserHome() {
       }
     };
 
-    const loadSubscription = async () => {
+    const loadSubscriptions = async () => {
       try {
         const response = await api.get("/subscriptions/me");
-        setSubscription(getSubscriptionObject(response));
+        setSubscriptions(getSubscriptionsList(response));
       } catch (error) {
-        setSubscription(null);
-        setSubscriptionError(error?.response?.data?.message || "");
+        setSubscriptions([]);
+        setSubscriptionsError(error?.response?.data?.message || "");
       } finally {
-        setLoadingSubscription(false);
+        setLoadingSubscriptions(false);
       }
     };
 
     loadPlans();
-    loadSubscription();
+    loadSubscriptions();
   }, []);
 
-  const remainingDays = useMemo(() => {
-    const endsAt = getSubscriptionEndsAt(subscription);
-    if (!endsAt) return null;
+  const activeSubscriptions = useMemo(() => {
+    return subscriptions.filter(isSubscriptionActive);
+  }, [subscriptions, nowTs]);
 
-    const endDate = new Date(endsAt);
-    if (Number.isNaN(endDate.getTime())) return null;
+  const totalActiveAccess = activeSubscriptions.length;
 
-    const diff = Math.ceil(
-      (endDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-    );
+  const nextExpiration = useMemo(() => {
+    if (!activeSubscriptions.length) return null;
 
-    return Math.max(diff, 0);
-  }, [subscription]);
+    const sorted = [...activeSubscriptions].sort((a, b) => {
+      const aTime = new Date(getSubscriptionEndsAt(a) || 0).getTime();
+      const bTime = new Date(getSubscriptionEndsAt(b) || 0).getTime();
+      return aTime - bTime;
+    });
 
-  const visiblePlans = useMemo(() => plans.filter(isPlanActive), [plans]);
+    return sorted[0] || null;
+  }, [activeSubscriptions]);
+
+  const nextExpirationCountdown = useMemo(() => {
+    if (!nextExpiration) return null;
+    return buildCountdown(getSubscriptionEndsAt(nextExpiration), nowTs);
+  }, [nextExpiration, nowTs]);
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -291,9 +555,16 @@ export default function UserHome() {
           grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
+        .user-home-subscriptions-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         @media (max-width: 1180px) {
           .user-home-top-grid,
-          .user-home-plans-grid {
+          .user-home-plans-grid,
+          .user-home-subscriptions-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
         }
@@ -301,7 +572,8 @@ export default function UserHome() {
         @media (max-width: 860px) {
           .user-home-top-grid,
           .user-home-stats-grid,
-          .user-home-plans-grid {
+          .user-home-plans-grid,
+          .user-home-subscriptions-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -383,125 +655,126 @@ export default function UserHome() {
                 maxWidth: 680,
               }}
             >
-              Veja sua assinatura atual, acompanhe o prazo restante e confira
-              os planos disponíveis no momento.
+              Veja seus acessos ativos, acompanhe o tempo restante de cada plano
+              e confira os planos disponíveis.
             </p>
           </div>
 
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              minWidth: 260,
-            }}
-          >
+          {activeSubscriptions.length > 0 ? (
             <div
               style={{
-                borderRadius: 20,
-                border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.04)",
-                padding: "14px 16px",
+                display: "grid",
+                gap: 12,
+                minWidth: 260,
               }}
             >
               <div
                 style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  fontWeight: 800,
-                  marginBottom: 6,
+                  borderRadius: 20,
+                  border: "1px solid rgba(34,197,94,0.18)",
+                  background: "rgba(34,197,94,0.05)",
+                  padding: "14px 16px",
                 }}
               >
-                Status
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#9ca3af",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    fontWeight: 800,
+                    marginBottom: 6,
+                  }}
+                >
+                  Acessos ativos
+                </div>
+                <div
+                  style={{
+                    color: "#86efac",
+                    fontWeight: 800,
+                    fontSize: 22,
+                  }}
+                >
+                  {totalActiveAccess}
+                </div>
               </div>
-              <div
-                style={{
-                  color: subscription ? "#86efac" : "#fca5a5",
-                  fontWeight: 800,
-                  fontSize: 15,
-                }}
-              >
-                {subscription ? "Ativa" : "Inativa"}
-              </div>
-            </div>
 
-            <div
-              style={{
-                borderRadius: 20,
-                border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.04)",
-                padding: "14px 16px",
-              }}
-            >
               <div
                 style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  fontWeight: 800,
-                  marginBottom: 6,
+                  borderRadius: 20,
+                  border: "1px solid #1f2937",
+                  background: "rgba(255,255,255,0.04)",
+                  padding: "14px 16px",
                 }}
               >
-                Plano
-              </div>
-              <div
-                style={{
-                  color: "#f3f4f6",
-                  fontWeight: 800,
-                  fontSize: 15,
-                }}
-              >
-                {subscription ? getPlanName(subscription) : "Nenhuma assinatura"}
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#9ca3af",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.12em",
+                    fontWeight: 800,
+                    marginBottom: 6,
+                  }}
+                >
+                  Próxima expiração
+                </div>
+                <div
+                  style={{
+                    color: "#f3f4f6",
+                    fontWeight: 800,
+                    fontSize: 15,
+                  }}
+                >
+                  {nextExpirationCountdown?.label || "—"}
+                </div>
               </div>
             </div>
-          </div>
+          ) : null}
         </div>
       </section>
 
-      {(subscription || subscriptionError || loadingSubscription) && (
+      {(activeSubscriptions.length > 0 ||
+        subscriptionsError ||
+        loadingSubscriptions) && (
         <div className="user-home-top-grid">
           <SectionCard
-            title="Assinatura atual"
-            subtitle="Resumo do acesso atual"
+            title="Resumo do acesso"
+            subtitle="Visão geral das assinaturas ativas."
           >
             <div className="user-home-stats-grid">
               <StatCard
-                label="Dias restantes"
-                value={loadingSubscription ? "..." : remainingDays ?? "—"}
+                label="Acessos ativos"
+                value={loadingSubscriptions ? "..." : totalActiveAccess}
                 helpText={
-                  loadingSubscription
-                    ? "Carregando assinatura..."
-                    : remainingDays === null
-                    ? "Sem data final disponível."
-                    : remainingDays === 1
-                    ? "1 dia restante"
-                    : `${remainingDays} dias restantes`
+                  loadingSubscriptions
+                    ? "Carregando assinaturas..."
+                    : totalActiveAccess > 0
+                    ? "Planos válidos para este usuário."
+                    : "Nenhum acesso ativo encontrado."
                 }
+                accent="success"
               />
 
               <StatCard
-                label="Plano"
+                label="Próximo vencimento"
                 value={
-                  subscription
-                    ? getPlanName(subscription)
-                    : loadingSubscription
+                  loadingSubscriptions
                     ? "..."
-                    : "Nenhuma"
+                    : nextExpirationCountdown?.label || "—"
                 }
                 helpText={
-                  subscription
-                    ? "Seu acesso está ativo no momento."
-                    : "Você ainda não possui assinatura ativa."
+                  nextExpiration
+                    ? getPlanName(nextExpiration)
+                    : "Sem vencimentos futuros."
                 }
               />
             </div>
           </SectionCard>
 
           <SectionCard
-            title="Seu acesso"
-            subtitle="Situação atual da assinatura."
+            title="Situação atual"
+            subtitle="Status consolidado dos seus acessos."
           >
             <div
               style={{
@@ -519,8 +792,8 @@ export default function UserHome() {
                   marginBottom: 10,
                 }}
               >
-                {subscription
-                  ? getPlanName(subscription)
+                {activeSubscriptions.length > 0
+                  ? `${activeSubscriptions.length} acesso(s) ativo(s)`
                   : "Nenhuma assinatura ativa"}
               </div>
 
@@ -531,13 +804,9 @@ export default function UserHome() {
                   lineHeight: 1.7,
                 }}
               >
-                {subscription
-                  ? "Sua assinatura está ativa e vinculada à sua conta."
-                  : loadingSubscription
-                  ? "Carregando dados da assinatura..."
-                  : subscriptionError
-                  ? subscriptionError
-                  : "Ative um plano para liberar seu acesso."}
+                {activeSubscriptions.length > 0
+                  ? "Cada plano ativo aparece abaixo com seu contador em tempo real."
+                  : subscriptionsError || "Assine um plano para liberar acessos."}
               </div>
             </div>
           </SectionCard>
@@ -545,39 +814,54 @@ export default function UserHome() {
       )}
 
       <SectionCard
+        title="Seus acessos ativos"
+        subtitle="Cada plano possui seu próprio tempo e sua própria validade."
+      >
+        {loadingSubscriptions ? (
+          <div style={{ color: "#9ca3af", fontSize: 14 }}>
+            Carregando assinaturas...
+          </div>
+        ) : activeSubscriptions.length === 0 ? (
+          <EmptyState
+            title="Nenhum acesso ativo"
+            description="Você ainda não possui uma assinatura ativa neste momento."
+          />
+        ) : (
+          <div className="user-home-subscriptions-grid">
+            {activeSubscriptions.map((subscription) => (
+              <ActiveSubscriptionCard
+                key={subscription.id}
+                subscription={subscription}
+                nowTs={nowTs}
+              />
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard
         title="Planos disponíveis"
-        subtitle="Escolha um plano para ativar ou renovar seu acesso."
+        subtitle="Escolha um novo plano e habilite novos acessos."
       >
         {loadingPlans ? (
-          <div
-            style={{
-              borderRadius: 22,
-              border: "1px solid #1f2937",
-              background: "rgba(255,255,255,0.03)",
-              padding: 22,
-              color: "#9ca3af",
-            }}
-          >
+          <div style={{ color: "#9ca3af", fontSize: 14 }}>
             Carregando planos...
           </div>
-        ) : visiblePlans.length === 0 ? (
+        ) : plans.length === 0 ? (
           <EmptyState
-            title="Nenhum plano disponível"
-            description="No momento não há planos ativos para contratação."
+            title="Nenhum plano encontrado"
+            description="No momento não há planos disponíveis para assinatura."
           />
         ) : (
           <div className="user-home-plans-grid">
-            {visiblePlans.map((plan) => (
+            {plans.map((plan) => (
               <PlanCard key={plan.id} plan={plan} user={user} showCheckout />
             ))}
           </div>
         )}
       </SectionCard>
 
-      <UserHomeFooter
-        discordUrl={import.meta.env.VITE_DISCORD_URL || "#"}
-        instagramUrl={import.meta.env.VITE_INSTAGRAM_URL || "#"}
-      />
+      <UserHomeFooter />
     </div>
   );
 }

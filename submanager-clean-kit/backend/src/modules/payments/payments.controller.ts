@@ -36,8 +36,6 @@ function txStatusToCheckoutStatus(
 function resolvePlanDurationDays(plan: {
   billingCycle: "WEEKLY" | "MONTHLY" | "YEARLY";
   metadata?: unknown;
-  days?: number | null;
-  durationDays?: number | null;
 }) {
   const metadata =
     plan?.metadata && typeof plan.metadata === "object"
@@ -48,8 +46,6 @@ function resolvePlanDurationDays(plan: {
     Number(metadata.validityDays),
     Number(metadata.days),
     Number(metadata.durationDays),
-    Number(plan?.days),
-    Number(plan?.durationDays),
   ];
 
   const customDays = candidates.find(
@@ -69,8 +65,6 @@ function computeEndsAt(
   plan: {
     billingCycle: "WEEKLY" | "MONTHLY" | "YEARLY";
     metadata?: unknown;
-    days?: number | null;
-    durationDays?: number | null;
   },
   baseDate: Date,
 ) {
@@ -221,14 +215,13 @@ export const paymentsController = {
         });
       }
 
-      // evita processar duas vezes
       if (txStatus !== "APPROVED" || wasAlreadyApproved) {
         return;
       }
 
       const now = new Date();
 
-      // estoque: decrementa uma vez só quando aprova
+      // Atualiza estoque uma única vez quando aprova
       if (
         Number.isFinite(checkout.plan.quantity) &&
         checkout.plan.quantity > 0
@@ -243,48 +236,47 @@ export const paymentsController = {
         });
       }
 
-      // PLAYER com tempo corrido
+      // Fluxo PLAYER: ativa/renova somente o mesmo planId, sem mexer nos outros
       if (checkout.userId) {
-        const existingActive = await tx.subscription.findFirst({
+        const existingSamePlan = await tx.subscription.findFirst({
           where: {
             userId: checkout.userId,
+            planId: checkout.planId,
             status: "ACTIVE",
             OR: [{ endsAt: null }, { endsAt: { gt: now } }],
           },
           orderBy: { createdAt: "desc" },
         });
 
-        const baseDate =
-          existingActive?.endsAt && existingActive.endsAt > now
-            ? existingActive.endsAt
-            : now;
-
-        const endsAt = computeEndsAt(checkout.plan, baseDate);
+        const endsAt = computeEndsAt(checkout.plan, now);
 
         let subscriptionId: string | null = null;
 
-        if (existingActive) {
-          const updatedActive = await tx.subscription.update({
-            where: { id: existingActive.id },
+        if (existingSamePlan) {
+          const updatedSubscription = await tx.subscription.update({
+            where: { id: existingSamePlan.id },
             data: {
+              startsAt: now,
               endsAt,
               approvedAt: now,
+              status: "ACTIVE",
+              cancelledAt: null,
               metadata: {
-                ...(existingActive.metadata &&
-                typeof existingActive.metadata === "object"
-                  ? existingActive.metadata
+                ...(existingSamePlan.metadata &&
+                typeof existingSamePlan.metadata === "object"
+                  ? existingSamePlan.metadata
                   : {}),
-                extendedBy: "mp-webhook",
+                renewedBy: "mp-webhook",
                 checkoutSessionId: checkout.id,
                 cycle: checkout.plan.billingCycle,
-                durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+                durationDaysApplied: resolvePlanDurationDays(checkout.plan),
               },
             },
           });
 
-          subscriptionId = updatedActive.id;
+          subscriptionId = updatedSubscription.id;
         } else {
-          const pendingSubscription = await tx.subscription.findFirst({
+          const pendingSamePlan = await tx.subscription.findFirst({
             where: {
               userId: checkout.userId,
               planId: checkout.planId,
@@ -293,28 +285,29 @@ export const paymentsController = {
             orderBy: { createdAt: "desc" },
           });
 
-          if (pendingSubscription) {
-            const updatedSubscription = await tx.subscription.update({
-              where: { id: pendingSubscription.id },
+          if (pendingSamePlan) {
+            const updatedPending = await tx.subscription.update({
+              where: { id: pendingSamePlan.id },
               data: {
                 status: "ACTIVE",
                 startsAt: now,
                 endsAt,
                 approvedAt: now,
+                cancelledAt: null,
                 metadata: {
-                  ...(pendingSubscription.metadata &&
-                  typeof pendingSubscription.metadata === "object"
-                    ? pendingSubscription.metadata
+                  ...(pendingSamePlan.metadata &&
+                  typeof pendingSamePlan.metadata === "object"
+                    ? pendingSamePlan.metadata
                     : {}),
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
                   cycle: checkout.plan.billingCycle,
-                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+                  durationDaysApplied: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
 
-            subscriptionId = updatedSubscription.id;
+            subscriptionId = updatedPending.id;
           } else {
             const createdSubscription = await tx.subscription.create({
               data: {
@@ -329,7 +322,7 @@ export const paymentsController = {
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
                   cycle: checkout.plan.billingCycle,
-                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+                  durationDaysApplied: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
@@ -348,48 +341,47 @@ export const paymentsController = {
         return;
       }
 
-      // legado ADMIN
+      // Fluxo legado ADMIN: ativa/renova somente o mesmo planId
       if (checkout.adminId) {
-        const existingActive = await tx.subscription.findFirst({
+        const existingSamePlan = await tx.subscription.findFirst({
           where: {
             adminId: checkout.adminId,
+            planId: checkout.planId,
             status: "ACTIVE",
             OR: [{ endsAt: null }, { endsAt: { gt: now } }],
           },
           orderBy: { createdAt: "desc" },
         });
 
-        const baseDate =
-          existingActive?.endsAt && existingActive.endsAt > now
-            ? existingActive.endsAt
-            : now;
-
-        const endsAt = computeEndsAt(checkout.plan, baseDate);
+        const endsAt = computeEndsAt(checkout.plan, now);
 
         let subscriptionId: string | null = null;
 
-        if (existingActive) {
-          const updatedActive = await tx.subscription.update({
-            where: { id: existingActive.id },
+        if (existingSamePlan) {
+          const updatedSubscription = await tx.subscription.update({
+            where: { id: existingSamePlan.id },
             data: {
+              startsAt: now,
               endsAt,
               approvedAt: now,
+              status: "ACTIVE",
+              cancelledAt: null,
               metadata: {
-                ...(existingActive.metadata &&
-                typeof existingActive.metadata === "object"
-                  ? existingActive.metadata
+                ...(existingSamePlan.metadata &&
+                typeof existingSamePlan.metadata === "object"
+                  ? existingSamePlan.metadata
                   : {}),
-                extendedBy: "mp-webhook",
+                renewedBy: "mp-webhook",
                 checkoutSessionId: checkout.id,
                 cycle: checkout.plan.billingCycle,
-                durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+                durationDaysApplied: resolvePlanDurationDays(checkout.plan),
               },
             },
           });
 
-          subscriptionId = updatedActive.id;
+          subscriptionId = updatedSubscription.id;
         } else {
-          const pendingSubscription = await tx.subscription.findFirst({
+          const pendingSamePlan = await tx.subscription.findFirst({
             where: {
               adminId: checkout.adminId,
               planId: checkout.planId,
@@ -398,28 +390,29 @@ export const paymentsController = {
             orderBy: { createdAt: "desc" },
           });
 
-          if (pendingSubscription) {
-            const updatedSubscription = await tx.subscription.update({
-              where: { id: pendingSubscription.id },
+          if (pendingSamePlan) {
+            const updatedPending = await tx.subscription.update({
+              where: { id: pendingSamePlan.id },
               data: {
                 status: "ACTIVE",
                 startsAt: now,
                 endsAt,
                 approvedAt: now,
+                cancelledAt: null,
                 metadata: {
-                  ...(pendingSubscription.metadata &&
-                  typeof pendingSubscription.metadata === "object"
-                    ? pendingSubscription.metadata
+                  ...(pendingSamePlan.metadata &&
+                  typeof pendingSamePlan.metadata === "object"
+                    ? pendingSamePlan.metadata
                     : {}),
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
                   cycle: checkout.plan.billingCycle,
-                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+                  durationDaysApplied: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
 
-            subscriptionId = updatedSubscription.id;
+            subscriptionId = updatedPending.id;
           } else {
             const createdSubscription = await tx.subscription.create({
               data: {
@@ -433,7 +426,7 @@ export const paymentsController = {
                   activatedBy: "mp-webhook",
                   checkoutSessionId: checkout.id,
                   cycle: checkout.plan.billingCycle,
-                  durationDaysAdded: resolvePlanDurationDays(checkout.plan),
+                  durationDaysApplied: resolvePlanDurationDays(checkout.plan),
                 },
               },
             });
