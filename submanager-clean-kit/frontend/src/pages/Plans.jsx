@@ -597,8 +597,8 @@ export default function Plans() {
         title="Catálogo de planos"
         subtitle={
           isAdmin
-            ? "Criação, edição e status usando a API real."
-            : "Planos disponíveis retornados pela API."
+            ? "Criação, edição e gerenciamento de planos."
+            : "Planos disponíveis para assinatura."
         }
         action={
           isAdmin ? (
@@ -896,7 +896,7 @@ export default function Plans() {
             </div>
           </form>
         ) : loading ? (
-          <SectionCard title="Carregando" subtitle="Buscando planos da API.">
+          <SectionCard title="Carregando" subtitle="Buscando planos...">
             <div style={{ color: "#e5e7eb" }}>Carregando planos...</div>
           </SectionCard>
         ) : visiblePlans.length === 0 ? (
