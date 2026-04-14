@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+} from "recharts";
 
 const API_BASE = "/api";
 const TOKEN_KEY = "submanager_token";
@@ -9,72 +18,6 @@ function formatPrice(value) {
   return number.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
-  });
-}
-
-function getPlanTitle(plan) {
-  return (
-    plan?.title ||
-    plan?.name ||
-    plan?.planName ||
-    plan?.label ||
-    "Plano sem nome"
-  );
-}
-
-function getPlanPrice(plan) {
-  return plan?.price ?? plan?.amount ?? plan?.value ?? plan?.monthlyPrice ?? 0;
-}
-
-function getPlanValidity(plan) {
-  return (
-    plan?.durationDays ??
-    plan?.validityDays ??
-    plan?.days ??
-    plan?.duration ??
-    plan?.metadata?.validityDays ??
-    plan?.metadata?.days ??
-    null
-  );
-}
-
-function getPlanStock(plan) {
-  return (
-    plan?.stock ??
-    plan?.quantity ??
-    plan?.availableQuantity ??
-    plan?.limit ??
-    null
-  );
-}
-
-function isPlanActive(plan) {
-  if (typeof plan?.active === "boolean") return plan.active;
-  if (typeof plan?.isActive === "boolean") return plan.isActive;
-  if (typeof plan?.enabled === "boolean") return plan.enabled;
-  if (typeof plan?.available === "boolean") return plan.available;
-  if (typeof plan?.status === "string") {
-    const status = plan.status.toLowerCase();
-    return ["active", "ativo", "enabled", "available"].includes(status);
-  }
-  return true;
-}
-
-function getCreatedAt(plan) {
-  return (
-    plan?.createdAt ||
-    plan?.created_at ||
-    plan?.updatedAt ||
-    plan?.updated_at ||
-    null
-  );
-}
-
-function sortNewestPlans(plans) {
-  return [...plans].sort((a, b) => {
-    const aDate = getCreatedAt(a) ? new Date(getCreatedAt(a)).getTime() : 0;
-    const bDate = getCreatedAt(b) ? new Date(getCreatedAt(b)).getTime() : 0;
-    return bDate - aDate;
   });
 }
 
@@ -118,155 +61,48 @@ function buildRevenueSeries(payments) {
 
   return [...grouped.entries()]
     .sort((a, b) => a[0].localeCompare(b[0]))
-    .map(([date, amount]) => ({ date, amount }));
+    .map(([date, amount]) => ({
+      date,
+      amount,
+      label: new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      }),
+    }));
 }
 
-function formatShortDate(value) {
-  const date = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-  });
-}
-
-function RevenueChart({ data }) {
-  if (!data.length) {
-    return (
-      <div
-        style={{
-          height: 260,
-          borderRadius: 24,
-          border: "1px dashed rgba(34,197,94,0.22)",
-          background:
-            "linear-gradient(180deg, rgba(34,197,94,0.05) 0%, rgba(11,15,20,0.4) 100%)",
-          display: "grid",
-          placeItems: "center",
-          color: "#9ca3af",
-          fontSize: 14,
-          textAlign: "center",
-          padding: 20,
-        }}
-      >
-        Sem pagamentos aprovados suficientes para exibir o gráfico.
-      </div>
-    );
-  }
-
-  const width = 100;
-  const height = 260;
-  const padding = 18;
-  const maxAmount = Math.max(...data.map((item) => item.amount), 1);
-
-  const points = data.map((item, index) => {
-    const x =
-      data.length === 1
-        ? width / 2
-        : padding + (index * (width - padding * 2)) / (data.length - 1);
-
-    const y =
-      height -
-      padding -
-      (item.amount / maxAmount) * (height - padding * 2);
-
-    return { x, y, ...item };
-  });
-
-  const linePath = points
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
-
-  const areaPath = `${linePath} L ${points[points.length - 1].x} ${height - padding} L ${points[0].x} ${height - padding} Z`;
-
+function SectionCard({ title, subtitle, children }) {
   return (
-    <div
+    <section
       style={{
-        borderRadius: 24,
-        border: "1px solid rgba(34,197,94,0.16)",
         background:
-          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
-        padding: 18,
+          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+        border: "1px solid #1f2937",
+        borderRadius: 28,
+        padding: 22,
+        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
       }}
     >
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        preserveAspectRatio="none"
-        style={{ width: "100%", height: 260, display: "block" }}
-      >
-        <defs>
-          <linearGradient id="revenueAreaFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(34,197,94,0.38)" />
-            <stop offset="100%" stopColor="rgba(34,197,94,0.02)" />
-          </linearGradient>
-          <linearGradient id="revenueLineStroke" x1="0" x2="1" y1="0" y2="0">
-            <stop offset="0%" stopColor="#22c55e" />
-            <stop offset="100%" stopColor="#86efac" />
-          </linearGradient>
-        </defs>
-
-        {[0.25, 0.5, 0.75].map((ratio) => {
-          const y = height - padding - ratio * (height - padding * 2);
-          return (
-            <line
-              key={ratio}
-              x1={padding}
-              x2={width - padding}
-              y1={y}
-              y2={y}
-              stroke="rgba(148,163,184,0.10)"
-              strokeWidth="0.4"
-              strokeDasharray="1.6 1.4"
-            />
-          );
-        })}
-
-        <path d={areaPath} fill="url(#revenueAreaFill)" />
-        <path
-          d={linePath}
-          fill="none"
-          stroke="url(#revenueLineStroke)"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {points.map((point) => (
-          <circle
-            key={`${point.date}-${point.amount}`}
-            cx={point.x}
-            cy={point.y}
-            r="1.6"
-            fill="#22c55e"
-            stroke="rgba(255,255,255,0.7)"
-            strokeWidth="0.5"
-          />
-        ))}
-      </svg>
-
-      <div
-        style={{
-          marginTop: 12,
-          display: "grid",
-          gridTemplateColumns: `repeat(${Math.min(data.length, 6)}, minmax(0, 1fr))`,
-          gap: 8,
-        }}
-      >
-        {data.slice(-6).map((item) => (
-          <div
-            key={item.date}
-            style={{
-              minWidth: 0,
-              color: "#9ca3af",
-              fontSize: 12,
-              textAlign: "center",
-            }}
-          >
-            {formatShortDate(item.date)}
-          </div>
-        ))}
+      <div style={{ marginBottom: 18 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 900,
+            color: "#f3f4f6",
+          }}
+        >
+          {title}
+        </h2>
+        {subtitle ? (
+          <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14 }}>
+            {subtitle}
+          </p>
+        ) : null}
       </div>
-    </div>
+
+      {children}
+    </section>
   );
 }
 
@@ -285,13 +121,6 @@ function StatCard({ title, value, hint, accent = "primary" }) {
       glow: "0 0 34px rgba(34, 197, 94, 0.16)",
       dot: "#22c55e",
       value: "#86efac",
-    },
-    danger: {
-      chip: "rgba(239, 68, 68, 0.12)",
-      border: "rgba(239, 68, 68, 0.24)",
-      glow: "0 0 30px rgba(239, 68, 68, 0.12)",
-      dot: "#ef4444",
-      value: "#fca5a5",
     },
     neutral: {
       chip: "rgba(148, 163, 184, 0.10)",
@@ -360,38 +189,26 @@ function StatCard({ title, value, hint, accent = "primary" }) {
   );
 }
 
-function SectionCard({ title, subtitle, children }) {
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+
   return (
-    <section
+    <div
       style={{
-        background:
-          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+        background: "#0f172a",
         border: "1px solid #1f2937",
-        borderRadius: 28,
-        padding: 22,
-        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
+        borderRadius: 14,
+        padding: 12,
+        boxShadow: "0 12px 32px rgba(0,0,0,0.28)",
       }}
     >
-      <div style={{ marginBottom: 18 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 22,
-            fontWeight: 900,
-            color: "#f3f4f6",
-          }}
-        >
-          {title}
-        </h2>
-        {subtitle ? (
-          <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14 }}>
-            {subtitle}
-          </p>
-        ) : null}
+      <div style={{ color: "#cbd5e1", fontSize: 12, marginBottom: 6 }}>
+        {label}
       </div>
-
-      {children}
-    </section>
+      <div style={{ color: "#86efac", fontSize: 14, fontWeight: 800 }}>
+        {formatPrice(payload[0].value)}
+      </div>
+    </div>
   );
 }
 
@@ -473,7 +290,11 @@ export default function AdminDashboard() {
   }, [payments]);
 
   const activePlans = useMemo(() => {
-    return plans.filter((plan) => isPlanActive(plan)).length;
+    return plans.filter((plan) => {
+      if (typeof plan?.isActive === "boolean") return plan.isActive;
+      if (typeof plan?.active === "boolean") return plan.active;
+      return true;
+    }).length;
   }, [plans]);
 
   const revenueSeries = useMemo(() => buildRevenueSeries(payments), [payments]);
@@ -613,8 +434,39 @@ export default function AdminDashboard() {
           >
             {loadingPayments ? (
               <div style={{ color: "#9ca3af" }}>Carregando gráfico...</div>
+            ) : revenueSeries.length === 0 ? (
+              <div style={{ color: "#9ca3af" }}>
+                Sem pagamentos aprovados suficientes para exibir o gráfico.
+              </div>
             ) : (
-              <RevenueChart data={revenueSeries} />
+              <div style={{ width: "100%", height: 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={revenueSeries}>
+                    <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `R$ ${value}`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#22c55e"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </SectionCard>
 

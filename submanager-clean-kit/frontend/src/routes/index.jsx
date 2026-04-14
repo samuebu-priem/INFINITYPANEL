@@ -6,17 +6,29 @@ import Plans from "../pages/Plans.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import AdminSubscribers from "../pages/AdminSubscribers.jsx";
 import UserHome from "../pages/UserHome.jsx";
+import Profile from "../pages/Profile.jsx";
 import TermsOfUse from "../pages/TermsOfUse.jsx";
 import PrivacyPolicy from "../pages/PrivacyPolicy.jsx";
 import FinancialTerms from "../pages/FinancialTerms.jsx";
 import { useAuth } from "../context/auth.jsx";
+
+function ProtectedRoute({ children }) {
+  const { user, booting } = useAuth();
+
+  if (booting) return null;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
 
 function AdminOnlyRoute({ children }) {
   const { user, booting } = useAuth();
 
   if (booting) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (user?.role !== "ADMIN") return <Navigate to="/dashboard" replace />;
+  if (!["ADMIN", "OWNER"].includes(user?.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return children;
 }
 
@@ -25,7 +37,7 @@ function DefaultRedirect() {
 
   if (booting) return null;
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
+  return <Navigate to={user?.role === "PLAYER" ? "/dashboard" : "/admin"} replace />;
 }
 
 function LogoutRedirect() {
@@ -33,7 +45,7 @@ function LogoutRedirect() {
 
   if (booting) return null;
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user?.role === "ADMIN" ? "/admin" : "/dashboard"} replace />;
+  return <Navigate to={user?.role === "PLAYER" ? "/dashboard" : "/admin"} replace />;
 }
 
 export default function AppRoutes() {
@@ -41,6 +53,7 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+
       <Route
         path="/termos-de-uso"
         element={
@@ -65,8 +78,31 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+
       <Route path="/" element={<AppShell><DefaultRedirect /></AppShell>} />
-      <Route path="/dashboard" element={<AppShell><UserHome /></AppShell>} />
+
+      <Route
+        path="/dashboard"
+        element={
+          <AppShell>
+            <ProtectedRoute>
+              <UserHome />
+            </ProtectedRoute>
+          </AppShell>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <AppShell>
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          </AppShell>
+        }
+      />
+
       <Route
         path="/plans"
         element={
@@ -77,6 +113,7 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+
       <Route
         path="/admin"
         element={
@@ -87,6 +124,7 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+
       <Route
         path="/admin/subscribers"
         element={
@@ -97,7 +135,9 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+
       <Route path="/logout" element={<LogoutRedirect />} />
+
       <Route
         path="*"
         element={
