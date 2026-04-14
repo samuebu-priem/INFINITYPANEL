@@ -1,6 +1,7 @@
 import { Client, EmbedBuilder, Events, GatewayIntentBits, Message, TextChannel } from 'discord.js';
 import { ParserService, SupervisorLogData } from '../modules/supervisor/parser.service';
 import { ValidatorService } from '../modules/supervisor/validator.service';
+import { MatchRecorderService } from '../modules/supervisor/matchRecorder.service';
 
 type SupervisorClientOptions = {
   token: string;
@@ -17,8 +18,12 @@ const isEmbedLogMessage = (message: Message<boolean>): boolean => {
 
   const title = embeds[0]?.title ?? '';
   const description = embeds[0]?.description ?? '';
-  const fieldsText = embeds[0]?.fields?.map((field) => `${field.name} ${field.value}`).join(' ') ?? '';
-  return /concluíd|aposta|sucesso|encerrad|finalizad|fila/i.test(`${title} ${description} ${fieldsText}`);
+  const fieldsText =
+    embeds[0]?.fields?.map((field) => `${field.name} ${field.value}`).join(' ') ?? '';
+
+  return /concluíd|aposta|sucesso|encerrad|finalizad|fila/i.test(
+    `${title} ${description} ${fieldsText}`,
+  );
 };
 
 const formatCurrencyBRL = (value: number): string =>
@@ -32,10 +37,11 @@ const calculateMediatorProfit = (log: SupervisorLogData): number => {
 export class DiscordSupervisorClient {
   private readonly client: Client;
   private readonly mediatorRevenueTotals = new Map<string, number>();
+  private readonly matchRecorder = new MatchRecorderService();
 
   constructor(private readonly options: SupervisorClientOptions) {
     this.client = new Client({
-      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
+      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
     });
   }
 
@@ -55,8 +61,8 @@ export class DiscordSupervisorClient {
             '🟢 Bot supervisor online',
             `User: ${this.client.user?.tag ?? 'unknown user'}`,
             `Canal de logs: ${this.options.logChannelId}`,
-            `Canal de alertas: ${this.options.alertChannelId}`
-          ].join('\n')
+            `Canal de alertas: ${this.options.alertChannelId}`,
+          ].join('\n'),
         });
       } catch (error) {
         console.error('Failed to send startup message:', error);
@@ -116,13 +122,34 @@ export class DiscordSupervisorClient {
         const playersCount = Array.isArray(parsed.players) ? parsed.players.length : 0;
         const mediatorProfit = calculateMediatorProfit(parsed);
         const mediatorId = parsed.mediatorId || 'unknown';
+
         const previousMediatorTotal = this.mediatorRevenueTotals.get(mediatorId) ?? 0;
         const updatedMediatorTotal = previousMediatorTotal + mediatorProfit;
         this.mediatorRevenueTotals.set(mediatorId, updatedMediatorTotal);
 
         const result = this.options.validatorService.validate(parsed, undefined);
+
         console.log('resultado validação:', result);
-        console.log(`contabilidade atualizada | mediador=${parsed.mediatorName} | filas=${playersCount} | lucroAtual=R$ ${mediatorProfit.toFixed(2)} | totalAcumulado=R$ ${updatedMediatorTotal.toFixed(2)}`);
+        console.log(
+          `contabilidade atualizada | mediador=${parsed.mediatorName} | filas=${playersCount} | lucroAtual=R$ ${mediatorProfit.toFixed(2)} | totalAcumulado=R$ ${updatedMediatorTotal.toFixed(2)}`,
+        );
+
+        // ✅ NOVO: registro interno centralizado
+        const recorderResult = await this.matchRecorder.recordMatch({
+          players: Array.isArray(parsed.players) ? parsed.players : [],
+          threadName: parsed.threadName || 'Não informado',
+          game: parsed.game || 'Não informado',
+          mode: parsed.mode || 'Não informado',
+          winner: parsed.winner || 'Não informado',
+          mediatorId: parsed.mediatorId || 'unknown',
+          mediatorName: parsed.mediatorName || 'Não informado',
+          mediatorRevenue: mediatorProfit,
+        });
+
+        const effectiveMediatorTotal =
+          recorderResult?.ok && typeof recorderResult?.backend?.updatedMediatorTotal === 'number'
+            ? recorderResult.backend.updatedMediatorTotal
+            : updatedMediatorTotal;
 
         const alertChannel = await this.client.channels.fetch(alertChannelId);
         if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) {
@@ -133,6 +160,7 @@ export class DiscordSupervisorClient {
         const textChannel = alertChannel as TextChannel;
         const currentTime = new Date().toLocaleString('pt-BR');
         const issuesText = result.issues.map((issue) => `${issue.field}: ${issue.message}`).join('\n');
+
         const embedBuilder = new EmbedBuilder()
           .setColor(0x3B82F6)
           .setTitle('📊 Fila contabilizada')
@@ -140,13 +168,13 @@ export class DiscordSupervisorClient {
           .addFields(
             { name: '👤 Mediador', value: parsed.mediatorName || 'Não informado', inline: true },
             { name: '🧾 Mediador ID', value: parsed.mediatorId || 'Não informado', inline: true },
-          { name: '📈 Filas concluídas', value: String(playersCount), inline: true },
-          { name: '💰 Lucro da aposta', value: formatCurrencyBRL(mediatorProfit), inline: true },
-          { name: '📊 Total acumulado do mediador', value: formatCurrencyBRL(updatedMediatorTotal), inline: true },
+            { name: '📈 Filas concluídas', value: String(playersCount), inline: true },
+            { name: '💰 Lucro da aposta', value: formatCurrencyBRL(mediatorProfit), inline: true },
+            { name: '📊 Total acumulado do mediador', value: formatCurrencyBRL(effectiveMediatorTotal), inline: true },
             { name: '🏆 Último vencedor', value: parsed.winner || 'Não informado', inline: true },
             { name: '🧵 Thread', value: parsed.threadName || 'Não informado', inline: false },
             { name: '🗂️ Jogo', value: parsed.game || 'Não informado', inline: true },
-            { name: '🎮 Modalidade', value: parsed.mode || 'Não informado', inline: true }
+            { name: '🎮 Modalidade', value: parsed.mode || 'Não informado', inline: true },
           )
           .setFooter({ text: `Supervisor ativo • ${currentTime}` });
 

@@ -241,6 +241,24 @@ model Ranking {
   @@index([scope, weekKey, points])
 }
 
+model SupervisorMatchRecord {
+  id              String   @id @default(cuid())
+  threadName      String   @unique
+  game            String
+  mode            String
+  winner          String
+  mediatorId      String
+  mediatorName    String
+  mediatorRevenue Decimal  @default(0) @db.Decimal(12, 2)
+  players         Json
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([mediatorId, createdAt])
+  @@index([winner, createdAt])
+  @@index([createdAt])
+}
+
 enum Role {
   OWNER
   ADMIN
