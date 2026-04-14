@@ -33,7 +33,7 @@ export class MatchRecorderService {
 
   private async sendToBackend(payload: RecordMatchPayload) {
     const baseUrl = this.options.internalApiUrl || process.env.API_BASE_URL;
-    const token = this.options.internalApiToken || process.env.API_TOKEN;
+    const token = this.options.internalApiToken || process.env.INTERNAL_API_TOKEN;
 
     if (!baseUrl) {
       console.warn("API_BASE_URL not configured. Skipping backend sync.");
@@ -41,7 +41,7 @@ export class MatchRecorderService {
     }
 
     if (!token) {
-      console.warn("API_TOKEN not configured. Skipping backend sync.");
+      console.warn("INTERNAL_API_TOKEN not configured. Skipping backend sync.");
       return null;
     }
 
