@@ -2,76 +2,367 @@ import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 
-function SectionCard({ title, children }) {
+function getSubscriptionsList(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.subscriptions)) return response.subscriptions;
+  if (Array.isArray(response?.data?.subscriptions)) {
+    return response.data.subscriptions;
+  }
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+}
+
+function getPlanName(subscription) {
+  return (
+    subscription?.plan?.name ||
+    subscription?.plan?.title ||
+    subscription?.planName ||
+    "Plano ativo"
+  );
+}
+
+function getEndsAt(subscription) {
+  return (
+    subscription?.endsAt ||
+    subscription?.expiresAt ||
+    subscription?.validUntil ||
+    subscription?.endDate ||
+    null
+  );
+}
+
+function isSubscriptionActive(subscription) {
+  if (!subscription) return false;
+  if (subscription?.isActive === true) return true;
+
+  const status = String(subscription?.status || "").toUpperCase();
+  if (status !== "ACTIVE") return false;
+
+  const endsAt = getEndsAt(subscription);
+  if (!endsAt) return false;
+
+  const endDate = new Date(endsAt);
+  if (Number.isNaN(endDate.getTime())) return false;
+
+  return endDate.getTime() > Date.now();
+}
+
+function buildCountdown(endsAt, nowTs) {
+  if (!endsAt) {
+    return {
+      expired: true,
+      label: "Expirada",
+    };
+  }
+
+  const endDate = new Date(endsAt);
+  if (Number.isNaN(endDate.getTime())) {
+    return {
+      expired: true,
+      label: "Expirada",
+    };
+  }
+
+  const diffMs = endDate.getTime() - nowTs;
+
+  if (diffMs <= 0) {
+    return {
+      expired: true,
+      label: "Expirada",
+    };
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    expired: false,
+    label: `${days}d ${hours}h ${minutes}m ${seconds}s`,
+  };
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "—";
+
+  return date.toLocaleString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function SectionCard({ title, subtitle, children }) {
   return (
     <section
       style={{
-        background: "linear-gradient(180deg, #121821 0%, #0b0f14 100%)",
+        background:
+          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
         border: "1px solid #1f2937",
-        borderRadius: 24,
-        padding: 20,
+        borderRadius: 28,
+        padding: 22,
+        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
       }}
     >
-      <h2 style={{ color: "#f3f4f6", marginBottom: 16 }}>{title}</h2>
+      <div style={{ marginBottom: 18 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 900,
+            color: "#f3f4f6",
+          }}
+        >
+          {title}
+        </h2>
+
+        {subtitle ? (
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: "#9ca3af",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            {subtitle}
+          </p>
+        ) : null}
+      </div>
+
       {children}
     </section>
   );
 }
 
-function formatDate(date) {
-  if (!date) return "—";
-  return new Date(date).toLocaleString("pt-BR");
+function StatCard({ label, value, helpText, accent = "primary" }) {
+  const accents = {
+    primary: {
+      value: "#f3f4f6",
+      border: "rgba(99,102,241,0.16)",
+      bg: "rgba(255,255,255,0.02)",
+    },
+    success: {
+      value: "#86efac",
+      border: "rgba(34,197,94,0.18)",
+      bg: "rgba(34,197,94,0.05)",
+    },
+  };
+
+  const theme = accents[accent] || accents.primary;
+
+  return (
+    <div
+      style={{
+        border: `1px solid ${theme.border}`,
+        borderRadius: 22,
+        background: theme.bg,
+        padding: 18,
+      }}
+    >
+      <div
+        style={{
+          color: "#9ca3af",
+          fontSize: 12,
+          fontWeight: 800,
+          textTransform: "uppercase",
+          letterSpacing: "0.12em",
+          marginBottom: 10,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          color: theme.value,
+          fontSize: 32,
+          lineHeight: 1.05,
+          fontWeight: 900,
+        }}
+      >
+        {value}
+      </div>
+
+      <div
+        style={{
+          marginTop: 8,
+          color: "#9ca3af",
+          fontSize: 14,
+          lineHeight: 1.5,
+        }}
+      >
+        {helpText}
+      </div>
+    </div>
+  );
 }
 
-function getRemainingTime(endsAt) {
-  if (!endsAt) return "∞";
-
-  const diff = new Date(endsAt).getTime() - Date.now();
-  if (diff <= 0) return "Expirado";
-
-  const seconds = Math.floor(diff / 1000);
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-
-  return `${d}d ${h}h ${m}m ${s}s`;
-}
-
-function SubscriptionCard({ sub }) {
-  const active = sub.isActive;
+function AccessCard({ subscription, nowTs }) {
+  const countdown = buildCountdown(getEndsAt(subscription), nowTs);
+  const active = isSubscriptionActive(subscription);
 
   return (
     <div
       style={{
         border: "1px solid #1f2937",
-        borderRadius: 20,
-        padding: 16,
-        background: "rgba(255,255,255,0.02)",
+        borderRadius: 24,
+        background:
+          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
+        padding: 20,
+        boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+        display: "grid",
+        gap: 14,
       }}
     >
-      <div style={{ fontWeight: 800, color: "#f3f4f6", fontSize: 16 }}>
-        {sub.plan?.name}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              color: "#f3f4f6",
+              fontSize: 18,
+              fontWeight: 800,
+              lineHeight: 1.25,
+            }}
+          >
+            {getPlanName(subscription)}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#9ca3af",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            Acesso ativo vinculado à sua conta.
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            width: "fit-content",
+            padding: "6px 10px",
+            borderRadius: 999,
+            fontSize: 11,
+            fontWeight: 900,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            color: active ? "#86efac" : "#fca5a5",
+            background: active
+              ? "rgba(34,197,94,0.10)"
+              : "rgba(239,68,68,0.10)",
+            border: active
+              ? "1px solid rgba(34,197,94,0.18)"
+              : "1px solid rgba(239,68,68,0.18)",
+          }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: active ? "#22c55e" : "#ef4444",
+              boxShadow: active
+                ? "0 0 12px rgba(34,197,94,0.75)"
+                : "0 0 10px rgba(239,68,68,0.45)",
+            }}
+          />
+          {active ? "Ativo" : "Expirado"}
+        </div>
       </div>
 
-      <div style={{ marginTop: 8, color: active ? "#22c55e" : "#ef4444" }}>
-        {active ? "ATIVO" : "EXPIRADO"}
-      </div>
+      <div
+        style={{
+          display: "grid",
+          gap: 14,
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid rgba(34,197,94,0.18)",
+            background: "rgba(34,197,94,0.05)",
+            padding: "14px 16px",
+          }}
+        >
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              marginBottom: 8,
+            }}
+          >
+            Tempo restante
+          </div>
 
-      <div style={{ marginTop: 10, fontSize: 13, color: "#9ca3af" }}>
-        Tempo restante:
-      </div>
+          <div
+            style={{
+              color: active ? "#86efac" : "#fca5a5",
+              fontSize: 20,
+              fontWeight: 900,
+              lineHeight: 1.2,
+            }}
+          >
+            {countdown.label}
+          </div>
+        </div>
 
-      <div style={{ color: "#f3f4f6", fontWeight: 700 }}>
-        {getRemainingTime(sub.endsAt)}
-      </div>
+        <div
+          style={{
+            borderRadius: 18,
+            border: "1px solid #1f2937",
+            background: "rgba(255,255,255,0.02)",
+            padding: "14px 16px",
+          }}
+        >
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              marginBottom: 8,
+            }}
+          >
+            Expira em
+          </div>
 
-      <div style={{ marginTop: 10, fontSize: 12, color: "#9ca3af" }}>
-        Início: {formatDate(sub.startsAt)}
-      </div>
-
-      <div style={{ fontSize: 12, color: "#9ca3af" }}>
-        Fim: {formatDate(sub.endsAt)}
+          <div
+            style={{
+              color: "#f3f4f6",
+              fontSize: 15,
+              fontWeight: 800,
+              lineHeight: 1.5,
+            }}
+          >
+            {formatDate(getEndsAt(subscription))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -79,111 +370,409 @@ function SubscriptionCard({ sub }) {
 
 export default function Profile() {
   const { user } = useAuth();
-
   const [subscriptions, setSubscriptions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
+  const [subscriptionsError, setSubscriptionsError] = useState("");
+  const [nowTs, setNowTs] = useState(Date.now());
 
   useEffect(() => {
-    const load = async () => {
+    const interval = window.setInterval(() => {
+      setNowTs(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const loadSubscriptions = async () => {
       try {
-        const res = await api.get("/subscriptions/me");
-        setSubscriptions(res?.subscriptions || []);
-      } catch {
+        const response = await api.get("/subscriptions/me");
+        setSubscriptions(getSubscriptionsList(response));
+      } catch (error) {
         setSubscriptions([]);
+        setSubscriptionsError(error?.response?.data?.message || "");
       } finally {
-        setLoading(false);
+        setLoadingSubscriptions(false);
       }
     };
 
-    load();
+    loadSubscriptions();
   }, []);
 
-  // Atualiza tempo em tempo real
-  const [, forceUpdate] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      forceUpdate((v) => v + 1);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const activeCount = useMemo(
-    () => subscriptions.filter((s) => s.isActive).length,
-    [subscriptions]
+  const activeSubscriptions = useMemo(
+    () => subscriptions.filter(isSubscriptionActive),
+    [subscriptions, nowTs]
   );
+
+  const nextExpiration = useMemo(() => {
+    if (!activeSubscriptions.length) return null;
+
+    const sorted = [...activeSubscriptions].sort((a, b) => {
+      const aTime = new Date(getEndsAt(a) || 0).getTime();
+      const bTime = new Date(getEndsAt(b) || 0).getTime();
+      return aTime - bTime;
+    });
+
+    return sorted[0] || null;
+  }, [activeSubscriptions]);
+
+  const nextExpirationCountdown = useMemo(() => {
+    if (!nextExpiration) return null;
+    return buildCountdown(getEndsAt(nextExpiration), nowTs);
+  }, [nextExpiration, nowTs]);
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
-      {/* HEADER */}
+      <style>{`
+        .profile-top-grid {
+          display: grid;
+          gap: 20px;
+          grid-template-columns: 1.1fr 0.9fr;
+        }
+
+        .profile-stats-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .profile-access-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 1180px) {
+          .profile-top-grid,
+          .profile-access-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+        }
+
+        @media (max-width: 860px) {
+          .profile-top-grid,
+          .profile-stats-grid,
+          .profile-access-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
       <section
         style={{
+          position: "relative",
+          overflow: "hidden",
           borderRadius: 30,
           padding: 28,
-          border: "1px solid rgba(99,102,241,0.2)",
+          border: "1px solid rgba(99, 102, 241, 0.18)",
           background:
-            "linear-gradient(135deg, rgba(18,24,33,1) 0%, rgba(11,15,20,1) 100%)",
+            "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+          boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
         }}
       >
-        <h1 style={{ color: "#f3f4f6", fontSize: 32 }}>
-          Perfil de {user?.username}
-        </h1>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(circle at 85% 15%, rgba(99,102,241,0.22), transparent 24%)",
+          }}
+        />
 
-        <p style={{ color: "#9ca3af" }}>
-          Gerencie sua conta e acompanhe seus acessos
-        </p>
-      </section>
-
-      {/* INFO */}
-      <SectionCard title="Informações da conta">
-        <div style={{ display: "grid", gap: 8, color: "#cbd5e1" }}>
-          <div>Usuário: {user?.username}</div>
-          <div>Email: {user?.email}</div>
-          <div>Role: {user?.role}</div>
-        </div>
-      </SectionCard>
-
-      {/* STATUS */}
-      <SectionCard title="Status">
-        <div style={{ display: "flex", gap: 20 }}>
-          <div>
-            <div style={{ color: "#9ca3af", fontSize: 12 }}>
-              Assinaturas ativas
+        <div
+          style={{
+            position: "relative",
+            zIndex: 1,
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 20,
+            flexWrap: "wrap",
+            alignItems: "flex-end",
+          }}
+        >
+          <div style={{ maxWidth: 720 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 14,
+                padding: "7px 12px",
+                borderRadius: 999,
+                background: "rgba(99,102,241,0.10)",
+                border: "1px solid rgba(99,102,241,0.18)",
+                color: "#c7d2fe",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+              }}
+            >
+              Seu perfil
             </div>
-            <div style={{ fontSize: 28, color: "#22c55e" }}>
-              {activeCount}
-            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                color: "#f3f4f6",
+                fontSize: 38,
+                lineHeight: 1.05,
+                fontWeight: 900,
+                letterSpacing: -0.5,
+              }}
+            >
+              {user?.username || "Usuário"}
+            </h1>
+
+            <p
+              style={{
+                margin: "14px 0 0",
+                color: "#9ca3af",
+                fontSize: 15,
+                lineHeight: 1.7,
+                maxWidth: 680,
+              }}
+            >
+              Gerencie sua conta e acompanhe seus acessos ativos com clareza.
+            </p>
           </div>
 
-          <div>
-            <div style={{ color: "#9ca3af", fontSize: 12 }}>
-              Total de planos
-            </div>
-            <div style={{ fontSize: 28, color: "#f3f4f6" }}>
-              {subscriptions.length}
-            </div>
-          </div>
-        </div>
-      </SectionCard>
-
-      {/* SUBSCRIPTIONS */}
-      <SectionCard title="Seus planos">
-        {loading ? (
-          <div style={{ color: "#9ca3af" }}>Carregando...</div>
-        ) : subscriptions.length === 0 ? (
-          <div style={{ color: "#9ca3af" }}>
-            Você não possui planos ativos.
-          </div>
-        ) : (
           <div
             style={{
               display: "grid",
-              gap: 16,
-              gridTemplateColumns: "repeat(3, 1fr)",
+              gap: 12,
+              minWidth: 260,
             }}
           >
-            {subscriptions.map((sub) => (
-              <SubscriptionCard key={sub.id} sub={sub} />
+            <div
+              style={{
+                borderRadius: 20,
+                border: "1px solid rgba(34,197,94,0.18)",
+                background: "rgba(34,197,94,0.05)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  fontWeight: 800,
+                  marginBottom: 6,
+                }}
+              >
+                Acessos ativos
+              </div>
+              <div
+                style={{
+                  color: "#86efac",
+                  fontWeight: 800,
+                  fontSize: 22,
+                }}
+              >
+                {loadingSubscriptions ? "..." : activeSubscriptions.length}
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 20,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.04)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  fontWeight: 800,
+                  marginBottom: 6,
+                }}
+              >
+                Próxima expiração
+              </div>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontWeight: 800,
+                  fontSize: 15,
+                }}
+              >
+                {loadingSubscriptions
+                  ? "..."
+                  : nextExpirationCountdown?.label || "—"}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="profile-top-grid">
+        <SectionCard
+          title="Dados da conta"
+          subtitle="Informações principais da sua conta."
+        >
+          <div style={{ display: "grid", gap: 14 }}>
+            <div
+              style={{
+                borderRadius: 18,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.02)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: 8,
+                }}
+              >
+                Nome de usuário
+              </div>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontSize: 16,
+                  fontWeight: 800,
+                }}
+              >
+                {user?.username || "—"}
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 18,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.02)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: 8,
+                }}
+              >
+                E-mail
+              </div>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontSize: 16,
+                  fontWeight: 800,
+                  wordBreak: "break-word",
+                }}
+              >
+                {user?.email || "—"}
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 18,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.02)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: 8,
+                }}
+              >
+                Conta criada em
+              </div>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontSize: 16,
+                  fontWeight: 800,
+                }}
+              >
+                {formatDate(user?.createdAt)}
+              </div>
+            </div>
+          </div>
+        </SectionCard>
+
+        <SectionCard
+          title="Resumo do acesso"
+          subtitle="Status atual das suas assinaturas."
+        >
+          <div className="profile-stats-grid">
+            <StatCard
+              label="Acessos ativos"
+              value={loadingSubscriptions ? "..." : activeSubscriptions.length}
+              helpText="Planos válidos no momento."
+              accent="success"
+            />
+
+            <StatCard
+              label="Próximo vencimento"
+              value={
+                loadingSubscriptions
+                  ? "..."
+                  : nextExpirationCountdown?.label || "—"
+              }
+              helpText={
+                nextExpiration
+                  ? getPlanName(nextExpiration)
+                  : subscriptionsError || "Nenhum vencimento próximo."
+              }
+            />
+          </div>
+        </SectionCard>
+      </div>
+
+      <SectionCard
+        title="Acessos ativos"
+        subtitle="Cada plano possui seu próprio tempo e validade."
+      >
+        {loadingSubscriptions ? (
+          <div style={{ color: "#9ca3af", fontSize: 14 }}>
+            Carregando assinaturas...
+          </div>
+        ) : activeSubscriptions.length === 0 ? (
+          <div
+            style={{
+              border: "1px dashed rgba(99, 102, 241, 0.22)",
+              borderRadius: 24,
+              padding: 28,
+              textAlign: "center",
+              background:
+                "linear-gradient(180deg, rgba(99,102,241,0.05) 0%, rgba(11,15,20,0.4) 100%)",
+              color: "#9ca3af",
+            }}
+          >
+            Você não possui nenhum acesso ativo no momento.
+          </div>
+        ) : (
+          <div className="profile-access-grid">
+            {activeSubscriptions.map((subscription) => (
+              <AccessCard
+                key={subscription.id}
+                subscription={subscription}
+                nowTs={nowTs}
+              />
             ))}
           </div>
         )}
