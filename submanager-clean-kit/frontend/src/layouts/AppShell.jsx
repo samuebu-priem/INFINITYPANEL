@@ -1,4 +1,3 @@
-
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Home,
@@ -7,6 +6,7 @@ import {
   ShieldCheck,
   FileText,
   Users,
+  User,
 } from "lucide-react";
 import { useAuth } from "../context/auth.jsx";
 
@@ -22,13 +22,14 @@ export default function AppShell({ children, showHeader = true }) {
       ? [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard }]
       : [{ to: "/dashboard", label: "Início", icon: Home }]),
 
+    { to: "/profile", label: "Perfil", icon: User },
+
     ...(isAdmin ? [{ to: "/plans", label: "Planos", icon: FileText }] : []),
 
     ...(isAdmin
       ? [{ to: "/admin/subscribers", label: "Usuários", icon: Users }]
       : []),
 
-    // ✅ Termos como link normal
     { to: "/termos-de-uso", label: "Termos", icon: FileText },
   ];
 
@@ -64,7 +65,6 @@ export default function AppShell({ children, showHeader = true }) {
               flexWrap: "wrap",
             }}
           >
-            {/* LOGO */}
             <div
               style={{
                 display: "flex",
@@ -114,7 +114,6 @@ export default function AppShell({ children, showHeader = true }) {
               </div>
             </div>
 
-            {/* NAV */}
             <nav
               style={{
                 display: "flex",
@@ -161,7 +160,6 @@ export default function AppShell({ children, showHeader = true }) {
                 );
               })}
 
-              {/* SAIR */}
               <button
                 type="button"
                 onClick={() => {
@@ -190,7 +188,6 @@ export default function AppShell({ children, showHeader = true }) {
         </header>
       ) : null}
 
-      {/* CONTEÚDO */}
       <main
         style={{
           maxWidth: 1400,
