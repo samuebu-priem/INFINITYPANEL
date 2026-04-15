@@ -5,8 +5,10 @@ import Register from "../pages/Register.jsx";
 import Plans from "../pages/Plans.jsx";
 import AdminDashboard from "../pages/AdminDashboard.jsx";
 import AdminSubscribers from "../pages/AdminSubscribers.jsx";
+import AdminMediatorRanking from "../pages/AdminMediatorRanking.jsx";
 import UserHome from "../pages/UserHome.jsx";
 import Profile from "../pages/Profile.jsx";
+import RankingPublic from "../pages/RankingPublic.jsx";
 import TermsOfUse from "../pages/TermsOfUse.jsx";
 import PrivacyPolicy from "../pages/PrivacyPolicy.jsx";
 import FinancialTerms from "../pages/FinancialTerms.jsx";
@@ -62,6 +64,7 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+
       <Route
         path="/politica-de-privacidade"
         element={
@@ -70,6 +73,7 @@ export default function AppRoutes() {
           </AppShell>
         }
       />
+
       <Route
         path="/termos-financeiros"
         element={
@@ -104,6 +108,17 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/ranking"
+        element={
+          <AppShell>
+            <ProtectedRoute>
+              <RankingPublic />
+            </ProtectedRoute>
+          </AppShell>
+        }
+      />
+
+      <Route
         path="/plans"
         element={
           <AppShell>
@@ -131,6 +146,17 @@ export default function AppRoutes() {
           <AppShell>
             <AdminOnlyRoute>
               <AdminSubscribers />
+            </AdminOnlyRoute>
+          </AppShell>
+        }
+      />
+
+      <Route
+        path="/admin/mediators"
+        element={
+          <AppShell>
+            <AdminOnlyRoute>
+              <AdminMediatorRanking />
             </AdminOnlyRoute>
           </AppShell>
         }

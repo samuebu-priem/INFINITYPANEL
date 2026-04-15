@@ -1,0 +1,1 @@
+export { rankingsRouter } from "./rankings.routes.js";

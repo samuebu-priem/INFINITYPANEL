@@ -7,6 +7,7 @@ import {
   FileText,
   Users,
   User,
+  Trophy,
 } from "lucide-react";
 import { useAuth } from "../context/auth.jsx";
 
@@ -23,11 +24,16 @@ export default function AppShell({ children, showHeader = true }) {
       : [{ to: "/dashboard", label: "Início", icon: Home }]),
 
     { to: "/profile", label: "Perfil", icon: User },
+    { to: "/ranking", label: "Ranking público", icon: Trophy },
 
     ...(isAdmin ? [{ to: "/plans", label: "Planos", icon: FileText }] : []),
 
     ...(isAdmin
       ? [{ to: "/admin/subscribers", label: "Usuários", icon: Users }]
+      : []),
+
+    ...(isAdmin
+      ? [{ to: "/admin/mediators", label: "Mediadores", icon: Trophy }]
       : []),
 
     { to: "/termos-de-uso", label: "Termos", icon: FileText },

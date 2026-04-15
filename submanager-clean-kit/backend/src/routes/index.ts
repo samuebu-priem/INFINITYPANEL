@@ -10,6 +10,8 @@ import { paymentsRouter } from "../modules/payments/payments.routes.js";
 import { internalMatchesRouter } from "../modules/internal/internal-matches.routes.js";
 import { adminRouter } from "../modules/admin/admin.routes.js";
 import { profileRouter } from "../modules/profile/index.js";
+import { rankingsRouter } from "../modules/rankings/index.js";
+
 
 export const apiRouter = Router();
 
@@ -23,3 +25,4 @@ apiRouter.use("/payments", paymentsRouter);
 apiRouter.use("/internal/matches", internalMatchesRouter);
 apiRouter.use("/dev/payments", devPaymentsRouter);
 apiRouter.use("/profile", profileRouter);
+apiRouter.use("/rankings", rankingsRouter);
