@@ -902,66 +902,61 @@ export default function Profile() {
         </div>
       </SectionCard>
 
-      <SectionCard
-        title="Atividade"
-        subtitle="Resumo básico do seu histórico."
-      >
-        <div className="profile-stats-grid">
-          <StatCard
-            label="Vitórias"
-            value={loadingSummary ? "..." : profileSummary?.wins ?? 0}
-            helpText="Vitórias registradas pelo supervisor."
-            accent="success"
-          />
+     <SectionCard
+  title="Atividade"
+  subtitle="Resumo real da sua atuação na org."
+>
+  <div className="profile-stats-grid">
+    <StatCard
+      label="Vitórias"
+      value={loadingSummary ? "..." : profileSummary?.wins ?? 0}
+      helpText="Vitórias registradas pelo supervisor."
+      accent="success"
+    />
 
-          <StatCard
-            label="Última vitória"
-            value={
-              loadingSummary
-                ? "..."
-                : profileSummary?.latestWinAt
-                ? new Date(profileSummary.latestWinAt).toLocaleDateString("pt-BR")
-                : "—"
-            }
-            helpText="Último resultado reconhecido no sistema."
-          />
-        </div>
-      </SectionCard>
+    <StatCard
+      label="Partidas"
+      value={loadingSummary ? "..." : profileSummary?.matchesPlayed ?? 0}
+      helpText="Partidas em que sua conta apareceu no registro."
+    />
 
-      <SectionCard
-        title="Acessos ativos"
-        subtitle="Cada plano possui seu próprio tempo e validade."
-      >
-        {loadingSubscriptions ? (
-          <div style={{ color: "#9ca3af", fontSize: 14 }}>
-            Carregando assinaturas...
-          </div>
-        ) : activeSubscriptions.length === 0 ? (
-          <div
-            style={{
-              border: "1px dashed rgba(99, 102, 241, 0.22)",
-              borderRadius: 24,
-              padding: 28,
-              textAlign: "center",
-              background:
-                "linear-gradient(180deg, rgba(99,102,241,0.05) 0%, rgba(11,15,20,0.4) 100%)",
-              color: "#9ca3af",
-            }}
-          >
-            Você não possui nenhum acesso ativo no momento.
-          </div>
-        ) : (
-          <div className="profile-access-grid">
-            {activeSubscriptions.map((subscription) => (
-              <AccessCard
-                key={subscription.id}
-                subscription={subscription}
-                nowTs={nowTs}
-              />
-            ))}
-          </div>
-        )}
-      </SectionCard>
+    <StatCard
+      label="Lucro como mediador"
+      value={
+        loadingSummary
+          ? "..."
+          : `R$ ${Number(profileSummary?.mediatorProfitTotal || 0).toFixed(2)}`
+      }
+      helpText="Total acumulado mediando partidas."
+      accent="success"
+    />
+
+    <StatCard
+      label="Partidas mediadas"
+      value={loadingSummary ? "..." : profileSummary?.mediatedMatchesCount ?? 0}
+      helpText="Quantidade de partidas em que você mediou."
+    />
+  </div>
+
+  <div style={{ marginTop: 16 }}>
+    <StatCard
+      label="Dia com mais lucro"
+      value={
+        loadingSummary
+          ? "..."
+          : profileSummary?.bestMediatorDay?.date
+          ? new Date(`${profileSummary.bestMediatorDay.date}T00:00:00`).toLocaleDateString("pt-BR")
+          : "—"
+      }
+      helpText={
+        profileSummary?.bestMediatorDay?.amount
+          ? `R$ ${Number(profileSummary.bestMediatorDay.amount).toFixed(2)} no melhor dia`
+          : "Sem lucro como mediador registrado."
+      }
+      accent="success"
+    />
+  </div>
+</SectionCard>
     </div>
   );
 }
