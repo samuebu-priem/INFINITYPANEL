@@ -68,8 +68,7 @@ function buildRevenueSeries(payments) {
     if (Number.isNaN(date.getTime())) continue;
 
     const key = date.toISOString().slice(0, 10);
-    const current = grouped.get(key) || 0;
-    grouped.set(key, current + normalizePaymentAmount(payment));
+    grouped.set(key, (grouped.get(key) || 0) + normalizePaymentAmount(payment));
   }
 
   return [...grouped.entries()]
@@ -95,8 +94,7 @@ function buildSupervisorRevenueSeries(records) {
     if (Number.isNaN(date.getTime())) continue;
 
     const key = date.toISOString().slice(0, 10);
-    const current = grouped.get(key) || 0;
-    grouped.set(key, current + normalizeSupervisorRevenue(record));
+    grouped.set(key, (grouped.get(key) || 0) + normalizeSupervisorRevenue(record));
   }
 
   return [...grouped.entries()]
@@ -170,14 +168,7 @@ function SectionCard({ title, subtitle, children }) {
       }}
     >
       <div style={{ marginBottom: 18 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 22,
-            fontWeight: 900,
-            color: "#f3f4f6",
-          }}
-        >
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#f3f4f6" }}>
           {title}
         </h2>
         {subtitle ? (
@@ -186,7 +177,6 @@ function SectionCard({ title, subtitle, children }) {
           </p>
         ) : null}
       </div>
-
       {children}
     </section>
   );
@@ -194,27 +184,9 @@ function SectionCard({ title, subtitle, children }) {
 
 function StatCard({ title, value, hint, accent = "primary" }) {
   const themes = {
-    primary: {
-      chip: "rgba(99, 102, 241, 0.14)",
-      border: "rgba(99, 102, 241, 0.30)",
-      glow: "0 0 30px rgba(99, 102, 241, 0.16)",
-      dot: "#6366f1",
-      value: "#f3f4f6",
-    },
-    success: {
-      chip: "rgba(34, 197, 94, 0.14)",
-      border: "rgba(34, 197, 94, 0.30)",
-      glow: "0 0 34px rgba(34, 197, 94, 0.16)",
-      dot: "#22c55e",
-      value: "#86efac",
-    },
-    neutral: {
-      chip: "rgba(148, 163, 184, 0.10)",
-      border: "rgba(148, 163, 184, 0.18)",
-      glow: "0 0 24px rgba(148, 163, 184, 0.08)",
-      dot: "#94a3b8",
-      value: "#f3f4f6",
-    },
+    primary: { value: "#f3f4f6", border: "rgba(99,102,241,0.30)", bg: "rgba(99,102,241,0.08)" },
+    success: { value: "#86efac", border: "rgba(34,197,94,0.30)", bg: "rgba(34,197,94,0.08)" },
+    neutral: { value: "#f3f4f6", border: "rgba(148,163,184,0.18)", bg: "rgba(255,255,255,0.03)" },
   };
 
   const theme = themes[accent] || themes.primary;
@@ -222,53 +194,19 @@ function StatCard({ title, value, hint, accent = "primary" }) {
   return (
     <div
       style={{
-        background:
-          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
+        background: "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
         border: `1px solid ${theme.border}`,
         borderRadius: 24,
         padding: 20,
-        boxShadow: theme.glow,
       }}
     >
-      <div
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 8,
-          padding: "6px 10px",
-          borderRadius: 999,
-          background: theme.chip,
-          color: "#cbd5e1",
-          fontSize: 12,
-          fontWeight: 700,
-          marginBottom: 14,
-        }}
-      >
-        <span
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: "50%",
-            background: theme.dot,
-            boxShadow: `0 0 12px ${theme.dot}`,
-          }}
-        />
+      <div style={{ color: "#9ca3af", fontSize: 12, fontWeight: 700, marginBottom: 10 }}>
         {title}
       </div>
-
-      <div
-        style={{
-          color: theme.value,
-          fontSize: 32,
-          lineHeight: 1.05,
-          fontWeight: 900,
-          marginBottom: 8,
-        }}
-      >
+      <div style={{ color: theme.value, fontSize: 32, lineHeight: 1.05, fontWeight: 900 }}>
         {value}
       </div>
-
-      <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.55 }}>
+      <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.55, marginTop: 8 }}>
         {hint}
       </div>
     </div>
@@ -285,12 +223,9 @@ function CustomTooltip({ active, payload, label }) {
         border: "1px solid #1f2937",
         borderRadius: 14,
         padding: 12,
-        boxShadow: "0 12px 32px rgba(0,0,0,0.28)",
       }}
     >
-      <div style={{ color: "#cbd5e1", fontSize: 12, marginBottom: 6 }}>
-        {label}
-      </div>
+      <div style={{ color: "#cbd5e1", fontSize: 12, marginBottom: 6 }}>{label}</div>
       <div style={{ color: "#86efac", fontSize: 14, fontWeight: 800 }}>
         {formatPrice(payload[0].value)}
       </div>
@@ -313,36 +248,20 @@ function LatestSupervisorRecord({ record }) {
       <div style={{ color: "#f3f4f6", fontSize: 15, fontWeight: 800 }}>
         {record?.threadName || "Thread não informada"}
       </div>
-
       <div style={{ color: "#9ca3af", fontSize: 13 }}>
-        Mediador:{" "}
-        <strong style={{ color: "#e5e7eb" }}>
-          {record?.mediatorName || "Não informado"}
-        </strong>
+        Mediador: <strong style={{ color: "#e5e7eb" }}>{record?.mediatorName || "Não informado"}</strong>
       </div>
-
       <div style={{ color: "#9ca3af", fontSize: 13 }}>
-        Modalidade:{" "}
-        <strong style={{ color: "#e5e7eb" }}>
-          {record?.mode || "Não informada"}
-        </strong>
+        Modalidade: <strong style={{ color: "#e5e7eb" }}>{record?.mode || "Não informada"}</strong>
       </div>
-
       <div style={{ color: "#9ca3af", fontSize: 13 }}>
-        Vencedor:{" "}
-        <strong style={{ color: "#e5e7eb" }}>
-          {record?.winner || "Não informado"}
-        </strong>
+        Vencedor: <strong style={{ color: "#e5e7eb" }}>{record?.winner || "Não informado"}</strong>
       </div>
-
       <div style={{ color: "#86efac", fontSize: 14, fontWeight: 800 }}>
         Lucro: {formatPrice(record?.mediatorRevenue)}
       </div>
-
       <div style={{ color: "#6b7280", fontSize: 12 }}>
-        {record?.createdAt
-          ? new Date(record.createdAt).toLocaleString("pt-BR")
-          : "Sem data"}
+        {record?.createdAt ? new Date(record.createdAt).toLocaleString("pt-BR") : "Sem data"}
       </div>
     </div>
   );
@@ -375,8 +294,8 @@ export default function AdminDashboard() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-
         const data = await response.json();
+
         const normalized = Array.isArray(data)
           ? data
           : Array.isArray(data?.plans)
@@ -400,7 +319,6 @@ export default function AdminDashboard() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-
         const data = await response.json();
         if (mounted) setPayments(getPaymentsList(data));
       } finally {
@@ -417,7 +335,6 @@ export default function AdminDashboard() {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-
         const data = await response.json();
         if (mounted) setSupervisorRecords(getSupervisorRecordsList(data));
       } finally {
@@ -426,11 +343,7 @@ export default function AdminDashboard() {
     }
 
     async function loadAll() {
-      await Promise.all([
-        loadPlans(),
-        loadPayments(),
-        loadSupervisorRecords(),
-      ]);
+      await Promise.all([loadPlans(), loadPayments(), loadSupervisorRecords()]);
     }
 
     loadAll();
@@ -449,9 +362,7 @@ export default function AdminDashboard() {
   }, [payments]);
 
   const approvedCount = useMemo(() => {
-    return payments.filter(
-      (payment) => normalizePaymentStatus(payment) === "APPROVED"
-    ).length;
+    return payments.filter((payment) => normalizePaymentStatus(payment) === "APPROVED").length;
   }, [payments]);
 
   const activePlans = useMemo(() => {
@@ -465,12 +376,7 @@ export default function AdminDashboard() {
   const revenueSeries = useMemo(() => buildRevenueSeries(payments), [payments]);
 
   const filteredSupervisorRecords = useMemo(() => {
-    return filterSupervisorRecords(
-      supervisorRecords,
-      mediatorFilter,
-      dateFrom,
-      dateTo
-    );
+    return filterSupervisorRecords(supervisorRecords, mediatorFilter, dateFrom, dateTo);
   }, [supervisorRecords, mediatorFilter, dateFrom, dateTo]);
 
   const supervisorMatchesCount = useMemo(() => {
@@ -578,25 +484,10 @@ export default function AdminDashboard() {
             }}
           >
             <div>
-              <h1
-                style={{
-                  margin: 0,
-                  color: "#f3f4f6",
-                  fontSize: 36,
-                  lineHeight: 1.05,
-                  fontWeight: 900,
-                }}
-              >
+              <h1 style={{ margin: 0, color: "#f3f4f6", fontSize: 36, fontWeight: 900 }}>
                 Admin Dashboard
               </h1>
-              <p
-                style={{
-                  margin: "12px 0 0",
-                  color: "#9ca3af",
-                  fontSize: 15,
-                  lineHeight: 1.7,
-                }}
-              >
+              <p style={{ margin: "12px 0 0", color: "#9ca3af", fontSize: 15, lineHeight: 1.7 }}>
                 Visão geral financeira e operacional do painel.
               </p>
             </div>
@@ -642,11 +533,7 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Lucro supervisor"
-            value={
-              loadingSupervisorRecords
-                ? "..."
-                : formatPrice(supervisorTotalRevenue)
-            }
+            value={loadingSupervisorRecords ? "..." : formatPrice(supervisorTotalRevenue)}
             hint="Lucro operacional vindo do bot supervisor."
             accent="success"
           />
@@ -706,10 +593,7 @@ export default function AdminDashboard() {
         </SectionCard>
 
         <div className="admin-dashboard-grid">
-          <SectionCard
-            title="Gráfico de pagamentos"
-            subtitle="Pagamentos aprovados por data."
-          >
+          <SectionCard title="Gráfico de pagamentos" subtitle="Pagamentos aprovados por data.">
             {loadingPayments ? (
               <div style={{ color: "#9ca3af" }}>Carregando gráfico...</div>
             ) : revenueSeries.length === 0 ? (
@@ -721,37 +605,17 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={revenueSeries}>
                     <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => `R$ ${value}`}
-                    />
+                    <XAxis dataKey="label" tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => `R$ ${value}`} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="amount"
-                      stroke="#22c55e"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
+                    <Line type="monotone" dataKey="amount" stroke="#22c55e" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             )}
           </SectionCard>
 
-          <SectionCard
-            title="Resumo financeiro"
-            subtitle="Indicadores rápidos do sistema."
-          >
+          <SectionCard title="Resumo financeiro" subtitle="Indicadores rápidos do sistema.">
             <div style={{ display: "grid", gap: 14 }}>
               <div
                 style={{
@@ -789,8 +653,7 @@ export default function AdminDashboard() {
               </div>
 
               <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
-                Esses valores são baseados nos pagamentos confirmados e nos
-                registros operacionais recebidos do supervisor.
+                Esses valores são baseados nos pagamentos confirmados e nos registros operacionais recebidos do supervisor.
               </div>
             </div>
           </SectionCard>
@@ -812,27 +675,10 @@ export default function AdminDashboard() {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={supervisorRevenueSeries}>
                     <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
-                    <XAxis
-                      dataKey="label"
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: "#94a3b8", fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(value) => `R$ ${value}`}
-                    />
+                    <XAxis dataKey="label" tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#94a3b8", fontSize: 12 }} axisLine={false} tickLine={false} tickFormatter={(value) => `R$ ${value}`} />
                     <Tooltip content={<CustomTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="amount"
-                      stroke="#818cf8"
-                      strokeWidth={3}
-                      dot={{ r: 4 }}
-                      activeDot={{ r: 6 }}
-                    />
+                    <Line type="monotone" dataKey="amount" stroke="#818cf8" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -855,11 +701,7 @@ export default function AdminDashboard() {
               />
               <StatCard
                 title="Lucro operacional"
-                value={
-                  loadingSupervisorRecords
-                    ? "..."
-                    : formatPrice(supervisorTotalRevenue)
-                }
+                value={loadingSupervisorRecords ? "..." : formatPrice(supervisorTotalRevenue)}
                 hint="Receita de mediação acumulada."
                 accent="success"
               />
@@ -868,10 +710,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className="admin-dashboard-bottom-grid">
-          <SectionCard
-            title="Top mediadores"
-            subtitle="Maiores resultados no período filtrado."
-          >
+          <SectionCard title="Top mediadores" subtitle="Maiores resultados no período filtrado.">
             {topMediators.length === 0 ? (
               <div style={{ color: "#9ca3af" }}>Sem dados suficientes.</div>
             ) : (
