@@ -15,8 +15,8 @@ type EmbedField = {
 };
 
 const normalizeText = (value: unknown): string => {
-  if (typeof value !== 'string') return '';
-  return value.replace(/\u00A0/g, ' ').trim();
+  if (typeof value !== "string") return "";
+  return value.replace(/\u00A0/g, " ").trim();
 };
 
 const parseMoneyBRL = (value: string): number | undefined => {
@@ -24,7 +24,7 @@ const parseMoneyBRL = (value: string): number | undefined => {
   const match = normalized.match(/R\$\s*([\d.,]+)/i);
   if (!match) return undefined;
 
-  return Number(match[1].replace(/\./g, '').replace(',', '.'));
+  return Number(match[1].replace(/\./g, "").replace(",", "."));
 };
 
 const getFieldValue = (fields: EmbedField[], fieldName: string): string => {
@@ -53,71 +53,86 @@ export class ParserService {
     }));
 
     const footer =
-      embed.footer && typeof embed.footer === 'object'
+      embed.footer && typeof embed.footer === "object"
         ? (embed.footer as Record<string, unknown>)
         : null;
 
     const footerText = normalizeText(footer?.text);
 
     const rawThreadName =
-      normalizeText(getFieldValue(fields, 'Thread')) ||
-      normalizeText(getFieldValue(fields, 'Sala')) ||
+      normalizeText(getFieldValue(fields, "Thread")) ||
+      normalizeText(getFieldValue(fields, "Sala")) ||
       normalizeText(description.match(/thread[:\s]+([^\n`]+)/i)?.[1]) ||
       normalizeText(description.match(/(fila-[^\n`]+)/i)?.[1]);
 
     const threadName = rawThreadName
-      .replace(/^\*+\s*/, '')
-      .replace(/\s*\*+$/, '')
+      .replace(/^\*+\s*/, "")
+      .replace(/\s*\*+$/, "")
       .trim();
 
     const game =
-      normalizeText(getFieldValue(fields, 'Jogo')) ||
-      normalizeText(getFieldValue(fields, 'Game')) ||
+      normalizeText(getFieldValue(fields, "Jogo")) ||
+      normalizeText(getFieldValue(fields, "Game")) ||
       normalizeText(description.match(/jogo[:\s]+([^\n]+)/i)?.[1]);
 
     const mode =
-      normalizeText(getFieldValue(fields, 'Modalidade')) ||
-      normalizeText(getFieldValue(fields, 'Modo')) ||
+      normalizeText(getFieldValue(fields, "Modalidade")) ||
+      normalizeText(getFieldValue(fields, "Modo")) ||
       normalizeText(description.match(/modalidade[:\s]+([^\n]+)/i)?.[1]);
 
     const mediatorField =
-      getFieldValue(fields, 'Mediador') ||
-      getFieldValue(fields, 'Mediator') ||
-      getFieldValue(fields, 'Administrador');
+      getFieldValue(fields, "Mediador") ||
+      getFieldValue(fields, "Mediator") ||
+      getFieldValue(fields, "Administrador");
 
     const mediatorName =
       normalizeText(mediatorField) ||
       normalizeText(description.match(/mediador[:\s]+([^\n]+)/i)?.[1]);
 
     const mediatorId =
-      extractFirstNumber(getFieldValue(fields, 'ID do Mediador')) ||
-      extractFirstNumber(getFieldValue(fields, 'Mediador ID')) ||
+      extractFirstNumber(getFieldValue(fields, "ID do Mediador")) ||
+      extractFirstNumber(getFieldValue(fields, "Mediador ID")) ||
       extractFirstNumber(mediatorField) ||
       extractFirstNumber(footerText);
 
-    const winnerValue =
-      getFieldValue(fields, 'Vencedor') ||
-      getFieldValue(fields, 'Winner') ||
-      normalizeText(description.match(/vencedor[:\s]+([^\n]+)/i)?.[1]);
+    const winnerField =
+      getFieldValue(fields, "Vencedor") ||
+      getFieldValue(fields, "Winner") ||
+      getFieldValue(fields, "Ganhador") ||
+      getFieldValue(fields, "Resultado") ||
+      normalizeText(description.match(/vencedor[:\s]+([^\n]+)/i)?.[1]) ||
+      normalizeText(description.match(/winner[:\s]+([^\n]+)/i)?.[1]);
 
-    const winnerMentionIds = extractMentionIds(winnerValue);
+    const winnerMentionIds = extractMentionIds(winnerField);
     const winner =
       winnerMentionIds[0] ||
-      extractFirstNumber(winnerValue);
+      extractFirstNumber(winnerField);
 
     const playersField =
-      getFieldValue(fields, 'Jogadores') ||
-      getFieldValue(fields, 'Players') ||
-      getFieldValue(fields, 'Participantes');
+      getFieldValue(fields, "Jogadores") ||
+      getFieldValue(fields, "Players") ||
+      getFieldValue(fields, "Participantes");
 
     const players = playersField ? extractMentionIds(playersField) : [];
 
     const mediatorRevenueField =
-      getFieldValue(fields, 'Receita do Mediador') ||
-      getFieldValue(fields, 'Lucro do Mediador') ||
-      getFieldValue(fields, 'Lucro');
+      getFieldValue(fields, "Receita do Mediador") ||
+      getFieldValue(fields, "Lucro do Mediador") ||
+      getFieldValue(fields, "Lucro");
 
     if (!threadName || !game || !mode || !mediatorName || !mediatorId || !winner) {
+      console.log("parser falhou - campos extraídos:", {
+        threadName,
+        game,
+        mode,
+        mediatorName,
+        mediatorId,
+        winner,
+        winnerField,
+        fields,
+        description,
+        footerText,
+      });
       return null;
     }
 
