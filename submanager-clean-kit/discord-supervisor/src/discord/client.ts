@@ -2,6 +2,7 @@ import { Client, EmbedBuilder, Events, GatewayIntentBits, Message, TextChannel }
 import { ParserService, SupervisorLogData } from '../modules/supervisor/parser.service';
 import { ValidatorService } from '../modules/supervisor/validator.service';
 import { MatchRecorderService } from '../modules/supervisor/matchRecorder.service';
+import { sendVerifyMessage } from "./sendVerifyMessage";
 
 type SupervisorClientOptions = {
   token: string;
@@ -69,6 +70,8 @@ export class DiscordSupervisorClient {
   async start(): Promise<void> {
     this.client.once(Events.ClientReady, async () => {
       console.log(`Discord supervisor logged in as ${this.client.user?.tag ?? 'unknown user'}`);
+
+      await sendVerifyMessage(this.client);
 
       if (!this.options.sendStartupMessage) return;
 
@@ -213,8 +216,24 @@ export class DiscordSupervisorClient {
       }
     });
 
-    await this.client.login(this.options.token);
-  }
+  this.client.on(Events.InteractionCreate, async (interaction) => {
+    try {
+      if (!interaction.isButton()) return;
+
+      if (interaction.customId === "get_discord_id") {
+        await interaction.reply({
+          content: `📋 **Seu ID do Discord:**\n\`${interaction.user.id}\`\n\nCole isso no site para vincular sua conta.`,
+          ephemeral: true,
+        });
+      }
+    } catch (error) {
+      console.error("Button interaction error:", error);
+    }
+  });
+
+  await this.client.login(this.options.token);
+}
+
 
   async stop(): Promise<void> {
     await this.client.destroy();
