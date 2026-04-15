@@ -19,6 +19,13 @@ const normalizeText = (value: unknown): string => {
   return value.replace(/\u00A0/g, " ").trim();
 };
 
+const cleanMarkdownLabelValue = (value: string): string => {
+  return normalizeText(value)
+    .replace(/^\*\*+\s*/, "")
+    .replace(/\s*\*\*+$/, "")
+    .trim();
+};
+
 const parseMoneyBRL = (value: string): number | undefined => {
   const normalized = normalizeText(value);
   const match = normalized.match(/R\$\s*([\d.,]+)/i);
@@ -43,6 +50,18 @@ const extractFirstNumber = (value: string): string | undefined => {
   return match?.[1];
 };
 
+const extractWinnerFromMatchBlock = (value: string): string | undefined => {
+  const normalized = normalizeText(value);
+
+  const mentionMatch = normalized.match(/\*\*Vencedor:\*\*\s*<@!?(\d+)>/i);
+  if (mentionMatch?.[1]) return normalizeText(mentionMatch[1]);
+
+  const numericMatch = normalized.match(/\*\*Vencedor:\*\*\s*.*?\((\d{5,})\)/i);
+  if (numericMatch?.[1]) return normalizeText(numericMatch[1]);
+
+  return undefined;
+};
+
 export class ParserService {
   parse(embed: Record<string, unknown>): SupervisorLogData | null {
     const description = normalizeText(embed.description);
@@ -60,25 +79,29 @@ export class ParserService {
     const footerText = normalizeText(footer?.text);
 
     const rawThreadName =
-      normalizeText(getFieldValue(fields, "Thread")) ||
-      normalizeText(getFieldValue(fields, "Sala")) ||
+      getFieldValue(fields, "Thread") ||
+      getFieldValue(fields, "Sala") ||
+      normalizeText(description.match(/\*\*Thread:\*\*\s*([^\n`]+)/i)?.[1]) ||
       normalizeText(description.match(/thread[:\s]+([^\n`]+)/i)?.[1]) ||
       normalizeText(description.match(/(fila-[^\n`]+)/i)?.[1]);
 
-    const threadName = rawThreadName
-      .replace(/^\*+\s*/, "")
-      .replace(/\s*\*+$/, "")
-      .trim();
+    const threadName = cleanMarkdownLabelValue(rawThreadName);
 
-    const game =
-      normalizeText(getFieldValue(fields, "Jogo")) ||
-      normalizeText(getFieldValue(fields, "Game")) ||
+    const rawGame =
+      getFieldValue(fields, "Jogo") ||
+      getFieldValue(fields, "Game") ||
+      normalizeText(description.match(/\*\*Jogo:\*\*\s*([^\n]+)/i)?.[1]) ||
       normalizeText(description.match(/jogo[:\s]+([^\n]+)/i)?.[1]);
 
-    const mode =
-      normalizeText(getFieldValue(fields, "Modalidade")) ||
-      normalizeText(getFieldValue(fields, "Modo")) ||
+    const game = cleanMarkdownLabelValue(rawGame);
+
+    const rawMode =
+      getFieldValue(fields, "Modalidade") ||
+      getFieldValue(fields, "Modo") ||
+      normalizeText(description.match(/\*\*Modalidade:\*\*\s*([^\n]+)/i)?.[1]) ||
       normalizeText(description.match(/modalidade[:\s]+([^\n]+)/i)?.[1]);
+
+    const mode = cleanMarkdownLabelValue(rawMode);
 
     const mediatorField =
       getFieldValue(fields, "Mediador") ||
@@ -99,14 +122,17 @@ export class ParserService {
       getFieldValue(fields, "Vencedor") ||
       getFieldValue(fields, "Winner") ||
       getFieldValue(fields, "Ganhador") ||
-      getFieldValue(fields, "Resultado") ||
-      normalizeText(description.match(/vencedor[:\s]+([^\n]+)/i)?.[1]) ||
-      normalizeText(description.match(/winner[:\s]+([^\n]+)/i)?.[1]);
+      getFieldValue(fields, "Resultado");
+
+    const matchBlock =
+      getFieldValue(fields, "Partidas") ||
+      getFieldValue(fields, "Partida");
 
     const winnerMentionIds = extractMentionIds(winnerField);
     const winner =
       winnerMentionIds[0] ||
-      extractFirstNumber(winnerField);
+      extractFirstNumber(winnerField) ||
+      extractWinnerFromMatchBlock(matchBlock);
 
     const playersField =
       getFieldValue(fields, "Jogadores") ||
@@ -129,6 +155,7 @@ export class ParserService {
         mediatorId,
         winner,
         winnerField,
+        matchBlock,
         fields,
         description,
         footerText,
