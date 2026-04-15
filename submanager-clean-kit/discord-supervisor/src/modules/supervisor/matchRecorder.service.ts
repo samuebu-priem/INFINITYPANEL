@@ -32,7 +32,7 @@ export class MatchRecorderService {
   }
 
   private async sendToBackend(payload: RecordMatchPayload) {
-    const baseUrl = this.options.internalApiUrl || process.env.INTERNAL_API_URL;
+    const baseUrl = this.options.internalApiUrl || process.env.API_BASE_URL;
     const token = this.options.internalApiToken || process.env.INTERNAL_API_TOKEN;
 
     if (!baseUrl) {
