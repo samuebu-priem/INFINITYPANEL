@@ -29,6 +29,14 @@ function getPaymentsList(data) {
   return [];
 }
 
+function getSupervisorRecordsList(data) {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.records)) return data.records;
+  if (Array.isArray(data?.data?.records)) return data.data.records;
+  if (Array.isArray(data?.data)) return data.data;
+  return [];
+}
+
 function normalizePaymentAmount(payment) {
   const value = Number(payment?.amount ?? 0);
   return Number.isFinite(value) ? value : 0;
@@ -40,6 +48,11 @@ function normalizePaymentStatus(payment) {
 
 function normalizePaymentDate(payment) {
   return payment?.approvedAt || payment?.createdAt || null;
+}
+
+function normalizeSupervisorRevenue(record) {
+  const value = Number(record?.mediatorRevenue ?? 0);
+  return Number.isFinite(value) ? value : 0;
 }
 
 function buildRevenueSeries(payments) {
@@ -57,6 +70,33 @@ function buildRevenueSeries(payments) {
     const key = date.toISOString().slice(0, 10);
     const current = grouped.get(key) || 0;
     grouped.set(key, current + normalizePaymentAmount(payment));
+  }
+
+  return [...grouped.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, amount]) => ({
+      date,
+      amount,
+      label: new Date(`${date}T00:00:00`).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+      }),
+    }));
+}
+
+function buildSupervisorRevenueSeries(records) {
+  const grouped = new Map();
+
+  for (const record of records) {
+    const rawDate = record?.createdAt;
+    if (!rawDate) continue;
+
+    const date = new Date(rawDate);
+    if (Number.isNaN(date.getTime())) continue;
+
+    const key = date.toISOString().slice(0, 10);
+    const current = grouped.get(key) || 0;
+    grouped.set(key, current + normalizeSupervisorRevenue(record));
   }
 
   return [...grouped.entries()]
@@ -212,12 +252,64 @@ function CustomTooltip({ active, payload, label }) {
   );
 }
 
+function LatestSupervisorRecord({ record }) {
+  return (
+    <div
+      style={{
+        border: "1px solid #1f2937",
+        borderRadius: 18,
+        background: "rgba(255,255,255,0.02)",
+        padding: 16,
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      <div style={{ color: "#f3f4f6", fontSize: 15, fontWeight: 800 }}>
+        {record?.threadName || "Thread não informada"}
+      </div>
+
+      <div style={{ color: "#9ca3af", fontSize: 13 }}>
+        Mediador:{" "}
+        <strong style={{ color: "#e5e7eb" }}>
+          {record?.mediatorName || "Não informado"}
+        </strong>
+      </div>
+
+      <div style={{ color: "#9ca3af", fontSize: 13 }}>
+        Modalidade:{" "}
+        <strong style={{ color: "#e5e7eb" }}>
+          {record?.mode || "Não informada"}
+        </strong>
+      </div>
+
+      <div style={{ color: "#9ca3af", fontSize: 13 }}>
+        Vencedor:{" "}
+        <strong style={{ color: "#e5e7eb" }}>
+          {record?.winner || "Não informado"}
+        </strong>
+      </div>
+
+      <div style={{ color: "#86efac", fontSize: 14, fontWeight: 800 }}>
+        Lucro: {formatPrice(record?.mediatorRevenue)}
+      </div>
+
+      <div style={{ color: "#6b7280", fontSize: 12 }}>
+        {record?.createdAt
+          ? new Date(record.createdAt).toLocaleString("pt-BR")
+          : "Sem data"}
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [plans, setPlans] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [supervisorRecords, setSupervisorRecords] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loadingPayments, setLoadingPayments] = useState(true);
+  const [loadingSupervisorRecords, setLoadingSupervisorRecords] = useState(true);
 
   useEffect(() => {
     let mounted = true;
@@ -264,8 +356,29 @@ export default function AdminDashboard() {
       }
     }
 
+    async function loadSupervisorRecords() {
+      try {
+        const token = localStorage.getItem(TOKEN_KEY);
+        const response = await fetch(`${API_BASE}/internal/matches/records`, {
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+
+        const data = await response.json();
+        if (mounted) setSupervisorRecords(getSupervisorRecordsList(data));
+      } finally {
+        if (mounted) setLoadingSupervisorRecords(false);
+      }
+    }
+
     async function loadAll() {
-      await Promise.all([loadPlans(), loadPayments()]);
+      await Promise.all([
+        loadPlans(),
+        loadPayments(),
+        loadSupervisorRecords(),
+      ]);
     }
 
     loadAll();
@@ -299,6 +412,25 @@ export default function AdminDashboard() {
 
   const revenueSeries = useMemo(() => buildRevenueSeries(payments), [payments]);
 
+  const supervisorMatchesCount = useMemo(() => {
+    return supervisorRecords.length;
+  }, [supervisorRecords]);
+
+  const supervisorTotalRevenue = useMemo(() => {
+    return supervisorRecords.reduce(
+      (acc, record) => acc + normalizeSupervisorRevenue(record),
+      0
+    );
+  }, [supervisorRecords]);
+
+  const supervisorRevenueSeries = useMemo(() => {
+    return buildSupervisorRevenueSeries(supervisorRecords);
+  }, [supervisorRecords]);
+
+  const latestSupervisorRecords = useMemo(() => {
+    return supervisorRecords.slice(0, 6);
+  }, [supervisorRecords]);
+
   return (
     <div
       style={{
@@ -321,16 +453,32 @@ export default function AdminDashboard() {
           gap: 20px;
         }
 
+        .admin-dashboard-bottom-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+        }
+
+        .admin-dashboard-records-grid {
+          display: grid;
+          gap: 14px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
         @media (max-width: 1180px) {
           .admin-dashboard-stats,
-          .admin-dashboard-grid {
+          .admin-dashboard-grid,
+          .admin-dashboard-bottom-grid,
+          .admin-dashboard-records-grid {
             grid-template-columns: 1fr 1fr;
           }
         }
 
         @media (max-width: 860px) {
           .admin-dashboard-stats,
-          .admin-dashboard-grid {
+          .admin-dashboard-grid,
+          .admin-dashboard-bottom-grid,
+          .admin-dashboard-records-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -376,7 +524,7 @@ export default function AdminDashboard() {
                   lineHeight: 1.7,
                 }}
               >
-                Visão geral de lucro, pagamentos e planos.
+                Visão geral financeira e operacional do painel.
               </p>
             </div>
 
@@ -404,7 +552,7 @@ export default function AdminDashboard() {
           <StatCard
             title="Valor lucrado"
             value={loadingPayments ? "..." : formatPrice(totalRevenue)}
-            hint="Total consolidado em pagamentos aprovados."
+            hint="Pagamentos aprovados do sistema."
             accent="success"
           />
           <StatCard
@@ -420,16 +568,20 @@ export default function AdminDashboard() {
             accent="neutral"
           />
           <StatCard
-            title="Planos totais"
-            value={loadingPlans ? "..." : plans.length}
-            hint="Todos os planos cadastrados."
-            accent="primary"
+            title="Lucro supervisor"
+            value={
+              loadingSupervisorRecords
+                ? "..."
+                : formatPrice(supervisorTotalRevenue)
+            }
+            hint="Lucro operacional vindo do bot supervisor."
+            accent="success"
           />
         </div>
 
         <div className="admin-dashboard-grid">
           <SectionCard
-            title="Gráfico de lucro"
+            title="Gráfico de pagamentos"
             subtitle="Pagamentos aprovados por data."
           >
             {loadingPayments ? (
@@ -471,8 +623,8 @@ export default function AdminDashboard() {
           </SectionCard>
 
           <SectionCard
-            title="Resumo"
-            subtitle="Indicadores rápidos do painel."
+            title="Resumo financeiro"
+            subtitle="Indicadores rápidos do sistema."
           >
             <div style={{ display: "grid", gap: 14 }}>
               <div
@@ -494,7 +646,7 @@ export default function AdminDashboard() {
                     marginBottom: 10,
                   }}
                 >
-                  Lucro total
+                  Lucro total do sistema
                 </div>
 
                 <div
@@ -511,12 +663,99 @@ export default function AdminDashboard() {
               </div>
 
               <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
-                O gráfico e o valor acima atualizam automaticamente conforme novas
-                assinaturas forem aprovadas.
+                Esses valores são baseados nos pagamentos confirmados e nos
+                registros operacionais recebidos do supervisor.
               </div>
             </div>
           </SectionCard>
         </div>
+
+        <div className="admin-dashboard-bottom-grid">
+          <SectionCard
+            title="Gráfico do supervisor"
+            subtitle="Lucro operacional registrado pelo bot supervisor."
+          >
+            {loadingSupervisorRecords ? (
+              <div style={{ color: "#9ca3af" }}>Carregando gráfico...</div>
+            ) : supervisorRevenueSeries.length === 0 ? (
+              <div style={{ color: "#9ca3af" }}>
+                Nenhum registro operacional suficiente para exibir o gráfico.
+              </div>
+            ) : (
+              <div style={{ width: "100%", height: 320 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={supervisorRevenueSeries}>
+                    <CartesianGrid stroke="rgba(148,163,184,0.12)" vertical={false} />
+                    <XAxis
+                      dataKey="label"
+                      tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fill: "#94a3b8", fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) => `R$ ${value}`}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#818cf8"
+                      strokeWidth={3}
+                      dot={{ r: 4 }}
+                      activeDot={{ r: 6 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            title="Resumo operacional"
+            subtitle="Visão geral do que o supervisor está registrando."
+          >
+            <div className="admin-dashboard-stats" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+              <StatCard
+                title="Partidas supervisor"
+                value={loadingSupervisorRecords ? "..." : supervisorMatchesCount}
+                hint="Registros enviados pelo bot."
+                accent="primary"
+              />
+              <StatCard
+                title="Lucro operacional"
+                value={
+                  loadingSupervisorRecords
+                    ? "..."
+                    : formatPrice(supervisorTotalRevenue)
+                }
+                hint="Receita de mediação acumulada."
+                accent="success"
+              />
+            </div>
+          </SectionCard>
+        </div>
+
+        <SectionCard
+          title="Últimos registros do supervisor"
+          subtitle="Últimas partidas contabilizadas e recebidas pelo backend."
+        >
+          {loadingSupervisorRecords ? (
+            <div style={{ color: "#9ca3af" }}>Carregando registros...</div>
+          ) : latestSupervisorRecords.length === 0 ? (
+            <div style={{ color: "#9ca3af" }}>
+              Nenhum registro operacional encontrado.
+            </div>
+          ) : (
+            <div className="admin-dashboard-records-grid">
+              {latestSupervisorRecords.map((record) => (
+                <LatestSupervisorRecord key={record.id} record={record} />
+              ))}
+            </div>
+          )}
+        </SectionCard>
       </div>
     </div>
   );

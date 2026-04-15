@@ -17,4 +17,9 @@ export const internalMatchesController = {
 
     res.status(result.created ? 201 : 200).json(result);
   }),
+
+  list: asyncHandler(async (_req: Request, res: Response) => {
+    const result = await internalMatchesService.list();
+    res.json(result);
+  }),
 };

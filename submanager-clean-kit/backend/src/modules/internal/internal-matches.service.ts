@@ -60,10 +60,6 @@ export const internalMatchesService = {
       throw new ApiError(400, "mediatorName is required");
     }
 
-    if (players.length === 0) {
-      throw new ApiError(400, "players is required");
-    }
-
     const existing = await prisma.supervisorMatchRecord.findUnique({
       where: { threadName },
       select: { id: true },
@@ -88,9 +84,13 @@ export const internalMatchesService = {
         record: {
           id: updated.id,
           threadName: updated.threadName,
+          game: updated.game,
+          mode: updated.mode,
+          winner: updated.winner,
           mediatorId: updated.mediatorId,
           mediatorName: updated.mediatorName,
           mediatorRevenue: updated.mediatorRevenue.toString(),
+          players: updated.players,
           createdAt: updated.createdAt,
           updatedAt: updated.updatedAt,
         },
@@ -115,12 +115,39 @@ export const internalMatchesService = {
       record: {
         id: created.id,
         threadName: created.threadName,
+        game: created.game,
+        mode: created.mode,
+        winner: created.winner,
         mediatorId: created.mediatorId,
         mediatorName: created.mediatorName,
         mediatorRevenue: created.mediatorRevenue.toString(),
+        players: created.players,
         createdAt: created.createdAt,
         updatedAt: created.updatedAt,
       },
+    };
+  },
+
+  list: async () => {
+    const records = await prisma.supervisorMatchRecord.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    });
+
+    return {
+      records: records.map((record: typeof records[number]) => ({
+        id: record.id,
+        threadName: record.threadName,
+        game: record.game,
+        mode: record.mode,
+        winner: record.winner,
+        mediatorId: record.mediatorId,
+        mediatorName: record.mediatorName,
+        mediatorRevenue: record.mediatorRevenue.toString(),
+        players: record.players,
+        createdAt: record.createdAt,
+        updatedAt: record.updatedAt,
+      })),
     };
   },
 };
