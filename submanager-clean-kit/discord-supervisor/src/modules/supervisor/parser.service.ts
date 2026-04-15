@@ -98,10 +98,12 @@ export class ParserService {
     const winnerValue =
       getFieldValue(fields, 'Vencedor') ||
       getFieldValue(fields, 'Winner') ||
-      description.match(/vencedor[:\s]+([^\n]+)/i)?.[1] ||
-      '';
+      normalizeText(description.match(/vencedor[:\s]+([^\n]+)/i)?.[1]);
 
-    const winner = extractFirstNumber(winnerValue) || extractFirstNumber(description);
+    const winnerMentionIds = extractMentionIds(winnerValue);
+    const winner =
+      winnerMentionIds[0] ||
+      extractFirstNumber(winnerValue);
 
     const playersField =
       getFieldValue(fields, 'Jogadores') ||
