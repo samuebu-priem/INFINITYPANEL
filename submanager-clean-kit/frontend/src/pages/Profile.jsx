@@ -57,20 +57,13 @@ function isSubscriptionActive(subscription) {
 }
 
 function buildCountdown(endsAt, nowTs) {
-  if (!endsAt) {
-    return { expired: true, label: "Expirada" };
-  }
+  if (!endsAt) return { expired: true, label: "Expirada" };
 
   const endDate = new Date(endsAt);
-  if (Number.isNaN(endDate.getTime())) {
-    return { expired: true, label: "Expirada" };
-  }
+  if (Number.isNaN(endDate.getTime())) return { expired: true, label: "Expirada" };
 
   const diffMs = endDate.getTime() - nowTs;
-
-  if (diffMs <= 0) {
-    return { expired: true, label: "Expirada" };
-  }
+  if (diffMs <= 0) return { expired: true, label: "Expirada" };
 
   const totalSeconds = Math.floor(diffMs / 1000);
   const days = Math.floor(totalSeconds / 86400);
@@ -356,6 +349,23 @@ function AccessCard({ subscription, nowTs }) {
   );
 }
 
+function DiscordIcon() {
+  return (
+    <svg
+      viewBox="0 0 127.14 96.36"
+      width="22"
+      height="22"
+      aria-hidden="true"
+      style={{ display: "block" }}
+    >
+      <path
+        fill="currentColor"
+        d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21h0A105.73 105.73 0 0 0 32.71 96.36a77.7 77.7 0 0 0 6.89-11.27 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2.04a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2.04a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.26A105.25 105.25 0 0 0 126.6 80.22c2.64-27.35-4.5-51.08-18.9-72.15ZM42.45 65.69c-6.27 0-11.42-5.71-11.42-12.73S36.06 40.23 42.45 40.23 53.87 45.94 53.76 52.96c0 7.02-5.15 12.73-11.31 12.73Zm42.24 0c-6.27 0-11.42-5.71-11.42-12.73S78.3 40.23 84.69 40.23s11.42 5.71 11.31 12.73c0 7.02-5.04 12.73-11.31 12.73Z"
+      />
+    </svg>
+  );
+}
+
 export default function Profile() {
   const { user } = useAuth();
 
@@ -365,6 +375,10 @@ export default function Profile() {
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [subscriptionsError, setSubscriptionsError] = useState("");
   const [nowTs, setNowTs] = useState(Date.now());
+
+  const [discordIdInput, setDiscordIdInput] = useState("");
+  const [savingDiscordId, setSavingDiscordId] = useState(false);
+  const [discordMessage, setDiscordMessage] = useState("");
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -390,7 +404,9 @@ export default function Profile() {
     const loadSummary = async () => {
       try {
         const response = await api.get("/profile/summary");
-        setProfileSummary(getSummaryObject(response));
+        const summary = getSummaryObject(response);
+        setProfileSummary(summary);
+        setDiscordIdInput(summary?.discordId || "");
       } catch {
         setProfileSummary(null);
       } finally {
@@ -423,6 +439,38 @@ export default function Profile() {
     return buildCountdown(getEndsAt(nextExpiration), nowTs);
   }, [nextExpiration, nowTs]);
 
+  const handleSaveDiscordId = async (event) => {
+    event.preventDefault();
+    setSavingDiscordId(true);
+    setDiscordMessage("");
+
+    try {
+      const response = await api.patch("/profile/discord", {
+        discordId: discordIdInput,
+      });
+
+      const savedDiscordId =
+        response?.profile?.discordId ||
+        response?.data?.profile?.discordId ||
+        discordIdInput;
+
+      setProfileSummary((current) => ({
+        ...(current || {}),
+        discordId: savedDiscordId,
+      }));
+
+      setDiscordIdInput(savedDiscordId);
+      setDiscordMessage("ID do Discord vinculado com sucesso.");
+    } catch (error) {
+      setDiscordMessage(
+        error?.response?.data?.message ||
+          "Não foi possível vincular o ID do Discord."
+      );
+    } finally {
+      setSavingDiscordId(false);
+    }
+  };
+
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <style>{`
@@ -444,6 +492,13 @@ export default function Profile() {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
+        .profile-discord-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: 1fr auto;
+          align-items: end;
+        }
+
         @media (max-width: 1180px) {
           .profile-top-grid,
           .profile-access-grid {
@@ -454,7 +509,8 @@ export default function Profile() {
         @media (max-width: 860px) {
           .profile-top-grid,
           .profile-stats-grid,
-          .profile-access-grid {
+          .profile-access-grid,
+          .profile-discord-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -536,7 +592,7 @@ export default function Profile() {
                 maxWidth: 680,
               }}
             >
-              Gerencie sua conta e acompanhe seus acessos ativos com clareza.
+              Gerencie sua conta, acompanhe seus acessos e vincule seu Discord.
             </p>
           </div>
 
@@ -698,6 +754,153 @@ export default function Profile() {
           </div>
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Vincular Discord"
+        subtitle="Pegue seu ID no canal do Discord e cole abaixo para conectar sua conta."
+      >
+        <div
+          style={{
+            border: "1px solid rgba(88, 101, 242, 0.28)",
+            background:
+              "linear-gradient(180deg, rgba(88,101,242,0.12) 0%, rgba(17,24,39,0.35) 100%)",
+            borderRadius: 24,
+            padding: 20,
+            boxShadow: "0 0 28px rgba(88,101,242,0.12)",
+          }}
+        >
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              marginBottom: 16,
+              color: "#c7d2fe",
+              fontWeight: 800,
+              fontSize: 16,
+            }}
+          >
+            <span
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                display: "grid",
+                placeItems: "center",
+                background: "rgba(88,101,242,0.18)",
+                border: "1px solid rgba(88,101,242,0.28)",
+                color: "#5865F2",
+              }}
+            >
+              <DiscordIcon />
+            </span>
+            Discord
+          </div>
+
+          <form onSubmit={handleSaveDiscordId} style={{ display: "grid", gap: 14 }}>
+            <div className="profile-discord-grid">
+              <label style={{ display: "grid", gap: 8 }}>
+                <span
+                  style={{
+                    color: "#cbd5e1",
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  Seu ID do Discord
+                </span>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={discordIdInput}
+                  onChange={(event) => setDiscordIdInput(event.target.value)}
+                  placeholder="Ex: 123456789012345678"
+                  style={{
+                    height: 52,
+                    borderRadius: 16,
+                    border: "1px solid rgba(88,101,242,0.30)",
+                    background: "rgba(255,255,255,0.03)",
+                    color: "#f3f4f6",
+                    padding: "0 14px",
+                    outline: "none",
+                    boxShadow: "0 0 20px rgba(88,101,242,0.06)",
+                  }}
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={savingDiscordId}
+                style={{
+                  height: 52,
+                  padding: "0 18px",
+                  borderRadius: 16,
+                  border: "1px solid rgba(88,101,242,0.50)",
+                  background:
+                    "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+                  color: "#ffffff",
+                  fontSize: 14,
+                  fontWeight: 800,
+                  cursor: savingDiscordId ? "not-allowed" : "pointer",
+                  opacity: savingDiscordId ? 0.7 : 1,
+                  boxShadow: "0 0 28px rgba(88,101,242,0.18)",
+                }}
+              >
+                {savingDiscordId ? "Salvando..." : "Salvar ID"}
+              </button>
+            </div>
+
+            <div
+              style={{
+                color: "#9ca3af",
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
+              Vá ao canal criado no Discord, clique no botão para ver seu ID e
+              cole o número aqui.
+            </div>
+
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                flexWrap: "wrap",
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(88,101,242,0.24)",
+                  background: "rgba(88,101,242,0.10)",
+                  color: "#c7d2fe",
+                  fontSize: 12,
+                  fontWeight: 800,
+                }}
+              >
+                ID vinculado: {profileSummary?.discordId || "não vinculado"}
+              </div>
+
+              {discordMessage ? (
+                <div
+                  style={{
+                    color: discordMessage.toLowerCase().includes("sucesso")
+                      ? "#86efac"
+                      : "#fca5a5",
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
+                  {discordMessage}
+                </div>
+              ) : null}
+            </div>
+          </form>
+        </div>
+      </SectionCard>
 
       <SectionCard
         title="Atividade"
