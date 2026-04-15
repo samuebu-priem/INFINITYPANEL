@@ -780,3 +780,45 @@ export default function Profile() {
     </div>
   );
 }
+const [profileSummary, setProfileSummary] = useState(null);
+const [loadingSummary, setLoadingSummary] = useState(true);
+
+useEffect(() => {
+  const loadSummary = async () => {
+    try {
+      const response = await api.get("/profile/summary");
+      setProfileSummary(response?.summary || response?.data?.summary || null);
+    } catch {
+      setProfileSummary(null);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  loadSummary();
+}, []);
+
+<SectionCard
+  title="Atividade"
+  subtitle="Resumo básico do seu histórico."
+>
+  <div className="profile-stats-grid">
+    <StatCard
+      label="Vitórias"
+      value={loadingSummary ? "..." : profileSummary?.wins ?? 0}
+      helpText="Vitórias registradas pelo supervisor."
+      accent="success"
+    />
+    <StatCard
+      label="Última vitória"
+      value={
+        loadingSummary
+          ? "..."
+          : profileSummary?.latestWinAt
+          ? new Date(profileSummary.latestWinAt).toLocaleDateString("pt-BR")
+          : "—"
+      }
+      helpText="Último resultado reconhecido no sistema."
+    />
+  </div>
+</SectionCard>

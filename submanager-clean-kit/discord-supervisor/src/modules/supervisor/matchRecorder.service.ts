@@ -28,6 +28,7 @@ export class MatchRecorderService {
     return {
       ok: true,
       backend: response,
+      created: Boolean(response?.created),
     };
   }
 
@@ -46,7 +47,8 @@ export class MatchRecorderService {
     }
 
     try {
-      const res = await fetch(`${baseUrl}/api/internal/matches/record`, {
+      const normalizedBaseUrl = String(baseUrl).replace(/\/+$/, "");
+      const res = await fetch(`${normalizedBaseUrl}/api/internal/matches/record`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

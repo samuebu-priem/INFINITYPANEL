@@ -58,60 +58,75 @@ export class ParserService {
         : null;
 
     const footerText = normalizeText(footer?.text);
+
     const rawThreadName =
       normalizeText(getFieldValue(fields, 'Thread')) ||
       normalizeText(getFieldValue(fields, 'Sala')) ||
       normalizeText(description.match(/thread[:\s]+([^\n`]+)/i)?.[1]) ||
-      normalizeText(description.match(/(fila-[^\s`]+)/i)?.[1]) ||
-      normalizeText(description.match(/([A-Za-z0-9_-]{6,})/i)?.[1]);
+      normalizeText(description.match(/(fila-[^\n`]+)/i)?.[1]);
 
     const threadName = rawThreadName
       .replace(/^\*+\s*/, '')
       .replace(/\s*\*+$/, '')
-      .replace(/^\s*fila\s*-\s*/i, 'fila-')
       .trim();
+
     const game =
       normalizeText(getFieldValue(fields, 'Jogo')) ||
       normalizeText(getFieldValue(fields, 'Game')) ||
-      normalizeText(description.match(/jogo[:\s]+([^\n]+)/i)?.[1])
-        .replace(/^\*+\s*/, '')
-        .replace(/\s*\*+$/, '');
+      normalizeText(description.match(/jogo[:\s]+([^\n]+)/i)?.[1]);
+
     const mode =
       normalizeText(getFieldValue(fields, 'Modalidade')) ||
       normalizeText(getFieldValue(fields, 'Modo')) ||
-      normalizeText(description.match(/modalidade[:\s]+([^\n]+)/i)?.[1])
-        .replace(/^\*+\s*/, '')
-        .replace(/\s*\*+$/, '');
+      normalizeText(description.match(/modalidade[:\s]+([^\n]+)/i)?.[1]);
+
+    const mediatorField =
+      getFieldValue(fields, 'Mediador') ||
+      getFieldValue(fields, 'Mediator') ||
+      getFieldValue(fields, 'Administrador');
 
     const mediatorName =
-      normalizeText(getFieldValue(fields, 'Mediador')) ||
-      normalizeText(getFieldValue(fields, 'Mediator')) ||
-      normalizeText(getFieldValue(fields, 'Administrador')) ||
-      normalizeText(description.match(/mediador[:\s]+([^\n]+)/i)?.[1])
-        .replace(/^\*+\s*/, '')
-        .replace(/\s*\*+$/, '');
+      normalizeText(mediatorField) ||
+      normalizeText(description.match(/mediador[:\s]+([^\n]+)/i)?.[1]);
+
     const mediatorId =
       extractFirstNumber(getFieldValue(fields, 'ID do Mediador')) ||
       extractFirstNumber(getFieldValue(fields, 'Mediador ID')) ||
-      extractFirstNumber(footerText) ||
-      extractFirstNumber(description);
-    const winnerValue = getFieldValue(fields, 'Vencedor') || getFieldValue(fields, 'Winner');
-    const winnerId = extractFirstNumber(winnerValue) || extractFirstNumber(description);
-    const playerMentions = extractMentionIds(description);
-    const mediatorRevenueField = getFieldValue(fields, 'Receita do Mediador') || getFieldValue(fields, 'Lucro do Mediador');
+      extractFirstNumber(mediatorField) ||
+      extractFirstNumber(footerText);
 
-    if (!threadName || !game || !mode || !mediatorName || !mediatorId || !winnerId) {
+    const winnerValue =
+      getFieldValue(fields, 'Vencedor') ||
+      getFieldValue(fields, 'Winner') ||
+      description.match(/vencedor[:\s]+([^\n]+)/i)?.[1] ||
+      '';
+
+    const winner = extractFirstNumber(winnerValue) || extractFirstNumber(description);
+
+    const playersField =
+      getFieldValue(fields, 'Jogadores') ||
+      getFieldValue(fields, 'Players') ||
+      getFieldValue(fields, 'Participantes');
+
+    const players = playersField ? extractMentionIds(playersField) : [];
+
+    const mediatorRevenueField =
+      getFieldValue(fields, 'Receita do Mediador') ||
+      getFieldValue(fields, 'Lucro do Mediador') ||
+      getFieldValue(fields, 'Lucro');
+
+    if (!threadName || !game || !mode || !mediatorName || !mediatorId || !winner) {
       return null;
     }
 
     return {
-      players: playerMentions,
+      players,
       threadName,
       game,
       mode,
       mediatorName,
       mediatorId,
-      winner: winnerId,
+      winner,
       mediatorRevenue: mediatorRevenueField ? parseMoneyBRL(mediatorRevenueField) : undefined,
     };
   }

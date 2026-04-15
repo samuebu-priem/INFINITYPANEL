@@ -111,6 +111,52 @@ function buildSupervisorRevenueSeries(records) {
     }));
 }
 
+function filterSupervisorRecords(records, mediatorFilter, dateFrom, dateTo) {
+  return records.filter((record) => {
+    const mediatorName = String(record?.mediatorName || "").toLowerCase();
+    const mediatorId = String(record?.mediatorId || "").toLowerCase();
+    const normalizedFilter = String(mediatorFilter || "").toLowerCase().trim();
+
+    const matchesMediator =
+      !normalizedFilter ||
+      mediatorName.includes(normalizedFilter) ||
+      mediatorId.includes(normalizedFilter);
+
+    const createdAt = record?.createdAt ? new Date(record.createdAt) : null;
+
+    const matchesFrom =
+      !dateFrom || (createdAt && createdAt >= new Date(`${dateFrom}T00:00:00`));
+
+    const matchesTo =
+      !dateTo || (createdAt && createdAt <= new Date(`${dateTo}T23:59:59`));
+
+    return matchesMediator && matchesFrom && matchesTo;
+  });
+}
+
+function buildTopMediators(records) {
+  const grouped = new Map();
+
+  for (const record of records) {
+    const key = `${record?.mediatorId || "unknown"}::${record?.mediatorName || "Não informado"}`;
+    const current = grouped.get(key) || {
+      mediatorId: record?.mediatorId || "unknown",
+      mediatorName: record?.mediatorName || "Não informado",
+      totalRevenue: 0,
+      matches: 0,
+    };
+
+    current.totalRevenue += Number(record?.mediatorRevenue || 0);
+    current.matches += 1;
+
+    grouped.set(key, current);
+  }
+
+  return [...grouped.values()]
+    .sort((a, b) => b.totalRevenue - a.totalRevenue)
+    .slice(0, 5);
+}
+
 function SectionCard({ title, subtitle, children }) {
   return (
     <section
@@ -304,12 +350,18 @@ function LatestSupervisorRecord({ record }) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+
   const [plans, setPlans] = useState([]);
   const [payments, setPayments] = useState([]);
   const [supervisorRecords, setSupervisorRecords] = useState([]);
+
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loadingPayments, setLoadingPayments] = useState(true);
   const [loadingSupervisorRecords, setLoadingSupervisorRecords] = useState(true);
+
+  const [mediatorFilter, setMediatorFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -412,24 +464,37 @@ export default function AdminDashboard() {
 
   const revenueSeries = useMemo(() => buildRevenueSeries(payments), [payments]);
 
+  const filteredSupervisorRecords = useMemo(() => {
+    return filterSupervisorRecords(
+      supervisorRecords,
+      mediatorFilter,
+      dateFrom,
+      dateTo
+    );
+  }, [supervisorRecords, mediatorFilter, dateFrom, dateTo]);
+
   const supervisorMatchesCount = useMemo(() => {
-    return supervisorRecords.length;
-  }, [supervisorRecords]);
+    return filteredSupervisorRecords.length;
+  }, [filteredSupervisorRecords]);
 
   const supervisorTotalRevenue = useMemo(() => {
-    return supervisorRecords.reduce(
+    return filteredSupervisorRecords.reduce(
       (acc, record) => acc + normalizeSupervisorRevenue(record),
       0
     );
-  }, [supervisorRecords]);
+  }, [filteredSupervisorRecords]);
 
   const supervisorRevenueSeries = useMemo(() => {
-    return buildSupervisorRevenueSeries(supervisorRecords);
-  }, [supervisorRecords]);
+    return buildSupervisorRevenueSeries(filteredSupervisorRecords);
+  }, [filteredSupervisorRecords]);
 
   const latestSupervisorRecords = useMemo(() => {
-    return supervisorRecords.slice(0, 6);
-  }, [supervisorRecords]);
+    return filteredSupervisorRecords.slice(0, 6);
+  }, [filteredSupervisorRecords]);
+
+  const topMediators = useMemo(() => {
+    return buildTopMediators(filteredSupervisorRecords);
+  }, [filteredSupervisorRecords]);
 
   return (
     <div
@@ -465,11 +530,18 @@ export default function AdminDashboard() {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
+        .admin-dashboard-filters-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
         @media (max-width: 1180px) {
           .admin-dashboard-stats,
           .admin-dashboard-grid,
           .admin-dashboard-bottom-grid,
-          .admin-dashboard-records-grid {
+          .admin-dashboard-records-grid,
+          .admin-dashboard-filters-grid {
             grid-template-columns: 1fr 1fr;
           }
         }
@@ -478,7 +550,8 @@ export default function AdminDashboard() {
           .admin-dashboard-stats,
           .admin-dashboard-grid,
           .admin-dashboard-bottom-grid,
-          .admin-dashboard-records-grid {
+          .admin-dashboard-records-grid,
+          .admin-dashboard-filters-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -578,6 +651,59 @@ export default function AdminDashboard() {
             accent="success"
           />
         </div>
+
+        <SectionCard
+          title="Filtros operacionais"
+          subtitle="Refine os registros do supervisor."
+        >
+          <div className="admin-dashboard-filters-grid">
+            <input
+              type="text"
+              placeholder="Filtrar por mediador ou ID"
+              value={mediatorFilter}
+              onChange={(event) => setMediatorFilter(event.target.value)}
+              style={{
+                height: 48,
+                borderRadius: 16,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.03)",
+                color: "#f3f4f6",
+                padding: "0 14px",
+                outline: "none",
+              }}
+            />
+
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(event) => setDateFrom(event.target.value)}
+              style={{
+                height: 48,
+                borderRadius: 16,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.03)",
+                color: "#f3f4f6",
+                padding: "0 14px",
+                outline: "none",
+              }}
+            />
+
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(event) => setDateTo(event.target.value)}
+              style={{
+                height: 48,
+                borderRadius: 16,
+                border: "1px solid #1f2937",
+                background: "rgba(255,255,255,0.03)",
+                color: "#f3f4f6",
+                padding: "0 14px",
+                outline: "none",
+              }}
+            />
+          </div>
+        </SectionCard>
 
         <div className="admin-dashboard-grid">
           <SectionCard
@@ -717,7 +843,10 @@ export default function AdminDashboard() {
             title="Resumo operacional"
             subtitle="Visão geral do que o supervisor está registrando."
           >
-            <div className="admin-dashboard-stats" style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}>
+            <div
+              className="admin-dashboard-stats"
+              style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))" }}
+            >
               <StatCard
                 title="Partidas supervisor"
                 value={loadingSupervisorRecords ? "..." : supervisorMatchesCount}
@@ -738,24 +867,71 @@ export default function AdminDashboard() {
           </SectionCard>
         </div>
 
-        <SectionCard
-          title="Últimos registros do supervisor"
-          subtitle="Últimas partidas contabilizadas e recebidas pelo backend."
-        >
-          {loadingSupervisorRecords ? (
-            <div style={{ color: "#9ca3af" }}>Carregando registros...</div>
-          ) : latestSupervisorRecords.length === 0 ? (
-            <div style={{ color: "#9ca3af" }}>
-              Nenhum registro operacional encontrado.
-            </div>
-          ) : (
-            <div className="admin-dashboard-records-grid">
-              {latestSupervisorRecords.map((record) => (
-                <LatestSupervisorRecord key={record.id} record={record} />
-              ))}
-            </div>
-          )}
-        </SectionCard>
+        <div className="admin-dashboard-bottom-grid">
+          <SectionCard
+            title="Top mediadores"
+            subtitle="Maiores resultados no período filtrado."
+          >
+            {topMediators.length === 0 ? (
+              <div style={{ color: "#9ca3af" }}>Sem dados suficientes.</div>
+            ) : (
+              <div style={{ display: "grid", gap: 12 }}>
+                {topMediators.map((item, index) => (
+                  <div
+                    key={`${item.mediatorId}-${index}`}
+                    style={{
+                      border: "1px solid #1f2937",
+                      borderRadius: 18,
+                      background: "rgba(255,255,255,0.02)",
+                      padding: 16,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 16,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <div>
+                      <div style={{ color: "#f3f4f6", fontWeight: 800 }}>
+                        {item.mediatorName}
+                      </div>
+                      <div style={{ color: "#9ca3af", fontSize: 13 }}>
+                        ID: {item.mediatorId}
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ color: "#86efac", fontWeight: 800 }}>
+                        {formatPrice(item.totalRevenue)}
+                      </div>
+                      <div style={{ color: "#9ca3af", fontSize: 13 }}>
+                        {item.matches} partida(s)
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          <SectionCard
+            title="Últimos registros do supervisor"
+            subtitle="Últimas partidas contabilizadas e recebidas pelo backend."
+          >
+            {loadingSupervisorRecords ? (
+              <div style={{ color: "#9ca3af" }}>Carregando registros...</div>
+            ) : latestSupervisorRecords.length === 0 ? (
+              <div style={{ color: "#9ca3af" }}>
+                Nenhum registro operacional encontrado.
+              </div>
+            ) : (
+              <div className="admin-dashboard-records-grid">
+                {latestSupervisorRecords.map((record) => (
+                  <LatestSupervisorRecord key={record.id} record={record} />
+                ))}
+              </div>
+            )}
+          </SectionCard>
+        </div>
       </div>
     </div>
   );

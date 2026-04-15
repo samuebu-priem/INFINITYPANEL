@@ -9,6 +9,7 @@ import { devPaymentsRouter } from "../modules/devPayments/devPayments.routes.js"
 import { paymentsRouter } from "../modules/payments/payments.routes.js";
 import { internalMatchesRouter } from "../modules/internal/internal-matches.routes.js";
 import { adminRouter } from "../modules/admin/admin.routes.js";
+import { profileRouter } from "../modules/profile/index.js";
 
 export const apiRouter = Router();
 
@@ -18,7 +19,7 @@ apiRouter.use("/plans", plansRouter);
 apiRouter.use("/subscriptions", subscriptionsRouter);
 apiRouter.use("/users", usersRouter);
 apiRouter.use("/admin", adminRouter);
-
 apiRouter.use("/payments", paymentsRouter);
 apiRouter.use("/internal/matches", internalMatchesRouter);
 apiRouter.use("/dev/payments", devPaymentsRouter);
+apiRouter.use("/profile", profileRouter);

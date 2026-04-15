@@ -37,12 +37,33 @@ const calculateMediatorProfit = (log: SupervisorLogData): number => {
 export class DiscordSupervisorClient {
   private readonly client: Client;
   private readonly mediatorRevenueTotals = new Map<string, number>();
+  private readonly processedThreads = new Map<string, number>();
   private readonly matchRecorder = new MatchRecorderService();
 
   constructor(private readonly options: SupervisorClientOptions) {
     this.client = new Client({
       intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent],
     });
+  }
+
+  private isRecentDuplicate(threadName: string): boolean {
+    const now = Date.now();
+    const previous = this.processedThreads.get(threadName) ?? 0;
+
+    if (previous && now - previous < 90_000) {
+      return true;
+    }
+
+    this.processedThreads.set(threadName, now);
+
+    // limpeza simples
+    for (const [key, ts] of this.processedThreads.entries()) {
+      if (now - ts > 10 * 60_000) {
+        this.processedThreads.delete(key);
+      }
+    }
+
+    return false;
   }
 
   async start(): Promise<void> {
@@ -119,22 +140,19 @@ export class DiscordSupervisorClient {
           return;
         }
 
+        if (this.isRecentDuplicate(parsed.threadName)) {
+          console.log(`ignorado: thread duplicada recente (${parsed.threadName})`);
+          return;
+        }
+
         const playersCount = Array.isArray(parsed.players) ? parsed.players.length : 0;
         const mediatorProfit = calculateMediatorProfit(parsed);
         const mediatorId = parsed.mediatorId || 'unknown';
 
-        const previousMediatorTotal = this.mediatorRevenueTotals.get(mediatorId) ?? 0;
-        const updatedMediatorTotal = previousMediatorTotal + mediatorProfit;
-        this.mediatorRevenueTotals.set(mediatorId, updatedMediatorTotal);
-
         const result = this.options.validatorService.validate(parsed, undefined);
 
         console.log('resultado validação:', result);
-        console.log(
-          `contabilidade atualizada | mediador=${parsed.mediatorName} | filas=${playersCount} | lucroAtual=R$ ${mediatorProfit.toFixed(2)} | totalAcumulado=R$ ${updatedMediatorTotal.toFixed(2)}`,
-        );
 
-        // ✅ NOVO: registro interno centralizado
         const recorderResult = await this.matchRecorder.recordMatch({
           players: Array.isArray(parsed.players) ? parsed.players : [],
           threadName: parsed.threadName || 'Não informado',
@@ -146,10 +164,16 @@ export class DiscordSupervisorClient {
           mediatorRevenue: mediatorProfit,
         });
 
-        const effectiveMediatorTotal =
-          recorderResult?.ok && typeof recorderResult?.backend?.updatedMediatorTotal === 'number'
-            ? recorderResult.backend.updatedMediatorTotal
-            : updatedMediatorTotal;
+        let effectiveMediatorTotal = this.mediatorRevenueTotals.get(mediatorId) ?? 0;
+
+        if (recorderResult?.created) {
+          effectiveMediatorTotal += mediatorProfit;
+          this.mediatorRevenueTotals.set(mediatorId, effectiveMediatorTotal);
+        }
+
+        console.log(
+          `contabilidade atualizada | mediador=${parsed.mediatorName} | filas=${playersCount} | lucroAtual=R$ ${mediatorProfit.toFixed(2)} | totalAcumulado=R$ ${effectiveMediatorTotal.toFixed(2)}`,
+        );
 
         const alertChannel = await this.client.channels.fetch(alertChannelId);
         if (!alertChannel || !('isTextBased' in alertChannel) || !alertChannel.isTextBased()) {
