@@ -13,6 +13,14 @@ function getSubscriptionsList(response) {
   return [];
 }
 
+function getSummaryObject(response) {
+  if (!response) return null;
+  if (response.summary) return response.summary;
+  if (response.data?.summary) return response.data.summary;
+  if (response.data) return response.data;
+  return response;
+}
+
 function getPlanName(subscription) {
   return (
     subscription?.plan?.name ||
@@ -50,27 +58,18 @@ function isSubscriptionActive(subscription) {
 
 function buildCountdown(endsAt, nowTs) {
   if (!endsAt) {
-    return {
-      expired: true,
-      label: "Expirada",
-    };
+    return { expired: true, label: "Expirada" };
   }
 
   const endDate = new Date(endsAt);
   if (Number.isNaN(endDate.getTime())) {
-    return {
-      expired: true,
-      label: "Expirada",
-    };
+    return { expired: true, label: "Expirada" };
   }
 
   const diffMs = endDate.getTime() - nowTs;
 
   if (diffMs <= 0) {
-    return {
-      expired: true,
-      label: "Expirada",
-    };
+    return { expired: true, label: "Expirada" };
   }
 
   const totalSeconds = Math.floor(diffMs / 1000);
@@ -276,17 +275,6 @@ function AccessCard({ subscription, nowTs }) {
               : "1px solid rgba(239,68,68,0.18)",
           }}
         >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: active ? "#22c55e" : "#ef4444",
-              boxShadow: active
-                ? "0 0 12px rgba(34,197,94,0.75)"
-                : "0 0 10px rgba(239,68,68,0.45)",
-            }}
-          />
           {active ? "Ativo" : "Expirado"}
         </div>
       </div>
@@ -372,7 +360,9 @@ export default function Profile() {
   const { user } = useAuth();
 
   const [subscriptions, setSubscriptions] = useState([]);
+  const [profileSummary, setProfileSummary] = useState(null);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
+  const [loadingSummary, setLoadingSummary] = useState(true);
   const [subscriptionsError, setSubscriptionsError] = useState("");
   const [nowTs, setNowTs] = useState(Date.now());
 
@@ -397,7 +387,19 @@ export default function Profile() {
       }
     };
 
+    const loadSummary = async () => {
+      try {
+        const response = await api.get("/profile/summary");
+        setProfileSummary(getSummaryObject(response));
+      } catch {
+        setProfileSummary(null);
+      } finally {
+        setLoadingSummary(false);
+      }
+    };
+
     loadSubscriptions();
+    loadSummary();
   }, []);
 
   const activeSubscriptions = useMemo(() => {
@@ -626,25 +628,10 @@ export default function Profile() {
                 padding: "14px 16px",
               }}
             >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: 8,
-                }}
-              >
+              <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
                 Nome de usuário
               </div>
-              <div
-                style={{
-                  color: "#f3f4f6",
-                  fontSize: 16,
-                  fontWeight: 800,
-                }}
-              >
+              <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800 }}>
                 {user?.username || "—"}
               </div>
             </div>
@@ -657,26 +644,10 @@ export default function Profile() {
                 padding: "14px 16px",
               }}
             >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: 8,
-                }}
-              >
+              <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
                 E-mail
               </div>
-              <div
-                style={{
-                  color: "#f3f4f6",
-                  fontSize: 16,
-                  fontWeight: 800,
-                  wordBreak: "break-word",
-                }}
-              >
+              <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800, wordBreak: "break-word" }}>
                 {user?.email || "—"}
               </div>
             </div>
@@ -689,25 +660,10 @@ export default function Profile() {
                 padding: "14px 16px",
               }}
             >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: 8,
-                }}
-              >
+              <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
                 Conta criada em
               </div>
-              <div
-                style={{
-                  color: "#f3f4f6",
-                  fontSize: 16,
-                  fontWeight: 800,
-                }}
-              >
+              <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800 }}>
                 {formatDate(user?.createdAt)}
               </div>
             </div>
@@ -742,6 +698,32 @@ export default function Profile() {
           </div>
         </SectionCard>
       </div>
+
+      <SectionCard
+        title="Atividade"
+        subtitle="Resumo básico do seu histórico."
+      >
+        <div className="profile-stats-grid">
+          <StatCard
+            label="Vitórias"
+            value={loadingSummary ? "..." : profileSummary?.wins ?? 0}
+            helpText="Vitórias registradas pelo supervisor."
+            accent="success"
+          />
+
+          <StatCard
+            label="Última vitória"
+            value={
+              loadingSummary
+                ? "..."
+                : profileSummary?.latestWinAt
+                ? new Date(profileSummary.latestWinAt).toLocaleDateString("pt-BR")
+                : "—"
+            }
+            helpText="Último resultado reconhecido no sistema."
+          />
+        </div>
+      </SectionCard>
 
       <SectionCard
         title="Acessos ativos"
