@@ -1,3 +1,4 @@
+
 import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "../layouts/AppShell.jsx";
 import Login from "../pages/Login.jsx";
@@ -14,7 +15,9 @@ import PrivacyPolicy from "../pages/PrivacyPolicy.jsx";
 import FinancialTerms from "../pages/FinancialTerms.jsx";
 import { useAuth } from "../context/auth.jsx";
 
-function ProtectedRoute({ children }) {
+/* ================= PROTECTIONS ================= */
+
+function Protected({ children }) {
   const { user, booting } = useAuth();
 
   if (booting) return null;
@@ -22,7 +25,7 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
-function AdminOnlyRoute({ children }) {
+function AdminOnly({ children }) {
   const { user, booting } = useAuth();
 
   if (booting) return null;
@@ -34,146 +37,131 @@ function AdminOnlyRoute({ children }) {
   return children;
 }
 
-function DefaultRedirect() {
+/* ================= REDIRECT ================= */
+
+function RedirectByRole() {
   const { user, booting } = useAuth();
 
   if (booting) return null;
   if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user?.role === "PLAYER" ? "/dashboard" : "/admin"} replace />;
+
+  return (
+    <Navigate
+      to={user.role === "PLAYER" ? "/dashboard" : "/admin"}
+      replace
+    />
+  );
 }
 
-function LogoutRedirect() {
-  const { user, booting } = useAuth();
-
-  if (booting) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return <Navigate to={user?.role === "PLAYER" ? "/dashboard" : "/admin"} replace />;
-}
+/* ================= ROUTES ================= */
 
 export default function AppRoutes() {
   return (
     <Routes>
+
+      {/* PUBLIC */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
-      <Route
-        path="/termos-de-uso"
-        element={
-          <AppShell>
-            <TermsOfUse />
-          </AppShell>
-        }
-      />
+      {/* TERMS */}
+      <Route path="/termos-de-uso" element={<AppShell><TermsOfUse /></AppShell>} />
+      <Route path="/politica-de-privacidade" element={<AppShell><PrivacyPolicy /></AppShell>} />
+      <Route path="/termos-financeiros" element={<AppShell><FinancialTerms /></AppShell>} />
 
-      <Route
-        path="/politica-de-privacidade"
-        element={
-          <AppShell>
-            <PrivacyPolicy />
-          </AppShell>
-        }
-      />
+      {/* ROOT */}
+      <Route path="/" element={<RedirectByRole />} />
 
-      <Route
-        path="/termos-financeiros"
-        element={
-          <AppShell>
-            <FinancialTerms />
-          </AppShell>
-        }
-      />
-
-      <Route path="/" element={<AppShell><DefaultRedirect /></AppShell>} />
-
+      {/* APP (PLAYER) */}
       <Route
         path="/dashboard"
         element={
-          <AppShell>
-            <ProtectedRoute>
+          <Protected>
+            <AppShell>
               <UserHome />
-            </ProtectedRoute>
-          </AppShell>
+            </AppShell>
+          </Protected>
         }
       />
 
       <Route
         path="/profile"
         element={
-          <AppShell>
-            <ProtectedRoute>
+          <Protected>
+            <AppShell>
               <Profile />
-            </ProtectedRoute>
-          </AppShell>
+            </AppShell>
+          </Protected>
         }
       />
 
-      <Route
-        path="/ranking"
-        element={
-          <AppShell>
-            <AdminOnlyRoute>
-              <RankingPublic />
-            </AdminOnlyRoute>
-          </AppShell>
-        }
-      />
-
-      <Route
-        path="/plans"
-        element={
-          <AppShell>
-            <AdminOnlyRoute>
-              <Plans />
-            </AdminOnlyRoute>
-          </AppShell>
-        }
-      />
-
+      {/* ADMIN */}
       <Route
         path="/admin"
         element={
-          <AppShell>
-            <AdminOnlyRoute>
+          <AdminOnly>
+            <AppShell>
               <AdminDashboard />
-            </AdminOnlyRoute>
-          </AppShell>
+            </AppShell>
+          </AdminOnly>
         }
       />
 
       <Route
         path="/admin/subscribers"
         element={
-          <AppShell>
-            <AdminOnlyRoute>
+          <AdminOnly>
+            <AppShell>
               <AdminSubscribers />
-            </AdminOnlyRoute>
-          </AppShell>
+            </AppShell>
+          </AdminOnly>
         }
       />
 
       <Route
         path="/admin/mediators"
         element={
-          <AppShell>
-            <AdminOnlyRoute>
+          <AdminOnly>
+            <AppShell>
               <AdminMediatorRanking />
-            </AdminOnlyRoute>
-          </AppShell>
+            </AppShell>
+          </AdminOnly>
         }
       />
 
-      <Route path="/logout" element={<LogoutRedirect />} />
+      <Route
+        path="/ranking"
+        element={
+          <AdminOnly>
+            <AppShell>
+              <RankingPublic />
+            </AppShell>
+          </AdminOnly>
+        }
+      />
 
+      <Route
+        path="/plans"
+        element={
+          <AdminOnly>
+            <AppShell>
+              <Plans />
+            </AppShell>
+          </AdminOnly>
+        }
+      />
+
+      {/* FALLBACK */}
       <Route
         path="*"
         element={
           <AppShell>
-            <div className="rounded-[2rem] border border-slate-800 bg-slate-900 p-8 text-white">
-              Página não encontrada.
+            <div className="p-8 text-white">
+              página não encontrada
             </div>
           </AppShell>
         }
       />
+
     </Routes>
   );
 }

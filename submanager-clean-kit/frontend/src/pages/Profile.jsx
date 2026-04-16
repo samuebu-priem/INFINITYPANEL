@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+
+import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
+
+/* ================= HELPERS ================= */
 
 function getSubscriptionsList(response) {
   if (!response) return [];
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.subscriptions)) return response.subscriptions;
-  if (Array.isArray(response?.data?.subscriptions)) return response.data.subscriptions;
-  if (Array.isArray(response?.data)) return response.data;
+  if (response?.subscription) return [response.subscription];
   return [];
 }
 
@@ -19,1689 +21,206 @@ function getSummaryObject(response) {
   return response;
 }
 
-function getPlanName(subscription) {
-  return (
-    subscription?.plan?.name ||
-    subscription?.plan?.title ||
-    subscription?.planName ||
-    "Plano ativo"
-  );
-}
-
-function getEndsAt(subscription) {
-  return subscription?.endsAt || subscription?.expiresAt || subscription?.validUntil || subscription?.endDate || null;
-}
-
 function isSubscriptionActive(subscription) {
   if (!subscription) return false;
-  if (subscription?.isActive === true) return true;
+  if (subscription?.isActive) return true;
 
   const status = String(subscription?.status || "").toUpperCase();
   if (status !== "ACTIVE") return false;
 
-  const endsAt = getEndsAt(subscription);
-  if (!endsAt) return false;
-
-  const endDate = new Date(endsAt);
-  if (Number.isNaN(endDate.getTime())) return false;
-
-  return endDate.getTime() > Date.now();
+  const end = new Date(subscription?.endsAt || 0);
+  return end.getTime() > Date.now();
 }
 
-function buildCountdown(endsAt, nowTs) {
-  if (!endsAt) return { expired: true, label: "Expirada" };
-
-  const endDate = new Date(endsAt);
-  if (Number.isNaN(endDate.getTime())) return { expired: true, label: "Expirada" };
-
-  const diffMs = endDate.getTime() - nowTs;
-  if (diffMs <= 0) return { expired: true, label: "Expirada" };
-
-  const totalSeconds = Math.floor(diffMs / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return {
-    expired: false,
-    label: `${days}d ${hours}h ${minutes}m ${seconds}s`,
-  };
+function formatNumber(v) {
+  return new Intl.NumberFormat("pt-BR").format(Number(v || 0));
 }
 
-function formatDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatNumber(value, fallback = "0") {
-  if (value === null || value === undefined || value === "") return fallback;
-  const number = Number(value);
-  if (Number.isNaN(number)) return fallback;
-  return new Intl.NumberFormat("pt-BR").format(number);
-}
-
-function formatCurrency(value, fallback = "R$ 0,00") {
-  const number = Number(value);
-  if (Number.isNaN(number)) return fallback;
+function formatCurrency(v) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(number);
+  }).format(Number(v || 0));
 }
 
-function getAvatarText(user) {
-  const source = String(user?.displayName || user?.name || user?.username || user?.email || "U").trim();
-  const first = source.split(/\s+/)[0]?.[0] || "U";
-  const second = source.split(/\s+/)[1]?.[0] || "";
-  return `${first}${second}`.toUpperCase();
-}
-
-function SectionCard({ title, subtitle, children, action, delay = 0, animated = true }) {
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <section
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        background:
-          "linear-gradient(180deg, rgba(18,24,38,0.98) 0%, rgba(10,13,20,0.99) 100%)",
-        border: "2px solid rgba(34,211,238,0.16)",
-        borderRadius: 30,
-        padding: 24,
-        boxShadow:
-          "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)",
-        transform: hovered ? "translateY(-5px) scale(1.01)" : "translateY(0) scale(1)",
-        opacity: animated ? 0 : 1,
-        animation: animated
-          ? `panelEnter 700ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`
-          : "none",
-        transition:
-          "transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease, opacity 260ms ease",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at top right, rgba(34,211,238,0.10), transparent 34%), radial-gradient(circle at bottom left, rgba(99,102,241,0.08), transparent 36%)",
-          opacity: hovered ? 1 : 0.75,
-          transition: "opacity 260ms ease",
-        }}
-      />
-
-      {(title || subtitle || action) && (
-        <div
-          style={{
-            marginBottom: 20,
-            position: "relative",
-            zIndex: 1,
-            transform: hovered ? "translateY(-1px)" : "translateY(0)",
-            transition: "transform 260ms ease",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 16,
-              alignItems: "flex-start",
-              flexWrap: "wrap",
-            }}
-          >
-            <div>
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: 22,
-                  fontWeight: 900,
-                  color: "#f8fafc",
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                {title}
-              </h2>
-
-              {subtitle ? (
-                <p
-                  style={{
-                    margin: "8px 0 0",
-                    color: "#9ca3af",
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                  }}
-                >
-                  {subtitle}
-                </p>
-              ) : null}
-            </div>
-
-            {action ? <div>{action}</div> : null}
-          </div>
-        </div>
-      )}
-
-      <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
-    </section>
-  );
-}
-
-function StatCard({ label, value, helpText, accent = "primary", highlight = false, delay = 0 }) {
-  const accents = {
-    primary: {
-      value: "#f8fafc",
-      border: "rgba(99,102,241,0.22)",
-      bg: "rgba(255,255,255,0.025)",
-      glow: "rgba(99,102,241,0.14)",
-    },
-    success: {
-      value: "#86efac",
-      border: "rgba(34,197,94,0.22)",
-      bg: "rgba(34,197,94,0.08)",
-      glow: "rgba(34,197,94,0.18)",
-    },
-    cyan: {
-      value: "#67e8f9",
-      border: "rgba(34,211,238,0.22)",
-      bg: "rgba(34,211,238,0.08)",
-      glow: "rgba(34,211,238,0.18)",
-    },
-  };
-
-  const theme = accents[accent] || accents.primary;
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        border: `2px solid ${theme.border}`,
-        borderRadius: 26,
-        background: theme.bg,
-        padding: 20,
-        minHeight: 150,
-        boxShadow: highlight ? `0 18px 40px ${theme.glow}` : "none",
-        opacity: 0,
-        animation: `cardEnter 680ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`,
-        transform: hovered ? "translateY(-5px) scale(1.015)" : "translateY(0) scale(1)",
-        transition:
-          "transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, filter 240ms ease",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "linear-gradient(135deg, rgba(99,102,241,0.10), transparent 44%)",
-          opacity: hovered ? 1 : 0.75,
-          transition: "opacity 240ms ease",
-        }}
-      />
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          color: "#9ca3af",
-          fontSize: 12,
-          fontWeight: 800,
-          textTransform: "uppercase",
-          letterSpacing: "0.14em",
-          marginBottom: 10,
-          transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          transition: "transform 240ms ease",
-        }}
-      >
-        {label}
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          color: theme.value,
-          fontSize: 36,
-          lineHeight: 1.05,
-          fontWeight: 900,
-          letterSpacing: "-0.04em",
-          transform: hovered ? "scale(1.02)" : "scale(1)",
-          transition: "transform 240ms ease",
-        }}
-      >
-        {value}
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          marginTop: 8,
-          color: "#9ca3af",
-          fontSize: 14,
-          lineHeight: 1.5,
-          transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          transition: "transform 240ms ease",
-        }}
-      >
-        {helpText}
-      </div>
-    </div>
-  );
-}
-
-function AccessCard({ subscription, nowTs, delay = 0 }) {
-  const endsAt = getEndsAt(subscription);
-  const countdown = buildCountdown(endsAt, nowTs);
-  const active = isSubscriptionActive(subscription);
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        border: "2px solid rgba(34,197,94,0.22)",
-        borderRadius: 28,
-        background: "linear-gradient(180deg, rgba(16,19,28,0.98) 0%, rgba(9,11,16,0.99) 100%)",
-        padding: 22,
-        boxShadow: "0 18px 42px rgba(0,0,0,0.28)",
-        display: "grid",
-        gap: 16,
-        opacity: 0,
-        animation: `cardEnter 720ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`,
-        transform: hovered ? "translateY(-6px) scale(1.01)" : "translateY(0) scale(1)",
-        transition:
-          "transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, filter 240ms ease",
-      }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background: active
-            ? "radial-gradient(circle at top right, rgba(34,197,94,0.12), transparent 36%)"
-            : "radial-gradient(circle at top right, rgba(239,68,68,0.10), transparent 36%)",
-          opacity: hovered ? 1 : 0.82,
-          transition: "opacity 240ms ease",
-        }}
-      />
-
-      <div
-        style={{
-          position: "relative",
-          display: "flex",
-          justifyContent: "space-between",
-          gap: 12,
-          alignItems: "flex-start",
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "6px 10px",
-              borderRadius: 999,
-              border: "1px solid rgba(34,197,94,0.18)",
-              background: "rgba(34,197,94,0.08)",
-              color: "#86efac",
-              fontSize: 11,
-              fontWeight: 900,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              marginBottom: 12,
-            }}
-          >
-            Acesso liberado
-          </div>
-
-          <div
-            style={{
-              color: "#f8fafc",
-              fontSize: 20,
-              fontWeight: 900,
-              lineHeight: 1.2,
-              letterSpacing: "-0.03em",
-            }}
-          >
-            {getPlanName(subscription)}
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
-              color: "#9ca3af",
-              fontSize: 14,
-              lineHeight: 1.6,
-              maxWidth: 360,
-            }}
-          >
-            Esse plano está ativo na sua conta e segue contando em tempo real.
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            width: "fit-content",
-            padding: "8px 12px",
-            borderRadius: 999,
-            fontSize: 11,
-            fontWeight: 900,
-            textTransform: "uppercase",
-            letterSpacing: "0.08em",
-            color: active ? "#86efac" : "#fca5a5",
-            background: active ? "rgba(34,197,94,0.10)" : "rgba(239,68,68,0.10)",
-            border: active ? "1px solid rgba(34,197,94,0.18)" : "1px solid rgba(239,68,68,0.18)",
-          }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: active ? "#22c55e" : "#ef4444",
-              boxShadow: active ? "0 0 14px rgba(34,197,94,0.8)" : "0 0 12px rgba(239,68,68,0.5)",
-            }}
-          />
-          {active ? "No jogo" : "Off"}
-        </div>
-      </div>
-
-      <div
-        style={{
-          position: "relative",
-          display: "grid",
-          gap: 14,
-          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-        }}
-      >
-        <div
-          style={{
-            borderRadius: 20,
-            border: "1px solid rgba(34,197,94,0.18)",
-            background: "rgba(34,197,94,0.08)",
-            padding: "16px 18px",
-          }}
-        >
-          <div
-            style={{
-              color: "#9ca3af",
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              marginBottom: 8,
-            }}
-          >
-            Tempo restante
-          </div>
-
-          <div
-            style={{
-              color: active ? "#86efac" : "#fca5a5",
-              fontSize: 22,
-              fontWeight: 900,
-              lineHeight: 1.2,
-            }}
-          >
-            {countdown.label}
-          </div>
-        </div>
-
-        <div
-          style={{
-            borderRadius: 20,
-            border: "1px solid #1f2937",
-            background: "rgba(255,255,255,0.04)",
-            padding: "16px 18px",
-          }}
-        >
-          <div
-            style={{
-              color: "#9ca3af",
-              fontSize: 11,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.1em",
-              marginBottom: 8,
-            }}
-          >
-            Vai até
-          </div>
-
-          <div
-            style={{
-              color: "#f8fafc",
-              fontSize: 15,
-              fontWeight: 800,
-              lineHeight: 1.55,
-            }}
-          >
-            {formatDate(endsAt)}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DiscordIcon() {
-  return (
-    <svg viewBox="0 0 127.14 96.36" width="22" height="22" aria-hidden="true" style={{ display: "block" }}>
-      <path
-        fill="currentColor"
-        d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21h0A105.73 105.73 0 0 0 32.71 96.36a77.7 77.7 0 0 0 6.89-11.27 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2.04a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2.04a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.26A105.25 105.25 0 0 0 126.6 80.22c2.64-27.35-4.5-51.08-18.9-72.15ZM42.45 65.69c-6.27 0-11.42-5.71-11.42-12.73S36.06 40.23 42.45 40.23 53.87 45.94 53.76 52.96c0 7.02-5.15 12.73-11.31 12.73Zm42.24 0c-6.27 0-11.42-5.71-11.42-12.73S78.3 40.23 84.69 40.23s11.42 5.71 11.31 12.73c0 7.02-5.04 12.73-11.31 12.73Z"
-      />
-    </svg>
-  );
-}
-
-function AvatarPanel({ user }) {
-  const [photoHover, setPhotoHover] = useState(false);
-  const fileInputRef = useRef(null);
-  const [avatarPreview, setAvatarPreview] = useState("");
-  const [avatarMessage, setAvatarMessage] = useState("");
-  const [savingAvatar, setSavingAvatar] = useState(false);
-  const [panelHovered, setPanelHovered] = useState(false);
-
-  const currentAvatar = avatarPreview || "";
-  const avatarLabel = user?.username || "Usuário";
-  const avatarInitials = getAvatarText(user);
-
-  const handlePickAvatar = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleAvatarChange = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setAvatarMessage("Escolha uma imagem válida.");
-      event.target.value = "";
-      return;
-    }
-
-    setSavingAvatar(true);
-    setAvatarMessage("");
-
-    try {
-      const preview = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result || ""));
-        reader.onerror = () => reject(new Error("Falha ao ler a imagem."));
-        reader.readAsDataURL(file);
-      });
-
-      setAvatarPreview(String(preview || ""));
-      setAvatarMessage("Avatar trocado na sua tela.");
-    } catch (error) {
-      setAvatarMessage(error?.message || "Não foi possível trocar seu avatar.");
-    } finally {
-      setSavingAvatar(false);
-      event.target.value = "";
-    }
-  };
-
-  return (
-    <div
-      style={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: 34,
-        border: "2px solid rgba(34,211,238,0.24)",
-        background: "linear-gradient(180deg, rgba(16,19,28,0.98) 0%, rgba(9,11,16,0.99) 100%)",
-        boxShadow: "0 22px 60px rgba(0,0,0,0.34)",
-        padding: 26,
-        display: "grid",
-        gap: 18,
-        transform: panelHovered ? "translateY(-5px) scale(1.008)" : "translateY(0) scale(1)",
-        transition: "transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease",
-      }}
-      onMouseEnter={() => setPanelHovered(true)}
-      onMouseLeave={() => setPanelHovered(false)}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at 15% 15%, rgba(34,211,238,0.16), transparent 30%), radial-gradient(circle at 85% 0%, rgba(99,102,241,0.18), transparent 28%)",
-        }}
-      />
-
-      <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 18 }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 16,
-            flexWrap: "wrap",
-            alignItems: "flex-start",
-          }}
-        >
-          <div>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 12,
-                padding: "7px 12px",
-                borderRadius: 999,
-                background: "rgba(34,211,238,0.10)",
-                border: "1px solid rgba(34,211,238,0.18)",
-                color: "#a5f3fc",
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: 0.8,
-                textTransform: "uppercase",
-              }}
-            >
-              Sua identidade
-            </div>
-
-            <h2
-              style={{
-                margin: 0,
-                color: "#f8fafc",
-                fontSize: 24,
-                lineHeight: 1.1,
-                fontWeight: 900,
-                letterSpacing: "-0.04em",
-              }}
-            >
-              Avatar e presença
-            </h2>
-
-            <p
-              style={{
-                margin: "10px 0 0",
-                color: "#9ca3af",
-                fontSize: 14,
-                lineHeight: 1.7,
-                maxWidth: 360,
-              }}
-            >
-              Deixe seu perfil com mais cara de jogador dentro da Infinity.
-            </p>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: "flex",
-            gap: 18,
-            alignItems: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          <div
-              style={{
-                width: 122,
-                height: 122,
-                borderRadius: 36,
-                padding: 4,
-                background: "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
-                boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
-                cursor: "pointer",
-                transform: photoHover ? "translateY(-2px) scale(1.03)" : "translateY(0) scale(1)",
-                transition: "transform 220ms ease, box-shadow 220ms ease",
-              }}
-            onClick={handlePickAvatar}
-          >
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: 32,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background:
-                  "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%), linear-gradient(180deg, rgba(17,24,39,0.98), rgba(11,15,20,0.98))",
-                display: "grid",
-                placeItems: "center",
-                color: "#a5f3fc",
-                fontSize: 34,
-                fontWeight: 900,
-                letterSpacing: "-0.06em",
-                position: "relative",
-                overflow: "hidden",
-                transform: photoHover ? "translateY(-1px) scale(1.01)" : "translateY(0) scale(1)",
-                transition: "transform 220ms ease, background 220ms ease",
-              }}
-              onMouseEnter={() => setPhotoHover(true)}
-              onMouseLeave={() => setPhotoHover(false)}
-            >
-              <span
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: photoHover
-                    ? "radial-gradient(circle at center, rgba(34,211,238,0.12), transparent 48%)"
-                    : "radial-gradient(circle at center, rgba(99,102,241,0.08), transparent 48%)",
-                  transition: "opacity 180ms ease",
-                }}
-              />
-              {currentAvatar ? (
-                <img
-                  src={currentAvatar}
-                  alt={avatarLabel}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    borderRadius: 28,
-                    position: "relative",
-                    zIndex: 1,
-                  }}
-                />
-              ) : (
-                <span style={{ position: "relative", zIndex: 1 }}>{avatarInitials}</span>
-              )}
-            </div>
-          </div>
-
-          <div style={{ display: "grid", gap: 12, flex: 1, minWidth: 220 }}>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 10,
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  color: "#f8fafc",
-                  fontSize: 20,
-                  fontWeight: 900,
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                {user?.username || "Usuário"}
-              </div>
-
-              <div
-                style={{
-                  color: "#c7d2fe",
-                  fontSize: 13,
-                  fontWeight: 700,
-                  padding: "7px 10px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(99,102,241,0.20)",
-                  background: "rgba(99,102,241,0.08)",
-                }}
-              >
-                Clique para trocar a foto
-              </div>
-            </div>
-
-            <div
-              style={{
-                color: "#9ca3af",
-                fontSize: 14,
-                lineHeight: 1.7,
-                maxWidth: 520,
-              }}
-            >
-              Escolha uma imagem e veja como seu perfil fica na hora.
-            </div>
-
-            <button
-              type="button"
-              style={{
-                width: "fit-content",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 10,
-                height: 46,
-                padding: "0 16px",
-                borderRadius: 16,
-                border: "2px solid rgba(34,211,238,0.28)",
-                background: "rgba(34,211,238,0.10)",
-                color: "#cffafe",
-                fontSize: 14,
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 0 22px rgba(34,211,238,0.12)",
-                opacity: savingAvatar ? 0.75 : 1,
-              }}
-              onClick={handlePickAvatar}
-            >
-              {savingAvatar ? "Carregando..." : "Trocar avatar"}
-            </button>
-
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: "none" }} />
-
-            {avatarMessage ? (
-              <div
-                style={{
-                  color: avatarMessage.toLowerCase().includes("trocado") ? "#86efac" : "#fca5a5",
-                  fontSize: 13,
-                  fontWeight: 700,
-                }}
-              >
-                {avatarMessage}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProfileStatusCard({ statusValue, setStatusValue, saveMessage, onSave, saving }) {
-  return (
-    <SectionCard
-      title="Sua frase"
-      subtitle="Mostre sua energia dentro da comunidade."
-      delay={120}
-      action={
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          style={{
-            height: 44,
-            padding: "0 16px",
-            borderRadius: 14,
-            border: "2px solid rgba(99,102,241,0.32)",
-            background: "rgba(99,102,241,0.12)",
-            color: "#f8fafc",
-            fontWeight: 800,
-            cursor: "pointer",
-            opacity: saving ? 0.75 : 1,
-          }}
-        >
-          {saving ? "Atualizando..." : "Atualizar"}
-        </button>
-      }
-    >
-      <div style={{ display: "grid", gap: 14 }}>
-        <div
-          style={{
-            display: "grid",
-            gap: 10,
-            padding: 18,
-            borderRadius: 22,
-            border: "2px solid rgba(99,102,241,0.18)",
-            background: "rgba(255,255,255,0.03)",
-          }}
-        >
-          <div
-            style={{
-              color: "#9ca3af",
-              fontSize: 12,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-            }}
-          >
-            Frase do perfil
-          </div>
-
-          <input
-            type="text"
-            value={statusValue}
-            onChange={(event) => setStatusValue(event.target.value)}
-            placeholder="Ex: Pronto pro drop"
-            maxLength={80}
-            style={{
-              height: 56,
-              borderRadius: 16,
-              border: "2px solid rgba(34,211,238,0.18)",
-              background: "rgba(255,255,255,0.04)",
-              color: "#f8fafc",
-              padding: "0 16px",
-              outline: "none",
-              fontSize: 15,
-              boxShadow: "0 0 18px rgba(34,211,238,0.06)",
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: 12,
-              flexWrap: "wrap",
-              color: "#9ca3af",
-              fontSize: 13,
-            }}
-          >
-            <span>{statusValue ? `${statusValue.length}/80` : "0/80"}</span>
-            <span>Mostre sua vibe na Infinity</span>
-          </div>
-        </div>
-
-        <div
-          style={{
-            borderRadius: 20,
-            border: "2px solid rgba(99,102,241,0.16)",
-            background: "rgba(99,102,241,0.08)",
-            padding: 16,
-            color: "#c7d2fe",
-            fontSize: 14,
-            lineHeight: 1.7,
-          }}
-        >
-          {statusValue ? "Essa é a frase que aparece no seu perfil." : "Coloque uma frase que combine com você."}
-        </div>
-
-        {saveMessage ? (
-          <div
-            style={{
-              color: saveMessage.toLowerCase().includes("atualizado") ? "#86efac" : "#fca5a5",
-              fontSize: 13,
-              fontWeight: 700,
-            }}
-          >
-            {saveMessage}
-          </div>
-        ) : null}
-      </div>
-    </SectionCard>
-  );
-}
-
-function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, nextExpirationCountdown }) {
-  const preparedWins = profileSummary?.wins ?? 0;
-  const preparedMatches = profileSummary?.matchesPlayed ?? 0;
-  const preparedProfit = profileSummary?.mediatorProfitTotal ?? 0;
-  const preparedMediated = profileSummary?.mediatedMatchesCount ?? 0;
-  const bestDay = profileSummary?.bestMediatorDay || null;
-
-  return (
-    <SectionCard title="Seu desempenho" subtitle="Veja como você está se saindo dentro da Infinity.">
-      <div className="profile-metrics-grid">
-        <StatCard label="Acessos ativos" value={loadingSummary ? "..." : activeSubscriptions.length} helpText="Planos válidos no momento." accent="success" highlight />
-        <StatCard label="Próximo vencimento" value={loadingSummary ? "..." : nextExpirationCountdown?.label || "—"} helpText="O acesso que vence primeiro." accent="cyan" />
-        <StatCard label="Vitórias" value={loadingSummary ? "..." : formatNumber(preparedWins, "0")} helpText="Vitórias registradas no seu perfil." />
-        <StatCard label="Partidas" value={loadingSummary ? "..." : formatNumber(preparedMatches, "0")} helpText="Partidas ligadas à sua conta." />
-        <StatCard label="Partidas mediadas" value={loadingSummary ? "..." : formatNumber(preparedMediated, "0")} helpText="Vezes em que você atuou como mediador." accent="cyan" />
-        <StatCard label="Ganhos como mediador" value={loadingSummary ? "..." : formatCurrency(preparedProfit)} helpText="Total que você já acumulou mediando partidas." accent="success" />
-      </div>
-
-      <div
-        style={{
-          marginTop: 16,
-          display: "grid",
-          gap: 16,
-          gridTemplateColumns: "1.1fr 0.9fr",
-        }}
-      >
-        <div
-          style={{
-            borderRadius: 26,
-            border: "1px solid rgba(99,102,241,0.16)",
-            background: "rgba(255,255,255,0.03)",
-            padding: 18,
-          }}
-        >
-          <div
-            style={{
-              color: "#9ca3af",
-              fontSize: 12,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              marginBottom: 10,
-            }}
-          >
-            Melhor dia
-          </div>
-
-          <div
-            style={{
-              color: "#f8fafc",
-              fontSize: 18,
-              fontWeight: 900,
-              letterSpacing: "-0.03em",
-            }}
-          >
-            {loadingSummary ? "..." : bestDay?.date ? new Date(`${bestDay.date}T00:00:00`).toLocaleDateString("pt-BR") : "—"}
-          </div>
-
-          <div
-            style={{
-              marginTop: 8,
-              color: "#9ca3af",
-              fontSize: 14,
-              lineHeight: 1.7,
-            }}
-          >
-            {bestDay?.amount ? `${formatCurrency(bestDay.amount)} no seu melhor dia como mediador.` : "Ainda não apareceu um melhor dia para você aqui."}
-          </div>
-        </div>
-
-        <div
-          style={{
-            borderRadius: 26,
-            border: "1px solid rgba(34,211,238,0.18)",
-            background: "linear-gradient(180deg, rgba(34,211,238,0.08), rgba(255,255,255,0.03))",
-            padding: 18,
-          }}
-        >
-          <div
-            style={{
-              color: "#9ca3af",
-              fontSize: 12,
-              fontWeight: 800,
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              marginBottom: 10,
-            }}
-          >
-            Seu momento
-          </div>
-
-          <div style={{ display: "grid", gap: 10 }}>
-            <div style={{ color: "#cffafe", fontSize: 14, fontWeight: 700 }}>
-              {activeSubscriptions.length ? `${activeSubscriptions.length} plano(s) ativo(s) agora` : "Nenhum plano ativo no momento"}
-            </div>
-            <div style={{ color: "#c7d2fe", fontSize: 14, lineHeight: 1.7 }}>
-              {nextExpirationCountdown?.label ? `Seu próximo vencimento é em ${nextExpirationCountdown.label}` : "Sem vencimento próximo para mostrar agora."}
-            </div>
-          </div>
-        </div>
-      </div>
-    </SectionCard>
-  );
-}
+/* ================= COMPONENT ================= */
 
 export default function Profile() {
   const { user } = useAuth();
 
   const [subscriptions, setSubscriptions] = useState([]);
-  const [profileSummary, setProfileSummary] = useState(null);
-  const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
-  const [loadingSummary, setLoadingSummary] = useState(true);
-  const [subscriptionsError, setSubscriptionsError] = useState("");
-  const [nowTs, setNowTs] = useState(Date.now());
+  const [summary, setSummary] = useState(null);
 
-  const [discordIdInput, setDiscordIdInput] = useState("");
-  const [savingDiscordId, setSavingDiscordId] = useState(false);
-  const [discordMessage, setDiscordMessage] = useState("");
-  const [statusInput, setStatusInput] = useState("");
-  const [statusMessage, setStatusMessage] = useState("");
-  const [savingStatus, setSavingStatus] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  /* ================= LOAD ================= */
 
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      setNowTs(Date.now());
-    }, 1000);
+    async function load() {
+      try {
+        const [subs, sum] = await Promise.all([
+          api.get("/subscriptions/me", { auth: true }),
+          api.get("/profile/summary", { auth: true }),
+        ]);
 
-    return () => window.clearInterval(interval);
+        setSubscriptions(getSubscriptionsList(subs));
+        setSummary(getSummaryObject(sum));
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    load();
   }, []);
+
+  /* ================= DISCORD ================= */
+
+  const handleConnectDiscord = async () => {
+    const res = await api.get("/auth/discord/url", { auth: true });
+    if (res?.url) window.location.href = res.url;
+  };
+
+  const handleDisconnectDiscord = async () => {
+    await api.delete("/profile/discord", { auth: true });
+    window.location.reload();
+  };
 
   useEffect(() => {
-    const loadSubscriptions = async () => {
-      try {
-        const response = await api.get("/subscriptions/me");
-        setSubscriptions(getSubscriptionsList(response));
-      } catch (error) {
-        setSubscriptions([]);
-        setSubscriptionsError(error?.response?.data?.message || "");
-      } finally {
-        setLoadingSubscriptions(false);
-      }
-    };
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
 
-    const loadSummary = async () => {
-      try {
-        const response = await api.get("/profile/summary");
-        const summary = getSummaryObject(response);
-        setProfileSummary(summary);
-        setDiscordIdInput(summary?.discordId || "");
-        setStatusInput(summary?.status || summary?.customStatus || summary?.profileStatus || summary?.bio || "");
-      } catch {
-        setProfileSummary(null);
-      } finally {
-        setLoadingSummary(false);
-      }
-    };
+    if (!code) return;
 
-    loadSubscriptions();
-    loadSummary();
+    async function connect() {
+      await api.post("/profile/discord/refresh", {}, { auth: true });
+      window.history.replaceState({}, document.title, "/profile");
+      window.location.reload();
+    }
+
+    connect();
   }, []);
 
-  const activeSubscriptions = useMemo(() => subscriptions.filter(isSubscriptionActive), [subscriptions]);
+  /* ================= DATA ================= */
 
-  const nextExpiration = useMemo(() => {
-    if (!activeSubscriptions.length) return null;
+  const activeSubs = useMemo(
+    () => subscriptions.filter(isSubscriptionActive),
+    [subscriptions]
+  );
 
-    const sorted = [...activeSubscriptions].sort((a, b) => {
-      const aTime = new Date(getEndsAt(a) || 0).getTime();
-      const bTime = new Date(getEndsAt(b) || 0).getTime();
-      return aTime - bTime;
-    });
+  const wins = summary?.wins || 0;
+  const matches = summary?.matchesPlayed || 0;
+  const profit = summary?.mediatorProfitTotal || 0;
+  const mediated = summary?.mediatedMatchesCount || 0;
 
-    return sorted[0] || null;
-  }, [activeSubscriptions]);
-
-  const nextExpirationCountdown = useMemo(() => {
-    if (!nextExpiration) return null;
-    return buildCountdown(getEndsAt(nextExpiration), nowTs);
-  }, [nextExpiration, nowTs]);
-
-  const handleSaveDiscordId = async (event) => {
-    event.preventDefault();
-    setSavingDiscordId(true);
-    setDiscordMessage("");
-
-    try {
-      const response = await api.patch("/profile/discord", {
-        discordId: discordIdInput,
-      });
-
-      const savedDiscordId = response?.profile?.discordId || response?.data?.profile?.discordId || discordIdInput;
-
-      setProfileSummary((current) => ({
-        ...(current || {}),
-        discordId: savedDiscordId,
-      }));
-
-      setDiscordMessage("Discord conectado com sucesso.");
-    } catch (error) {
-      setDiscordMessage(error?.response?.data?.message || "Não foi possível conectar seu Discord.");
-    } finally {
-      setSavingDiscordId(false);
-    }
-  };
-
-  const handleSaveStatus = () => {
-    setSavingStatus(true);
-    setStatusMessage("");
-
-    try {
-      setProfileSummary((current) => ({
-        ...(current || {}),
-        status: statusInput,
-        customStatus: statusInput,
-        profileStatus: statusInput,
-        bio: statusInput,
-      }));
-      setStatusMessage("Status atualizado na sua tela.");
-    } finally {
-      setSavingStatus(false);
-    }
-  };
-
-  const displayStatus = statusInput || profileSummary?.status || profileSummary?.customStatus || "Manda uma frase aí";
+  /* ================= UI ================= */
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
-      <style>{`
-        .profile-top-grid {
-          display: grid;
-          gap: 20px;
-          grid-template-columns: 1.05fr 0.95fr;
-        }
+    <div className="min-h-screen text-white px-4 py-6 space-y-8">
 
-        .profile-metrics-grid {
-          display: grid;
-          gap: 16px;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-
-        .profile-access-grid {
-          display: grid;
-          gap: 16px;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .profile-discord-grid {
-          display: grid;
-          gap: 16px;
-          grid-template-columns: 1fr auto;
-          align-items: end;
-        }
-
-        @media (max-width: 1180px) {
-          .profile-top-grid,
-          .profile-metrics-grid,
-          .profile-access-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-        }
-
-        @media (max-width: 860px) {
-          .profile-top-grid,
-          .profile-metrics-grid,
-          .profile-access-grid,
-          .profile-discord-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
-      <section
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          borderRadius: 34,
-          padding: 30,
-          border: "2px solid rgba(34,211,238,0.24)",
-          background: "linear-gradient(135deg, rgba(11,17,28,0.98) 0%, rgba(8,11,18,0.99) 55%, rgba(14,22,38,0.98) 100%)",
-          boxShadow: "0 24px 76px rgba(0,0,0,0.38)",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            pointerEvents: "none",
-            background: "radial-gradient(circle at 85% 15%, rgba(34,211,238,0.18), transparent 24%)",
-          }}
-        />
-
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 20,
-            flexWrap: "wrap",
-            alignItems: "flex-end",
-          }}
-        >
-          <div style={{ maxWidth: 720 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                marginBottom: 14,
-                padding: "7px 12px",
-                borderRadius: 999,
-                background: "rgba(34,211,238,0.10)",
-                border: "1px solid rgba(34,211,238,0.18)",
-                color: "#cffafe",
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: 0.8,
-                textTransform: "uppercase",
-              }}
-            >
-              Seu perfil na Infinity
-            </div>
-
-            <h1
-              style={{
-                margin: 0,
-                color: "#f8fafc",
-                fontSize: 40,
-                lineHeight: 1.02,
-                fontWeight: 900,
-                letterSpacing: -0.7,
-                maxWidth: 780,
-              }}
-            >
-              {user?.username || "Usuário"}
-            </h1>
-
-            <div
-              style={{
-                marginTop: 12,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "8px 12px",
-                borderRadius: 999,
-                background: "rgba(99,102,241,0.12)",
-                border: "1px solid rgba(99,102,241,0.18)",
-                color: "#c7d2fe",
-                fontSize: 13,
-                fontWeight: 700,
-              }}
-            >
-              {displayStatus}
-            </div>
-
-            <p
-              style={{
-                margin: "14px 0 0",
-                color: "#9ca3af",
-                fontSize: 15,
-                lineHeight: 1.7,
-                maxWidth: 720,
-              }}
-            >
-              Aqui você ajusta seu visual, sua frase e seu acesso dentro da comunidade.
-            </p>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gap: 12,
-              minWidth: 260,
-            }}
-          >
-            <div
-              style={{
-                borderRadius: 20,
-                border: "1px solid rgba(34,197,94,0.18)",
-                background: "rgba(34,197,94,0.06)",
-                padding: "14px 16px",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  fontWeight: 800,
-                  marginBottom: 6,
-                }}
-              >
-                Acessos ativos
-              </div>
-              <div style={{ color: "#86efac", fontWeight: 800, fontSize: 22 }}>
-                {loadingSubscriptions ? "..." : activeSubscriptions.length}
-              </div>
-            </div>
-
-            <div
-              style={{
-                borderRadius: 20,
-                border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.05)",
-                padding: "14px 16px",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#9ca3af",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  fontWeight: 800,
-                  marginBottom: 6,
-                }}
-              >
-                Próximo vencimento
-              </div>
-              <div style={{ color: "#f8fafc", fontWeight: 800, fontSize: 15 }}>
-                {loadingSubscriptions ? "..." : nextExpirationCountdown?.label || "—"}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <div className="profile-top-grid">
-        <AvatarPanel user={user} />
-        <ProfileStatusCard
-          statusValue={statusInput}
-          setStatusValue={setStatusInput}
-          saveMessage={statusMessage}
-          onSave={handleSaveStatus}
-          saving={savingStatus}
-        />
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl font-bold">
+          {user?.username}
+        </h1>
+        <p className="text-sm text-zinc-400">
+          Sua presença na Infinity
+        </p>
       </div>
 
-      <div className="profile-top-grid">
-        <SectionCard title="Sua conta" subtitle="O básico da sua conta dentro da Infinity.">
-          <div style={{ display: "grid", gap: 14 }}>
-            <div
-              style={{
-                borderRadius: 18,
-                border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.03)",
-                padding: "14px 16px",
-              }}
-            >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: 8,
-                }}
-              >
-                Nome de usuário
-              </div>
-              <div style={{ color: "#f8fafc", fontSize: 16, fontWeight: 800 }}>{user?.username || "—"}</div>
-            </div>
+      {/* DISCORD */}
+      <div className="bg-zinc-900 rounded-2xl p-4">
 
-            <div
-              style={{
-                borderRadius: 18,
-                border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.03)",
-                padding: "14px 16px",
-              }}
-            >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: 8,
-                }}
-              >
-                E-mail
+        {summary?.discordId ? (
+          <div className="flex items-center gap-4">
+
+            <img
+              src={`https://cdn.discordapp.com/avatars/${summary.discordId}/${summary.discordAvatar}.png`}
+              className="w-14 h-14 rounded-full"
+            />
+
+            <div>
+              <div className="font-bold">
+                {summary.discordUsername}
               </div>
-              <div
-                style={{
-                  color: "#f8fafc",
-                  fontSize: 16,
-                  fontWeight: 800,
-                  wordBreak: "break-word",
-                }}
-              >
-                {user?.email || "—"}
+              <div className="text-sm text-green-400">
+                conectado
               </div>
             </div>
 
-            <div
-              style={{
-                borderRadius: 18,
-                border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.03)",
-                padding: "14px 16px",
-              }}
+            <button
+              onClick={handleDisconnectDiscord}
+              className="ml-auto bg-red-500 px-3 py-2 rounded-lg text-sm font-bold"
             >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 11,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  marginBottom: 8,
-                }}
-              >
-                Conta criada em
-              </div>
-              <div style={{ color: "#f8fafc", fontSize: 16, fontWeight: 800 }}>{formatDate(user?.createdAt)}</div>
-            </div>
+              Desconectar
+            </button>
+
           </div>
-        </SectionCard>
+        ) : (
+          <button
+            onClick={handleConnectDiscord}
+            className="w-full h-12 bg-indigo-600 rounded-xl font-bold"
+          >
+            Conectar com Discord
+          </button>
+        )}
 
-        <SectionCard title="Sua marca na Infinity" subtitle="Seu nome, sua frase e sua presença dentro da org.">
-          <div style={{ display: "grid", gap: 16 }}>
-            <div
-              style={{
-                borderRadius: 26,
-                border: "1px solid rgba(99,102,241,0.16)",
-                background: "rgba(255,255,255,0.03)",
-                padding: 18,
-              }}
-            >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  marginBottom: 10,
-                }}
-              >
-                Sua frase
-              </div>
-              <div
-                style={{
-                  color: "#f8fafc",
-                  fontSize: 17,
-                  fontWeight: 800,
-                  lineHeight: 1.6,
-                }}
-              >
-                {displayStatus}
-              </div>
-              <div
-                style={{
-                  marginTop: 10,
-                  color: "#9ca3af",
-                  fontSize: 14,
-                  lineHeight: 1.7,
-                }}
-              >
-                Uma frase curta para mostrar quem você é dentro da org.
-              </div>
-            </div>
-
-            <div
-              style={{
-                borderRadius: 26,
-                border: "1px solid rgba(34,211,238,0.16)",
-                background: "rgba(34,211,238,0.06)",
-                padding: 18,
-              }}
-            >
-              <div
-                style={{
-                  color: "#9ca3af",
-                  fontSize: 12,
-                  fontWeight: 800,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  marginBottom: 10,
-                }}
-              >
-                Discord
-              </div>
-              <div style={{ color: "#cffafe", fontSize: 14, lineHeight: 1.7 }}>
-                {profileSummary?.discordId ? "Sua conta já está conectada ao Discord." : "Conecte seu Discord para completar sua presença na comunidade."}
-              </div>
-            </div>
-          </div>
-        </SectionCard>
       </div>
 
-      <SectionCard title="Conectar Discord" subtitle="Cole seu ID para ligar sua conta ao servidor.">
-        <div
-          style={{
-            position: "relative",
-            overflow: "hidden",
-            border: "2px solid rgba(88,101,242,0.34)",
-            background: "linear-gradient(180deg, rgba(88,101,242,0.18) 0%, rgba(10,13,20,0.55) 100%)",
-            borderRadius: 28,
-            padding: 22,
-            boxShadow: "0 18px 36px rgba(88,101,242,0.12)",
-          }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              background: "radial-gradient(circle at top right, rgba(88,101,242,0.24), transparent 36%)",
-            }}
-          />
+      {/* MÉTRICAS */}
+      <div className="grid grid-cols-2 gap-3">
 
-          <div
-            style={{
-              position: "relative",
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginBottom: 18,
-              color: "#e0e7ff",
-              fontWeight: 900,
-              fontSize: 16,
-            }}
-          >
-            <span
-              style={{
-                width: 46,
-                height: 46,
-                borderRadius: 16,
-                display: "grid",
-                placeItems: "center",
-                background: "rgba(88,101,242,0.18)",
-                border: "1px solid rgba(88,101,242,0.28)",
-                color: "#8ea0ff",
-                boxShadow: "0 0 24px rgba(88,101,242,0.18)",
-              }}
+        <div className="bg-zinc-900 p-4 rounded-xl">
+          <p className="text-xs text-zinc-400">vitórias</p>
+          <p className="text-xl font-bold">{formatNumber(wins)}</p>
+        </div>
+
+        <div className="bg-zinc-900 p-4 rounded-xl">
+          <p className="text-xs text-zinc-400">partidas</p>
+          <p className="text-xl font-bold">{formatNumber(matches)}</p>
+        </div>
+
+        <div className="bg-zinc-900 p-4 rounded-xl">
+          <p className="text-xs text-zinc-400">mediadas</p>
+          <p className="text-xl font-bold">{formatNumber(mediated)}</p>
+        </div>
+
+        <div className="bg-zinc-900 p-4 rounded-xl">
+          <p className="text-xs text-zinc-400">lucro</p>
+          <p className="text-xl font-bold text-green-400">
+            {formatCurrency(profit)}
+          </p>
+        </div>
+
+      </div>
+
+      {/* ACESSOS */}
+      <div className="bg-zinc-900 rounded-2xl p-4">
+
+        <p className="font-bold mb-3">
+          teus acessos
+        </p>
+
+        {loading ? (
+          <p>carregando...</p>
+        ) : activeSubs.length ? (
+          activeSubs.map((sub, i) => (
+            <div
+              key={i}
+              className="bg-zinc-800 p-3 rounded-lg mb-2"
             >
-              <DiscordIcon />
-            </span>
-            Discord
-          </div>
-
-          <form onSubmit={handleSaveDiscordId} style={{ position: "relative", display: "grid", gap: 14 }}>
-            <div className="profile-discord-grid">
-              <label style={{ display: "grid", gap: 8 }}>
-                <span
-                  style={{
-                    color: "#cbd5e1",
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  Seu ID do Discord
-                </span>
-
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={discordIdInput}
-                  onChange={(event) => setDiscordIdInput(event.target.value)}
-                  placeholder="Ex: 123456789012345678"
-                  style={{
-                    height: 54,
-                    borderRadius: 16,
-                    border: "1px solid rgba(88,101,242,0.35)",
-                    background: "rgba(255,255,255,0.04)",
-                    color: "#f8fafc",
-                    padding: "0 14px",
-                    outline: "none",
-                    boxShadow: "0 0 20px rgba(88,101,242,0.08)",
-                  }}
-                />
-              </label>
-
-              <button
-                type="submit"
-                disabled={savingDiscordId}
-                style={{
-                  height: 54,
-                  padding: "0 18px",
-                  borderRadius: 16,
-                  border: "1px solid rgba(88,101,242,0.55)",
-                  background: "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
-                  color: "#ffffff",
-                  fontSize: 14,
-                  fontWeight: 800,
-                  cursor: savingDiscordId ? "not-allowed" : "pointer",
-                  opacity: savingDiscordId ? 0.72 : 1,
-                  boxShadow: "0 12px 30px rgba(88,101,242,0.20)",
-                }}
-              >
-                {savingDiscordId ? "Salvando..." : "Salvar ID"}
-              </button>
+              {sub.plan?.name}
             </div>
+          ))
+        ) : (
+          <p className="text-zinc-400">
+            sem acesso ativo
+          </p>
+        )}
 
-            <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
-              Pegue seu ID no Discord e cole aqui para conectar sua conta.
-            </div>
+      </div>
 
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              <div
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 999,
-                  border: "1px solid rgba(88,101,242,0.24)",
-                  background: "rgba(88,101,242,0.10)",
-                  color: "#c7d2fe",
-                  fontSize: 12,
-                  fontWeight: 800,
-                }}
-              >
-                ID conectado: {profileSummary?.discordId || "não conectado"}
-              </div>
-
-              {discordMessage ? (
-                <div
-                  style={{
-                    color: discordMessage.toLowerCase().includes("sucesso")
-                      ? "#86efac"
-                      : "#fca5a5",
-                    fontSize: 13,
-                    fontWeight: 700,
-                  }}
-                >
-                  {discordMessage}
-                </div>
-              ) : null}
-            </div>
-          </form>
-        </div>
-      </SectionCard>
-
-      <MetricsOverview
-        loadingSummary={loadingSummary}
-        profileSummary={profileSummary}
-        activeSubscriptions={activeSubscriptions}
-        nextExpirationCountdown={nextExpirationCountdown}
-      />
-
-      <SectionCard title="Seus acessos" subtitle="Veja os planos ativos da sua conta.">
-        <div style={{ display: "grid", gap: 16 }}>
-          <div className="profile-access-grid">
-            {loadingSubscriptions ? (
-              <StatCard label="Assinaturas" value="..." helpText="Carregando dados." />
-            ) : activeSubscriptions.length ? (
-              activeSubscriptions.map((subscription, index) => (
-                <AccessCard key={`${getPlanName(subscription)}-${index}`} subscription={subscription} nowTs={nowTs} />
-              ))
-            ) : (
-              <div
-                style={{
-                  gridColumn: "1 / -1",
-                  borderRadius: 26,
-                  border: "2px solid rgba(99,102,241,0.16)",
-                  background: "rgba(255,255,255,0.03)",
-                  padding: 20,
-                  color: "#9ca3af",
-                  lineHeight: 1.7,
-                }}
-              >
-                {subscriptionsError || "Você não tem nenhum acesso ativo agora."}
-              </div>
-            )}
-          </div>
-        </div>
-      </SectionCard>
     </div>
   );
 }
