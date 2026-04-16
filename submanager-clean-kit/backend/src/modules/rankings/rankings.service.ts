@@ -95,19 +95,36 @@ export const rankingsService = {
         ]),
     );
 
-    const ranking = [...winsMap.values()]
-      .filter((item) => usersMap.has(item.discordId))
-      .map((item) => {
-        const user = usersMap.get(item.discordId);
-        return {
-          discordId: item.discordId,
-          username: user?.username || "",
-          avatarUrl: user?.avatarUrl ?? null,
-          status: user?.status ?? null,
-          wins: item.wins,
-          matches: matchesMap.get(item.discordId) || item.wins,
-        };
-      })
+   type RankedUser = {
+  username: string;
+  avatarUrl: string | null;
+  status: string | null;
+};
+
+const usersMap = new Map<string, RankedUser>(
+  users.map((user) => [
+    user.discordId,
+    {
+      username: user.username || "",
+      avatarUrl: user.avatarUrl ?? null,
+      status: user.status ?? null,
+    },
+  ]),
+);
+
+const ranking = [...winsMap.values()]
+  .filter((item) => usersMap.has(item.discordId))
+  .map((item) => {
+    const user = usersMap.get(item.discordId);
+    return {
+      discordId: item.discordId,
+      username: user?.username ?? "",
+      avatarUrl: user?.avatarUrl ?? null,
+      status: user?.status ?? null,
+      wins: item.wins,
+      matches: matchesMap.get(item.discordId) || item.wins,
+    };
+  })
       .filter((item) => Boolean(item.username))
       .sort((a, b) => b.wins - a.wins)
       .slice(0, 99)
