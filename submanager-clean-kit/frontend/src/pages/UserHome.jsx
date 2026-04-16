@@ -261,28 +261,19 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
   );
 }
 
-function RankingPodiumCard({ item, variant = "side" }) {
-  const isChampion = variant === "center";
-
+function RankingLeaderCard({ item }) {
   return (
     <div
       style={{
         position: "relative",
-        borderRadius: isChampion ? 30 : 24,
-        border: isChampion
-          ? "1px solid rgba(250,204,21,0.30)"
-          : "1px solid rgba(88,101,242,0.20)",
-        background: isChampion
-          ? "linear-gradient(180deg, rgba(250,204,21,0.14) 0%, rgba(17,24,39,0.98) 100%)"
-          : "linear-gradient(180deg, rgba(88,101,242,0.10) 0%, rgba(17,24,39,0.98) 100%)",
-        padding: isChampion ? 22 : 18,
-        minHeight: isChampion ? 260 : 220,
+        borderRadius: 30,
+        border: "1px solid rgba(250,204,21,0.28)",
+        background:
+          "linear-gradient(180deg, rgba(250,204,21,0.12) 0%, rgba(17,24,39,0.98) 100%)",
+        padding: 22,
+        boxShadow: "0 0 34px rgba(250,204,21,0.12)",
         display: "grid",
-        alignContent: "space-between",
-        boxShadow: isChampion
-          ? "0 0 34px rgba(250,204,21,0.14)"
-          : "0 0 24px rgba(88,101,242,0.10)",
-        transform: isChampion ? "translateY(-10px)" : "translateY(0)",
+        gap: 18,
       }}
     >
       <div
@@ -290,29 +281,32 @@ function RankingPodiumCard({ item, variant = "side" }) {
           position: "absolute",
           top: 14,
           right: 14,
-          width: isChampion ? 42 : 36,
-          height: isChampion ? 42 : 36,
+          width: 42,
+          height: 42,
           borderRadius: 14,
           display: "grid",
           placeItems: "center",
-          background: isChampion
-            ? "rgba(250,204,21,0.16)"
-            : "rgba(88,101,242,0.16)",
-          color: isChampion ? "#fde68a" : "#c7d2fe",
-          border: isChampion
-            ? "1px solid rgba(250,204,21,0.22)"
-            : "1px solid rgba(88,101,242,0.20)",
+          background: "rgba(250,204,21,0.16)",
+          color: "#fde68a",
+          border: "1px solid rgba(250,204,21,0.24)",
         }}
       >
-        {isChampion ? <Crown size={18} /> : <Trophy size={16} />}
+        <Crown size={18} />
       </div>
 
-      <div>
+      <div
+        style={{
+          display: "flex",
+          gap: 16,
+          alignItems: "center",
+          flexWrap: "wrap",
+        }}
+      >
         <div
           style={{
-            width: isChampion ? 84 : 72,
-            height: isChampion ? 84 : 72,
-            borderRadius: isChampion ? 28 : 22,
+            width: 84,
+            height: 84,
+            borderRadius: 28,
             overflow: "hidden",
             background: "rgba(255,255,255,0.05)",
             border: "1px solid rgba(255,255,255,0.08)",
@@ -320,8 +314,8 @@ function RankingPodiumCard({ item, variant = "side" }) {
             placeItems: "center",
             color: "#f3f4f6",
             fontWeight: 900,
-            fontSize: isChampion ? 24 : 20,
-            marginBottom: 16,
+            fontSize: 24,
+            flexShrink: 0,
           }}
         >
           {item?.avatar ? (
@@ -335,82 +329,121 @@ function RankingPodiumCard({ item, variant = "side" }) {
           )}
         </div>
 
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "6px 10px",
-            borderRadius: 999,
-            background: isChampion
-              ? "rgba(250,204,21,0.12)"
-              : "rgba(88,101,242,0.12)",
-            color: isChampion ? "#fde68a" : "#c7d2fe",
-            fontSize: 11,
-            fontWeight: 900,
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            marginBottom: 12,
-          }}
-        >
-          #{item.position}
-        </div>
+        <div style={{ minWidth: 0 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 10px",
+              borderRadius: 999,
+              background: "rgba(250,204,21,0.12)",
+              color: "#fde68a",
+              fontSize: 11,
+              fontWeight: 900,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            #1 da org
+          </div>
 
-        <div
-          style={{
-            color: "#f3f4f6",
-            fontSize: isChampion ? 22 : 18,
-            fontWeight: 900,
-            lineHeight: 1.15,
-            letterSpacing: "-0.03em",
-            marginBottom: 8,
-            wordBreak: "break-word",
-          }}
-        >
-          {item.name}
+          <div
+            style={{
+              color: "#f3f4f6",
+              fontSize: 28,
+              fontWeight: 900,
+              lineHeight: 1.05,
+              letterSpacing: "-0.04em",
+              marginBottom: 8,
+              wordBreak: "break-word",
+            }}
+          >
+            {item.name}
+          </div>
+
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            Quem tá puxando a frente agora.
+          </div>
         </div>
       </div>
 
       <div
         style={{
           display: "grid",
-          gap: 10,
+          gap: 12,
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
         }}
       >
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            color: "#dbeafe",
-            fontSize: 14,
-            fontWeight: 800,
+            borderRadius: 18,
+            border: "1px solid rgba(250,204,21,0.18)",
+            background: "rgba(250,204,21,0.08)",
+            padding: "14px 16px",
           }}
         >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Trophy size={15} />
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              marginBottom: 8,
+            }}
+          >
             Wins
-          </span>
-          <span>{item.wins}</span>
+          </div>
+
+          <div
+            style={{
+              color: "#fde68a",
+              fontSize: 24,
+              fontWeight: 900,
+            }}
+          >
+            {item.wins}
+          </div>
         </div>
 
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            gap: 12,
-            alignItems: "center",
-            color: "#9ca3af",
-            fontSize: 14,
-            fontWeight: 800,
+            borderRadius: 18,
+            border: "1px solid rgba(88,101,242,0.18)",
+            background: "rgba(88,101,242,0.08)",
+            padding: "14px 16px",
           }}
         >
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-            <Sword size={15} />
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.1em",
+              marginBottom: 8,
+            }}
+          >
             Partidas
-          </span>
-          <span>{item.matches}</span>
+          </div>
+
+          <div
+            style={{
+              color: "#c7d2fe",
+              fontSize: 24,
+              fontWeight: 900,
+            }}
+          >
+            {item.matches}
+          </div>
         </div>
       </div>
     </div>
@@ -433,18 +466,53 @@ function RankingListItem({ item }) {
     >
       <div
         style={{
-          width: 42,
-          height: 42,
-          borderRadius: 14,
-          display: "grid",
-          placeItems: "center",
-          background: "rgba(88,101,242,0.14)",
-          border: "1px solid rgba(88,101,242,0.18)",
-          color: "#c7d2fe",
-          fontWeight: 900,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
         }}
       >
-        #{item.position}
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            overflow: "hidden",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            display: "grid",
+            placeItems: "center",
+            color: "#f3f4f6",
+            fontWeight: 900,
+            flexShrink: 0,
+          }}
+        >
+          {item.avatar ? (
+            <img
+              src={item.avatar}
+              alt={item.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            item.name.slice(0, 1).toUpperCase()
+          )}
+        </div>
+
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: 12,
+            display: "grid",
+            placeItems: "center",
+            background: "rgba(88,101,242,0.14)",
+            border: "1px solid rgba(88,101,242,0.18)",
+            color: "#c7d2fe",
+            fontWeight: 900,
+            flexShrink: 0,
+          }}
+        >
+          #{item.position}
+        </div>
       </div>
 
       <div style={{ minWidth: 0 }}>
@@ -537,7 +605,7 @@ export default function UserHome() {
     const loadRanking = async () => {
       try {
         const response = await api.get("/rankings/public?period=total");
-        setRanking(getRankingList(response).map(normalizeRankingItem).slice(0, 5));
+        setRanking(getRankingList(response).map(normalizeRankingItem).slice(0, 8));
       } catch (error) {
         setRanking([]);
         setRankingError(error?.response?.data?.message || "");
@@ -574,8 +642,8 @@ export default function UserHome() {
     return buildCountdown(getSubscriptionEndsAt(nextExpiration), nowTs);
   }, [nextExpiration, nowTs]);
 
-  const top3 = useMemo(() => ranking.slice(0, 3), [ranking]);
-  const extraRanking = useMemo(() => ranking.slice(3, 5), [ranking]);
+  const leader = useMemo(() => ranking[0] || null, [ranking]);
+  const restRanking = useMemo(() => ranking.slice(1), [ranking]);
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -584,25 +652,6 @@ export default function UserHome() {
           display: grid;
           gap: 20px;
           grid-template-columns: 1.15fr 0.85fr;
-        }
-
-        .user-home-subscriptions-grid {
-          display: grid;
-          gap: 16px;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .user-home-ranking-top3 {
-          display: grid;
-          gap: 16px;
-          grid-template-columns: 0.9fr 1.15fr 0.9fr;
-          align-items: end;
-        }
-
-        .user-home-ranking-rest {
-          display: grid;
-          gap: 12px;
-          margin-top: 16px;
         }
 
         .user-home-plans-grid {
@@ -614,19 +663,13 @@ export default function UserHome() {
 
         @media (max-width: 1180px) {
           .user-home-hero-grid,
-          .user-home-subscriptions-grid,
           .user-home-plans-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
-
-          .user-home-ranking-top3 {
-            grid-template-columns: 1fr;
           }
         }
 
         @media (max-width: 860px) {
           .user-home-hero-grid,
-          .user-home-subscriptions-grid,
           .user-home-plans-grid {
             grid-template-columns: 1fr;
           }
@@ -847,27 +890,23 @@ export default function UserHome() {
               <div style={{ height: 76, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
               <div style={{ height: 76, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
             </div>
-          ) : top3.length === 0 ? (
+          ) : !leader ? (
             <EmptyState
               title="Sem ranking no momento"
               description={rankingError || "Ainda não tem movimento suficiente pra mostrar aqui."}
             />
           ) : (
-            <>
-              <div className="user-home-ranking-top3">
-                {top3[1] ? <RankingPodiumCard item={top3[1]} variant="side" /> : <div />}
-                {top3[0] ? <RankingPodiumCard item={top3[0]} variant="center" /> : <div />}
-                {top3[2] ? <RankingPodiumCard item={top3[2]} variant="side" /> : <div />}
-              </div>
+            <div style={{ display: "grid", gap: 14 }}>
+              <RankingLeaderCard item={leader} />
 
-              {extraRanking.length > 0 ? (
-                <div className="user-home-ranking-rest">
-                  {extraRanking.map((item) => (
+              {restRanking.length > 0 ? (
+                <div style={{ display: "grid", gap: 12 }}>
+                  {restRanking.map((item) => (
                     <RankingListItem key={`${item.position}-${item.name}`} item={item} />
                   ))}
                 </div>
               ) : null}
-            </>
+            </div>
           )}
         </section>
 
