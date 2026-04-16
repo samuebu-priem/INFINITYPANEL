@@ -62,7 +62,9 @@ function getInitials(name) {
   );
 }
 
-function SectionCard({ title, subtitle, children, style = {} }) {
+function SectionCard({ title, subtitle, children, style = {}, delay = 0, animated = true }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <section
       style={{
@@ -74,20 +76,17 @@ function SectionCard({ title, subtitle, children, style = {} }) {
         borderRadius: 30,
         padding: 24,
         boxShadow: "0 18px 54px rgba(0,0,0,0.28)",
+        transform: hovered ? "translateY(-5px) scale(1.01)" : "translateY(0) scale(1)",
+        opacity: animated ? 0 : 1,
+        animation: animated
+          ? `panelEnter 700ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`
+          : "none",
         transition:
-          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+          "transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease, opacity 260ms ease",
         ...style,
       }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-3px)";
-        event.currentTarget.style.boxShadow = "0 24px 72px rgba(0,0,0,0.34)";
-        event.currentTarget.style.borderColor = "rgba(34,211,238,0.28)";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 18px 54px rgba(0,0,0,0.28)";
-        event.currentTarget.style.borderColor = "rgba(34,211,238,0.16)";
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         style={{
@@ -96,10 +95,20 @@ function SectionCard({ title, subtitle, children, style = {} }) {
           pointerEvents: "none",
           background:
             "radial-gradient(circle at top right, rgba(34,211,238,0.10), transparent 32%), radial-gradient(circle at bottom left, rgba(99,102,241,0.10), transparent 28%)",
+          opacity: hovered ? 1 : 0.75,
+          transition: "opacity 260ms ease",
         }}
       />
 
-      <div style={{ position: "relative", zIndex: 1, marginBottom: 18 }}>
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          marginBottom: 18,
+          transform: hovered ? "translateY(-1px)" : "translateY(0)",
+          transition: "transform 260ms ease",
+        }}
+      >
         <h2
           style={{
             margin: 0,
@@ -132,6 +141,8 @@ function SectionCard({ title, subtitle, children, style = {} }) {
 }
 
 function PeriodButton({ active, children, onClick }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <button
       type="button"
@@ -140,9 +151,7 @@ function PeriodButton({ active, children, onClick }) {
         height: 44,
         padding: "0 16px",
         borderRadius: 14,
-        border: active
-          ? "2px solid rgba(34,211,238,0.40)"
-          : "1px solid #1f2937",
+        border: active ? "2px solid rgba(34,211,238,0.40)" : "1px solid #1f2937",
         background: active
           ? "linear-gradient(180deg, rgba(34,211,238,0.16) 0%, rgba(99,102,241,0.10) 100%)"
           : "rgba(255,255,255,0.03)",
@@ -150,19 +159,17 @@ function PeriodButton({ active, children, onClick }) {
         fontSize: 14,
         fontWeight: 800,
         cursor: "pointer",
+        transform: hovered ? "translateY(-2px) scale(1.02)" : "translateY(0) scale(1)",
+        boxShadow: hovered
+          ? active
+            ? "0 12px 28px rgba(34,211,238,0.18)"
+            : "0 12px 28px rgba(0,0,0,0.16)"
+          : "none",
         transition:
-          "transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease",
+          "transform 180ms ease, box-shadow 180ms ease, background 180ms ease, border-color 180ms ease",
       }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-1px)";
-        event.currentTarget.style.boxShadow = active
-          ? "0 10px 24px rgba(34,211,238,0.16)"
-          : "0 10px 24px rgba(0,0,0,0.16)";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "none";
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {children}
     </button>
@@ -182,6 +189,7 @@ function EmptyState({ title, description, hint }) {
         background:
           "linear-gradient(180deg, rgba(99,102,241,0.09) 0%, rgba(7,10,16,0.54) 100%)",
         boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
+        animation: "floatSoft 6s ease-in-out infinite",
       }}
     >
       <div
@@ -295,6 +303,8 @@ function SkeletonListItem() {
 }
 
 function Avatar({ avatar, username, position, accent }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <div
       style={{
@@ -318,7 +328,11 @@ function Avatar({ avatar, username, position, accent }) {
         color: "#f8fafc",
         fontSize: 18,
         fontWeight: 900,
+        transform: hovered ? "translateY(-3px) scale(1.03)" : "translateY(0) scale(1)",
+        transition: "transform 220ms ease, box-shadow 220ms ease",
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {avatar ? (
         <img
@@ -503,8 +517,8 @@ function UserCard({ item }) {
 }
 
 function PodiumCard({ item, rank, meta }) {
-  const variantLabel =
-    rank === 1 ? "Líder da temporada" : rank === 2 ? "Top 2" : "Top 3";
+  const variantLabel = rank === 1 ? "Líder da temporada" : rank === 2 ? "Top 2" : "Top 3";
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div
@@ -518,8 +532,24 @@ function PodiumCard({ item, rank, meta }) {
         display: "grid",
         gap: 16,
         minHeight: meta.height,
-        transform: rank === 1 ? "translateY(-10px) scale(1.03)" : "none",
+        transform:
+          rank === 1
+            ? hovered
+              ? "translateY(-14px) scale(1.04)"
+              : "translateY(-10px) scale(1.03)"
+            : hovered
+            ? "translateY(-4px) scale(1.01)"
+            : "translateY(0) scale(1)",
+        animation:
+          rank === 1
+            ? "podiumPulse 5.5s ease-in-out infinite"
+            : rank === 2
+            ? "podiumPulseSoft 6.2s ease-in-out infinite"
+            : "podiumPulseSoft 6.8s ease-in-out infinite",
+        transition: "transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease",
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       {rank === 1 ? (
         <div
@@ -527,9 +557,10 @@ function PodiumCard({ item, rank, meta }) {
             position: "absolute",
             top: -12,
             left: "50%",
-            transform: "translateX(-50%)",
+            transform: hovered ? "translateX(-50%) translateY(-3px)" : "translateX(-50%) translateY(0)",
             fontSize: 38,
             filter: "drop-shadow(0 0 12px rgba(251,191,36,0.45))",
+            animation: "crownFloat 3.8s ease-in-out infinite",
           }}
         >
           👑
@@ -617,7 +648,9 @@ function PodiumCard({ item, rank, meta }) {
   );
 }
 
-function RankCard({ item }) {
+function RankCard({ item, delay = 0 }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <div
       style={{
@@ -630,7 +663,13 @@ function RankCard({ item }) {
           "linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(7,10,16,0.98) 100%)",
         display: "grid",
         gap: 14,
+        opacity: 0,
+        animation: `cardEnter 680ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`,
+        transform: hovered ? "translateY(-5px) scale(1.01)" : "translateY(0) scale(1)",
+        transition: "transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease",
       }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         style={{
@@ -747,10 +786,16 @@ function RankCard({ item }) {
 }
 
 export default function RankingPublic() {
+  const [heroReady, setHeroReady] = useState(false);
   const { user } = useAuth();
   const [period, setPeriod] = useState("total");
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setHeroReady(true), 60);
+    return () => window.clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const loadRanking = async () => {
@@ -825,6 +870,28 @@ export default function RankingPublic() {
           align-items: end;
         }
 
+        .ranking-hero {
+          position: relative;
+          overflow: hidden;
+          animation: heroEnter 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .ranking-hero::before,
+        .ranking-hero::after {
+          content: "";
+          position: absolute;
+          inset: -20%;
+          pointer-events: none;
+          background: radial-gradient(circle at 20% 20%, rgba(34,211,238,0.16), transparent 30%), radial-gradient(circle at 80% 0%, rgba(99,102,241,0.18), transparent 28%);
+          filter: blur(8px);
+          animation: lobbyDrift 14s ease-in-out infinite alternate;
+        }
+
+        .ranking-hero::after {
+          background: radial-gradient(circle at 70% 30%, rgba(251,191,36,0.10), transparent 34%), radial-gradient(circle at 30% 80%, rgba(34,211,238,0.10), transparent 30%);
+          animation-duration: 18s;
+        }
+
         .ranking-list-wrap {
           max-height: 920px;
           overflow: auto;
@@ -854,6 +921,46 @@ export default function RankingPublic() {
           100% { background-position: -200% 0; }
         }
 
+        @keyframes cardEnter {
+          from { opacity: 0; transform: translateY(16px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes panelEnter {
+          from { opacity: 0; transform: translateY(18px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes heroEnter {
+          from { opacity: 0; transform: translateY(14px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes lobbyDrift {
+          from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+          to { transform: translate3d(1.5%, 1%, 0) scale(1.04); }
+        }
+
+        @keyframes floatSoft {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+
+        @keyframes podiumPulse {
+          0%, 100% { transform: translateY(-10px) scale(1.03); box-shadow: 0 24px 70px rgba(251,191,36,0.28); }
+          50% { transform: translateY(-14px) scale(1.04); box-shadow: 0 30px 78px rgba(251,191,36,0.34); }
+        }
+
+        @keyframes podiumPulseSoft {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-3px) scale(1.01); }
+        }
+
+        @keyframes crownFloat {
+          0%, 100% { transform: translateX(-50%) translateY(0); }
+          50% { transform: translateX(-50%) translateY(-4px); }
+        }
+
         @media (max-width: 1100px) {
           .ranking-top-grid,
           .ranking-header-grid {
@@ -863,6 +970,7 @@ export default function RankingPublic() {
       `}</style>
 
       <section
+        className="ranking-hero"
         style={{
           position: "relative",
           overflow: "hidden",
@@ -872,6 +980,9 @@ export default function RankingPublic() {
           background:
             "linear-gradient(135deg, rgba(14,18,29,0.98) 0%, rgba(7,10,16,0.98) 100%)",
           boxShadow: "0 24px 80px rgba(0,0,0,0.34)",
+          opacity: heroReady ? 1 : 0,
+          transform: heroReady ? "translateY(0)" : "translateY(10px)",
+          transition: "opacity 700ms ease, transform 700ms ease",
         }}
       >
         <div
@@ -988,10 +1099,7 @@ export default function RankingPublic() {
         {loading ? (
           <div className="ranking-top-grid">
             {[1, 2, 3].map((position) => (
-              <SkeletonPodiumCard
-                key={position}
-                height={position === 1 ? 324 : 286}
-              />
+              <SkeletonPodiumCard key={position} height={position === 1 ? 324 : 286} />
             ))}
           </div>
         ) : topThree.length === 0 ? (
@@ -1033,8 +1141,8 @@ export default function RankingPublic() {
         ) : (
           <div className="ranking-list-wrap">
             <div className="ranking-list-grid">
-              {rest.map((item) => (
-                <RankCard key={`${item.discordId}-${item.position}`} item={item} />
+              {rest.map((item, index) => (
+                <RankCard key={`${item.discordId}-${item.position}`} item={item} delay={index * 70} />
               ))}
             </div>
           </div>

@@ -106,29 +106,31 @@ function getAvatarText(user) {
   return `${first}${second}`.toUpperCase();
 }
 
-function SectionCard({ title, subtitle, children, action }) {
+function SectionCard({ title, subtitle, children, action, delay = 0, animated = true }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
     <section
       style={{
         position: "relative",
         overflow: "hidden",
-        background: "linear-gradient(180deg, rgba(18,24,38,0.98) 0%, rgba(10,13,20,0.99) 100%)",
-        border: "2px solid rgba(34,211,238,0.18)",
+        background:
+          "linear-gradient(180deg, rgba(18,24,38,0.98) 0%, rgba(10,13,20,0.99) 100%)",
+        border: "2px solid rgba(34,211,238,0.16)",
         borderRadius: 30,
         padding: 24,
-        boxShadow: "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)",
-        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        boxShadow:
+          "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)",
+        transform: hovered ? "translateY(-5px) scale(1.01)" : "translateY(0) scale(1)",
+        opacity: animated ? 0 : 1,
+        animation: animated
+          ? `panelEnter 700ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`
+          : "none",
+        transition:
+          "transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease, opacity 260ms ease",
       }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-3px)";
-        event.currentTarget.style.boxShadow = "0 24px 66px rgba(0,0,0,0.42), 0 0 34px rgba(34,211,238,0.10)";
-        event.currentTarget.style.borderColor = "rgba(34,211,238,0.30)";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)";
-        event.currentTarget.style.borderColor = "rgba(34,211,238,0.18)";
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         style={{
@@ -137,6 +139,8 @@ function SectionCard({ title, subtitle, children, action }) {
           pointerEvents: "none",
           background:
             "radial-gradient(circle at top right, rgba(34,211,238,0.10), transparent 34%), radial-gradient(circle at bottom left, rgba(99,102,241,0.08), transparent 36%)",
+          opacity: hovered ? 1 : 0.75,
+          transition: "opacity 260ms ease",
         }}
       />
 
@@ -146,6 +150,8 @@ function SectionCard({ title, subtitle, children, action }) {
             marginBottom: 20,
             position: "relative",
             zIndex: 1,
+            transform: hovered ? "translateY(-1px)" : "translateY(0)",
+            transition: "transform 260ms ease",
           }}
         >
           <div
@@ -194,7 +200,7 @@ function SectionCard({ title, subtitle, children, action }) {
   );
 }
 
-function StatCard({ label, value, helpText, accent = "primary", highlight = false }) {
+function StatCard({ label, value, helpText, accent = "primary", highlight = false, delay = 0 }) {
   const accents = {
     primary: {
       value: "#f8fafc",
@@ -217,6 +223,7 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
   };
 
   const theme = accents[accent] || accents.primary;
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div
@@ -229,25 +236,24 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
         padding: 20,
         minHeight: 150,
         boxShadow: highlight ? `0 18px 40px ${theme.glow}` : "none",
-        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        opacity: 0,
+        animation: `cardEnter 680ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`,
+        transform: hovered ? "translateY(-5px) scale(1.015)" : "translateY(0) scale(1)",
+        transition:
+          "transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, filter 240ms ease",
       }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-3px)";
-        event.currentTarget.style.boxShadow = `0 24px 54px ${theme.glow}`;
-        event.currentTarget.style.borderColor = "rgba(34,211,238,0.34)";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = highlight ? `0 18px 40px ${theme.glow}` : "none";
-        event.currentTarget.style.borderColor = theme.border;
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background: "linear-gradient(135deg, rgba(99,102,241,0.10), transparent 44%)",
+          background:
+            "linear-gradient(135deg, rgba(99,102,241,0.10), transparent 44%)",
+          opacity: hovered ? 1 : 0.75,
+          transition: "opacity 240ms ease",
         }}
       />
 
@@ -261,6 +267,8 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
           textTransform: "uppercase",
           letterSpacing: "0.14em",
           marginBottom: 10,
+          transform: hovered ? "translateY(-1px)" : "translateY(0)",
+          transition: "transform 240ms ease",
         }}
       >
         {label}
@@ -275,6 +283,8 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
           lineHeight: 1.05,
           fontWeight: 900,
           letterSpacing: "-0.04em",
+          transform: hovered ? "scale(1.02)" : "scale(1)",
+          transition: "transform 240ms ease",
         }}
       >
         {value}
@@ -288,6 +298,8 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
           color: "#9ca3af",
           fontSize: 14,
           lineHeight: 1.5,
+          transform: hovered ? "translateY(-1px)" : "translateY(0)",
+          transition: "transform 240ms ease",
         }}
       >
         {helpText}
@@ -296,10 +308,11 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
   );
 }
 
-function AccessCard({ subscription, nowTs }) {
+function AccessCard({ subscription, nowTs, delay = 0 }) {
   const endsAt = getEndsAt(subscription);
   const countdown = buildCountdown(endsAt, nowTs);
   const active = isSubscriptionActive(subscription);
+  const [hovered, setHovered] = useState(false);
 
   return (
     <div
@@ -313,18 +326,14 @@ function AccessCard({ subscription, nowTs }) {
         boxShadow: "0 18px 42px rgba(0,0,0,0.28)",
         display: "grid",
         gap: 16,
-        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        opacity: 0,
+        animation: `cardEnter 720ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms forwards`,
+        transform: hovered ? "translateY(-6px) scale(1.01)" : "translateY(0) scale(1)",
+        transition:
+          "transform 240ms ease, box-shadow 240ms ease, border-color 240ms ease, filter 240ms ease",
       }}
-      onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-4px)";
-        event.currentTarget.style.boxShadow = "0 26px 56px rgba(0,0,0,0.34)";
-        event.currentTarget.style.borderColor = "rgba(34,211,238,0.32)";
-      }}
-      onMouseLeave={(event) => {
-        event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 18px 42px rgba(0,0,0,0.28)";
-        event.currentTarget.style.borderColor = "rgba(34,197,94,0.22)";
-      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
       <div
         style={{
@@ -334,6 +343,8 @@ function AccessCard({ subscription, nowTs }) {
           background: active
             ? "radial-gradient(circle at top right, rgba(34,197,94,0.12), transparent 36%)"
             : "radial-gradient(circle at top right, rgba(239,68,68,0.10), transparent 36%)",
+          opacity: hovered ? 1 : 0.82,
+          transition: "opacity 240ms ease",
         }}
       />
 
@@ -518,6 +529,7 @@ function AvatarPanel({ user }) {
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
   const [savingAvatar, setSavingAvatar] = useState(false);
+  const [panelHovered, setPanelHovered] = useState(false);
 
   const currentAvatar = avatarPreview || "";
   const avatarLabel = user?.username || "Usuário";
@@ -570,7 +582,11 @@ function AvatarPanel({ user }) {
         padding: 26,
         display: "grid",
         gap: 18,
+        transform: panelHovered ? "translateY(-5px) scale(1.008)" : "translateY(0) scale(1)",
+        transition: "transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease",
       }}
+      onMouseEnter={() => setPanelHovered(true)}
+      onMouseLeave={() => setPanelHovered(false)}
     >
       <div
         style={{
@@ -649,15 +665,17 @@ function AvatarPanel({ user }) {
           }}
         >
           <div
-            style={{
-              width: 122,
-              height: 122,
-              borderRadius: 36,
-              padding: 4,
-              background: "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
-              boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
-              cursor: "pointer",
-            }}
+              style={{
+                width: 122,
+                height: 122,
+                borderRadius: 36,
+                padding: 4,
+                background: "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
+                boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
+                cursor: "pointer",
+                transform: photoHover ? "translateY(-2px) scale(1.03)" : "translateY(0) scale(1)",
+                transition: "transform 220ms ease, box-shadow 220ms ease",
+              }}
             onClick={handlePickAvatar}
           >
             <div
@@ -676,6 +694,8 @@ function AvatarPanel({ user }) {
                 letterSpacing: "-0.06em",
                 position: "relative",
                 overflow: "hidden",
+                transform: photoHover ? "translateY(-1px) scale(1.01)" : "translateY(0) scale(1)",
+                transition: "transform 220ms ease, background 220ms ease",
               }}
               onMouseEnter={() => setPhotoHover(true)}
               onMouseLeave={() => setPhotoHover(false)}
@@ -804,6 +824,7 @@ function ProfileStatusCard({ statusValue, setStatusValue, saveMessage, onSave, s
     <SectionCard
       title="Sua frase"
       subtitle="Mostre sua energia dentro da comunidade."
+      delay={120}
       action={
         <button
           type="button"
