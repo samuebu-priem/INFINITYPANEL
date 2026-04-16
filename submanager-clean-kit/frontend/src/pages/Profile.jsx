@@ -553,14 +553,14 @@ function DiscordIcon() {
   );
 }
 
-function AvatarPanel({ user }) {
+function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
   const [photoHover, setPhotoHover] = useState(false);
   const fileInputRef = useRef(null);
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
-  const currentAvatar =
-    avatarPreview || user?.avatar || user?.photoUrl || user?.imageUrl || "";
+  const currentAvatar = avatarPreview || avatarUrl || "";
   const avatarLabel = user?.username || "Usuário";
   const avatarInitials = getAvatarText(user);
 
@@ -568,7 +568,7 @@ function AvatarPanel({ user }) {
     fileInputRef.current?.click();
   };
 
-  const handleAvatarChange = (event) => {
+  const handleAvatarChange = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -581,9 +581,45 @@ function AvatarPanel({ user }) {
     const reader = new FileReader();
     reader.onload = () => {
       setAvatarPreview(String(reader.result || ""));
-      setAvatarMessage("Foto atualizada com sucesso.");
     };
     reader.readAsDataURL(file);
+
+    setSavingAvatar(true);
+    setAvatarMessage("");
+
+    try {
+      const response = await api.patch("/profile", {
+        avatarUrl: await new Promise((resolve, reject) => {
+          const fileReader = new FileReader();
+          fileReader.onload = () => resolve(String(fileReader.result || ""));
+          fileReader.onerror = () => reject(new Error("Falha ao ler a imagem."));
+          fileReader.readAsDataURL(file);
+        }),
+      });
+
+      const summary = getSummaryObject(response);
+      const savedAvatarUrl =
+        summary?.avatarUrl ||
+        response?.profile?.avatarUrl ||
+        response?.data?.profile?.avatarUrl ||
+        "";
+
+      if (savedAvatarUrl) {
+        setAvatarPreview("");
+        onRefresh?.();
+      }
+
+      setAvatarMessage("Avatar atualizado com sucesso.");
+    } catch (error) {
+      setAvatarMessage(
+        error?.response?.data?.message || error?.message || "Não foi possível atualizar seu avatar."
+      );
+      setAvatarPreview("");
+      onRefresh?.();
+    } finally {
+      setSavingAvatar(false);
+      event.target.value = "";
+    }
   };
 
   return (
@@ -789,6 +825,7 @@ function AvatarPanel({ user }) {
 
             <button
               type="button"
+              disabled={savingAvatar}
               style={{
                 width: "fit-content",
                 display: "inline-flex",
@@ -804,10 +841,11 @@ function AvatarPanel({ user }) {
                 fontWeight: 800,
                 cursor: "pointer",
                 boxShadow: "0 0 22px rgba(34,211,238,0.10)",
+                opacity: savingAvatar ? 0.75 : 1,
               }}
               onClick={handlePickAvatar}
             >
-              Trocar avatar
+              {savingAvatar ? "Salvando..." : "Trocar avatar"}
             </button>
 
             <input
@@ -843,6 +881,7 @@ function ProfileStatusCard({
   setStatusValue,
   saveMessage,
   onSave,
+  saving,
 }) {
   return (
     <SectionCard
@@ -852,6 +891,7 @@ function ProfileStatusCard({
         <button
           type="button"
           onClick={onSave}
+          disabled={saving}
           style={{
             height: 44,
             padding: "0 16px",
@@ -861,9 +901,10 @@ function ProfileStatusCard({
             color: "#e5e7eb",
             fontWeight: 800,
             cursor: "pointer",
+            opacity: saving ? 0.75 : 1,
           }}
         >
-          Atualizar
+          {saving ? "Salvando..." : "Atualizar"}
         </button>
       }
     >
@@ -1116,7 +1157,7 @@ function MetricsOverview({
 }
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, refreshMe } = useAuth();
 
   const [subscriptions, setSubscriptions] = useState([]);
   const [profileSummary, setProfileSummary] = useState(null);
@@ -1128,8 +1169,11 @@ export default function Profile() {
   const [discordIdInput, setDiscordIdInput] = useState("");
   const [savingDiscordId, setSavingDiscordId] = useState(false);
   const [discordMessage, setDiscordMessage] = useState("");
-  const [customStatus, setCustomStatus] = useState("");
+  const [statusInput, setStatusInput] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [savingStatus, setSavingStatus] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [avatarMessage, setAvatarMessage] = useState("");
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -1158,7 +1202,7 @@ export default function Profile() {
         const summary = getSummaryObject(response);
         setProfileSummary(summary);
         setDiscordIdInput(summary?.discordId || "");
-        setCustomStatus(
+        setStatusInput(
           summary?.status ||
             summary?.customStatus ||
             summary?.profileStatus ||
@@ -1197,6 +1241,15 @@ export default function Profile() {
     return buildCountdown(getEndsAt(nextExpiration), nowTs);
   }, [nextExpiration, nowTs]);
 
+  const syncSummary = async () => {
+    const response = await api.get("/profile/summary");
+    const summary = getSummaryObject(response);
+    setProfileSummary(summary);
+    setDiscordIdInput(summary?.discordId || "");
+    setStatusInput(summary?.status || summary?.customStatus || summary?.profileStatus || summary?.bio || "");
+    return summary;
+  };
+
   const handleSaveDiscordId = async (event) => {
     event.preventDefault();
     setSavingDiscordId(true);
@@ -1217,7 +1270,7 @@ export default function Profile() {
         discordId: savedDiscordId,
       }));
 
-      setDiscordIdInput(savedDiscordId);
+      await syncSummary();
       setDiscordMessage("Discord vinculado com sucesso.");
     } catch (error) {
       setDiscordMessage(
@@ -1230,14 +1283,65 @@ export default function Profile() {
   };
 
   const handleSaveStatus = async () => {
-    setStatusMessage("Status atualizado na tela.");
+    setSavingStatus(true);
+    setStatusMessage("");
+
+    try {
+      const response = await api.patch("/profile", {
+        status: statusInput,
+      });
+
+      const summary = getSummaryObject(response);
+      const savedStatus = summary?.status ?? statusInput;
+
+      setStatusInput(savedStatus || "");
+      await refreshMe().catch(() => null);
+      await syncSummary();
+
+      setStatusMessage("Status atualizado com sucesso.");
+    } catch (error) {
+      setStatusMessage(
+        error?.response?.data?.message || "Não foi possível atualizar seu status."
+      );
+    } finally {
+      setSavingStatus(false);
+    }
+  };
+
+  const handleSaveAvatar = async (avatarUrl) => {
+    setSavingAvatar(true);
+    setAvatarMessage("");
+
+    try {
+      const response = await api.patch("/profile", { avatarUrl });
+      const summary = getSummaryObject(response);
+      const savedAvatarUrl = summary?.avatarUrl || avatarUrl;
+
+      setProfileSummary((current) => ({
+        ...(current || {}),
+        avatarUrl: savedAvatarUrl,
+      }));
+
+      await refreshMe().catch(() => null);
+      await syncSummary();
+      setAvatarMessage("Avatar atualizado com sucesso.");
+    } catch (error) {
+      setAvatarMessage(
+        error?.response?.data?.message || "Não foi possível atualizar seu avatar."
+      );
+    } finally {
+      setSavingAvatar(false);
+    }
   };
 
   const displayStatus =
-    customStatus ||
+    statusInput ||
     profileSummary?.status ||
     profileSummary?.customStatus ||
     "Sem status definido";
+
+  const displayAvatar =
+    profileSummary?.avatarUrl || user?.avatarUrl || user?.avatar || "";
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -1441,12 +1545,18 @@ export default function Profile() {
       </section>
 
       <div className="profile-top-grid">
-        <AvatarPanel user={user} />
+        <AvatarPanel
+          user={user}
+          avatarUrl={displayAvatar}
+          status={displayStatus}
+          onRefresh={syncSummary}
+        />
         <ProfileStatusCard
-          statusValue={customStatus}
-          setStatusValue={setCustomStatus}
+          statusValue={statusInput}
+          setStatusValue={setStatusInput}
           saveMessage={statusMessage}
           onSave={handleSaveStatus}
+          saving={savingStatus}
         />
       </div>
 

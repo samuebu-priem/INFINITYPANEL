@@ -21,11 +21,25 @@ function normalizeRankingItem(item, index) {
     item?.displayName ??
     "Jogador";
 
-  const status = item?.status ?? item?.title ?? item?.rankTitle ?? item?.role ?? null;
-  const avatar = item?.avatar ?? item?.photoUrl ?? item?.imageUrl ?? item?.profileImage ?? null;
+  const status =
+    item?.status ?? item?.title ?? item?.rankTitle ?? item?.role ?? null;
+  const avatar =
+    item?.avatarUrl ??
+    item?.avatar ??
+    item?.photoUrl ??
+    item?.imageUrl ??
+    item?.profileImage ??
+    null;
   const matches = Number(item?.matches ?? item?.partidas ?? item?.games ?? 0);
-  const wins = Number(item?.wins ?? item?.vitórias ?? item?.vitorias ?? item?.victories ?? 0);
-  const earnedValue = item?.earnedValue ?? item?.valorGanho ?? item?.valorGanhoTotal ?? item?.totalEarned ?? null;
+  const wins = Number(
+    item?.wins ?? item?.vitórias ?? item?.vitorias ?? item?.victories ?? 0
+  );
+  const earnedValue =
+    item?.earnedValue ??
+    item?.valorGanho ??
+    item?.valorGanhoTotal ??
+    item?.totalEarned ??
+    null;
 
   return {
     raw: item,
@@ -35,7 +49,10 @@ function normalizeRankingItem(item, index) {
     avatar,
     matches,
     wins,
-    earnedValue: earnedValue !== null && earnedValue !== undefined && earnedValue !== "" ? earnedValue : null,
+    earnedValue:
+      earnedValue !== null && earnedValue !== undefined && earnedValue !== ""
+        ? earnedValue
+        : null,
     discordId: item?.discordId ?? item?.id ?? `${position}-${username}`,
   };
 }
@@ -56,18 +73,23 @@ function formatPlural(value, singular, plural) {
 }
 
 function getInitials(name) {
-  return String(name || "?")
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("") || "?";
+  return (
+    String(name || "?")
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase() || "")
+      .join("") || "?"
+  );
 }
 
 function getAvatarGradient(position, accent) {
-  if (position === 1) return "linear-gradient(180deg, rgba(251,191,36,0.26), rgba(17,24,39,0.96))";
-  if (position === 2) return "linear-gradient(180deg, rgba(226,232,240,0.18), rgba(17,24,39,0.96))";
-  if (position === 3) return "linear-gradient(180deg, rgba(251,146,60,0.20), rgba(17,24,39,0.96))";
+  if (position === 1)
+    return "linear-gradient(180deg, rgba(251,191,36,0.26), rgba(17,24,39,0.96))";
+  if (position === 2)
+    return "linear-gradient(180deg, rgba(226,232,240,0.18), rgba(17,24,39,0.96))";
+  if (position === 3)
+    return "linear-gradient(180deg, rgba(251,146,60,0.20), rgba(17,24,39,0.96))";
   return `linear-gradient(180deg, ${accent}26, rgba(17,24,39,0.96))`;
 }
 
@@ -149,7 +171,9 @@ function PeriodButton({ active, children, onClick }) {
         height: 44,
         padding: "0 16px",
         borderRadius: 14,
-        border: active ? "1px solid rgba(34,211,238,0.45)" : "1px solid #1f2937",
+        border: active
+          ? "1px solid rgba(34,211,238,0.45)"
+          : "1px solid #1f2937",
         background: active
           ? "linear-gradient(180deg, rgba(34,211,238,0.16) 0%, rgba(99,102,241,0.10) 100%)"
           : "rgba(255,255,255,0.03)",
@@ -301,7 +325,12 @@ function SkeletonListItem() {
   );
 }
 
-function LeaderboardCard({ item, variant = "default", compact = false, highlight = false }) {
+function LeaderboardCard({
+  item,
+  variant = "default",
+  compact = false,
+  highlight = false,
+}) {
   const accentMap = {
     gold: {
       accent: "#fbbf24",
@@ -441,7 +470,13 @@ function LeaderboardCard({ item, variant = "default", compact = false, highlight
               }}
             >
               #{item.position}
-              {item.position === 1 ? " campeão" : item.position === 2 ? " vice" : item.position === 3 ? " pódio" : ""}
+              {item.position === 1
+                ? " campeão"
+                : item.position === 2
+                ? " vice"
+                : item.position === 3
+                ? " pódio"
+                : ""}
             </div>
 
             <div
@@ -457,21 +492,19 @@ function LeaderboardCard({ item, variant = "default", compact = false, highlight
             </div>
 
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-              {item.status ? (
-                <div
-                  style={{
-                    padding: "6px 10px",
-                    borderRadius: 999,
-                    background: "rgba(99,102,241,0.10)",
-                    border: "1px solid rgba(99,102,241,0.18)",
-                    color: "#c7d2fe",
-                    fontSize: 11,
-                    fontWeight: 800,
-                  }}
-                >
-                  {item.status}
-                </div>
-              ) : null}
+              <div
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(99,102,241,0.10)",
+                  border: "1px solid rgba(99,102,241,0.18)",
+                  color: item.status ? "#c7d2fe" : "#94a3b8",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                {item.status || "Sem status"}
+              </div>
 
               <div
                 style={{
@@ -505,10 +538,18 @@ function LeaderboardCard({ item, variant = "default", compact = false, highlight
         </div>
 
         <div style={{ textAlign: "right", flex: "0 0 auto" }}>
-          <div style={{ color: styleSet.accent, fontSize: compact ? 18 : 24, fontWeight: 900 }}>
+          <div
+            style={{
+              color: styleSet.accent,
+              fontSize: compact ? 18 : 24,
+              fontWeight: 900,
+            }}
+          >
             {formatPlural(item.wins, "vitória", "vitórias")}
           </div>
-          <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>posição competitiva</div>
+          <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>
+            posição competitiva
+          </div>
         </div>
       </div>
 
@@ -529,7 +570,9 @@ function LeaderboardCard({ item, variant = "default", compact = false, highlight
             border: "1px solid rgba(255,255,255,0.05)",
           }}
         >
-          <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Participações</div>
+          <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>
+            Participações
+          </div>
           <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
             {formatPlural(item.matches, "partida", "partidas")}
           </div>
@@ -544,8 +587,12 @@ function LeaderboardCard({ item, variant = "default", compact = false, highlight
               border: "1px solid rgba(34,211,238,0.10)",
             }}
           >
-            <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Valor ganho total</div>
-            <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>{currency}</div>
+            <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>
+              Valor ganho total
+            </div>
+            <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
+              {currency}
+            </div>
           </div>
         ) : null}
       </div>
@@ -577,7 +624,8 @@ export default function RankingPublic() {
 
   const topThree = useMemo(() => ranking.slice(0, 3), [ranking]);
   const rest = useMemo(() => ranking.slice(3, 99), [ranking]);
-  const userKey = user?.discordId ?? user?.id ?? user?.username ?? user?.nickname ?? null;
+  const userKey =
+    user?.discordId ?? user?.id ?? user?.username ?? user?.nickname ?? null;
   const selfItem = useMemo(() => {
     if (!userKey) return null;
     return ranking.find((item) => {
@@ -735,8 +783,8 @@ export default function RankingPublic() {
                   maxWidth: 740,
                 }}
               >
-                Acompanhe o pódio, veja quem está dominando o período e compare posição,
-                vitórias e partidas em uma experiência clara e imersiva.
+                Acompanhe o pódio, veja quem está dominando o período e compare
+                posição, vitórias e partidas em uma experiência clara e imersiva.
               </p>
             </div>
 
@@ -766,7 +814,8 @@ export default function RankingPublic() {
                 Seu espaço para ver quem está no topo da Infinity.
               </div>
               <div style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.6 }}>
-                Posição, vitórias e partidas reunidos em uma visão rápida e elegante.
+                Posição, vitórias e partidas reunidos em uma visão rápida e
+                elegante.
               </div>
             </div>
           </div>
@@ -778,7 +827,10 @@ export default function RankingPublic() {
           <PeriodButton active={period === "total"} onClick={() => setPeriod("total")}>
             Total
           </PeriodButton>
-          <PeriodButton active={period === "weekly"} onClick={() => setPeriod("weekly")}>
+          <PeriodButton
+            active={period === "weekly"}
+            onClick={() => setPeriod("weekly")}
+          >
             Semanal
           </PeriodButton>
           <PeriodButton active={period === "24h"} onClick={() => setPeriod("24h")}>
@@ -914,7 +966,9 @@ export default function RankingPublic() {
                         border: "1px solid rgba(255,255,255,0.05)",
                       }}
                     >
-                      <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Vitórias</div>
+                      <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>
+                        Vitórias
+                      </div>
                       <div style={{ color: "#f8fafc", fontSize: 22, fontWeight: 900 }}>
                         {formatPlural(item.wins, "vitória", "vitórias")}
                       </div>
@@ -928,7 +982,9 @@ export default function RankingPublic() {
                         border: "1px solid rgba(34,211,238,0.10)",
                       }}
                     >
-                      <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Participações</div>
+                      <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>
+                        Participações
+                      </div>
                       <div style={{ color: "#f8fafc", fontSize: 22, fontWeight: 900 }}>
                         {formatPlural(item.matches, "partida", "partidas")}
                       </div>
@@ -988,7 +1044,10 @@ export default function RankingPublic() {
         </SectionCard>
       ) : null}
 
-      <SectionCard title="Posições 4 a 99" subtitle="Uma leitura mais clara, com mais destaque para quem segue firme no ranking.">
+      <SectionCard
+        title="Posições 4 a 99"
+        subtitle="Uma leitura mais clara, com mais destaque para quem segue firme no ranking."
+      >
         {loading ? (
           <div className="ranking-list-grid">
             {[1, 2, 3, 4, 5].map((row) => (
@@ -1005,7 +1064,11 @@ export default function RankingPublic() {
           <div className="ranking-list-wrap">
             <div className="ranking-list-grid">
               {rest.map((item) => (
-                <LeaderboardCard key={`${item.discordId}-${item.position}`} item={item} compact />
+                <LeaderboardCard
+                  key={`${item.discordId}-${item.position}`}
+                  item={item}
+                  compact
+                />
               ))}
             </div>
           </div>

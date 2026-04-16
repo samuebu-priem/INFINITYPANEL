@@ -12,7 +12,6 @@ import { adminRouter } from "../modules/admin/admin.routes.js";
 import { profileRouter } from "../modules/profile/index.js";
 import { rankingsRouter } from "../modules/rankings/index.js";
 
-
 export const apiRouter = Router();
 
 apiRouter.use("/auth", authRouter);

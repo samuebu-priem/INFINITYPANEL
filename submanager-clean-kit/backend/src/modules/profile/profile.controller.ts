@@ -16,4 +16,13 @@ export const profileController = {
 
     res.json(result);
   }),
+
+  updateProfile: asyncHandler(async (req: Request, res: Response) => {
+    const result = await profileService.updateProfileFields(req.auth!.id, {
+      avatarUrl: req.body?.avatarUrl,
+      status: req.body?.status,
+    });
+
+    res.json(result);
+  }),
 };

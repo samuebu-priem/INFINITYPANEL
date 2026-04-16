@@ -5,18 +5,9 @@ function normalizeDiscordId(value: unknown): string {
   return String(value || "").trim();
 }
 
-function startOfWindow(period: "total" | "weekly" | "24h"): Date | null {
-  const now = new Date();
-
-  if (period === "24h") {
-    return new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  }
-
-  if (period === "weekly") {
-    return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-  }
-
-  return null;
+function normalizeText(value: unknown): string | null {
+  const text = String(value || "").trim();
+  return text ? text : null;
 }
 
 export const profileService = {
@@ -26,6 +17,8 @@ export const profileService = {
       select: {
         id: true,
         discordId: true,
+        avatarUrl: true,
+        status: true,
       },
     });
 
@@ -36,6 +29,8 @@ export const profileService = {
           matchesPlayed: 0,
           latestWinAt: null,
           discordId: null,
+          avatarUrl: user?.avatarUrl ?? null,
+          status: user?.status ?? null,
           mediatorProfitTotal: 0,
           mediatedMatchesCount: 0,
           bestMediatorDay: null,
@@ -117,6 +112,8 @@ export const profileService = {
         matchesPlayed,
         latestWinAt: latestWin?.createdAt ?? null,
         discordId: user.discordId,
+        avatarUrl: user.avatarUrl ?? null,
+        status: user.status ?? null,
         mediatorProfitTotal,
         mediatedMatchesCount,
         bestMediatorDay,
@@ -158,6 +155,8 @@ export const profileService = {
       select: {
         id: true,
         discordId: true,
+        avatarUrl: true,
+        status: true,
       },
     });
 
@@ -166,6 +165,46 @@ export const profileService = {
       profile: {
         id: updated.id,
         discordId: updated.discordId,
+        avatarUrl: updated.avatarUrl ?? null,
+        status: updated.status ?? null,
+      },
+    };
+  },
+
+  updateProfileFields: async (
+    userId: string,
+    input: { avatarUrl?: unknown; status?: unknown },
+  ) => {
+    const data: { avatarUrl?: string | null; status?: string | null } = {};
+
+    if (Object.prototype.hasOwnProperty.call(input, "avatarUrl")) {
+      data.avatarUrl = normalizeText(input.avatarUrl);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, "status")) {
+      data.status = normalizeText(input.status);
+    }
+
+    if (!("avatarUrl" in data) && !("status" in data)) {
+      throw new ApiError(400, "No profile fields provided");
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data,
+      select: {
+        id: true,
+        avatarUrl: true,
+        status: true,
+      },
+    });
+
+    return {
+      success: true,
+      profile: {
+        id: updated.id,
+        avatarUrl: updated.avatarUrl ?? null,
+        status: updated.status ?? null,
       },
     };
   },
