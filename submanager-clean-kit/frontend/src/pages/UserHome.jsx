@@ -127,13 +127,16 @@ function SectionCard({ title, subtitle, children, action, flush = false }) {
   return (
     <section
       style={{
+        position: "relative",
+        overflow: "hidden",
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
         border: "1px solid rgba(99,102,241,0.16)",
         borderRadius: 30,
         padding: 24,
         boxShadow: "0 14px 44px rgba(0,0,0,0.24)",
-        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        transition:
+          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-3px)";

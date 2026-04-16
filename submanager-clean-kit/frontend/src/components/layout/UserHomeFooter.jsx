@@ -1,4 +1,3 @@
-
 import { Instagram, MessageCircleMore, Shield, FileText } from "lucide-react";
 import { useState } from "react";
 import {
@@ -53,10 +52,22 @@ function SocialIconLink({ href, label, children }) {
         alignItems: "center",
         justifyContent: "center",
         borderRadius: 16,
-        border: "1px solid #1f2937",
-        background: "rgba(255,255,255,0.03)",
-        color: "#d1d5db",
+        border: "1px solid rgba(99,102,241,0.18)",
+        background: "linear-gradient(180deg, rgba(99,102,241,0.10) 0%, rgba(255,255,255,0.03) 100%)",
+        color: "#c7d2fe",
         textDecoration: "none",
+        boxShadow: "0 0 22px rgba(99,102,241,0.10)",
+        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-2px)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.32)";
+        event.currentTarget.style.boxShadow = "0 0 28px rgba(99,102,241,0.18)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.18)";
+        event.currentTarget.style.boxShadow = "0 0 22px rgba(99,102,241,0.10)";
       }}
     >
       {children}
@@ -73,18 +84,31 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
         style={{
           marginTop: 6,
           borderRadius: 28,
-          border: "1px solid #1f2937",
+          border: "1px solid rgba(99,102,241,0.16)",
           background:
             "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
           padding: "20px 22px",
           boxShadow: "0 14px 32px rgba(0,0,0,0.20)",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background: "radial-gradient(circle at top right, rgba(99,102,241,0.10), transparent 35%)",
+          }}
+        />
+
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             gap: 18,
+            position: "relative",
+            zIndex: 1,
           }}
         >
           <div
@@ -110,9 +134,9 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
                   display: "grid",
                   placeItems: "center",
                   borderRadius: 16,
-                  border: "1px solid #1f2937",
-                  background: "rgba(255,255,255,0.03)",
-                  color: "#6366f1",
+                  border: "1px solid rgba(99,102,241,0.20)",
+                  background: "rgba(99,102,241,0.08)",
+                  color: "#c7d2fe",
                   boxShadow: "0 0 24px rgba(99,102,241,0.16)",
                 }}
               >
@@ -168,12 +192,23 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
                   height: 42,
                   padding: "0 14px",
                   borderRadius: 16,
-                  border: "1px solid #1f2937",
+                  border: "1px solid rgba(99,102,241,0.18)",
                   background: "rgba(255,255,255,0.03)",
                   color: "#e5e7eb",
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: "pointer",
+                  transition: "transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.transform = "translateY(-1px)";
+                  event.currentTarget.style.borderColor = "rgba(99,102,241,0.30)";
+                  event.currentTarget.style.boxShadow = "0 0 20px rgba(99,102,241,0.10)";
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.transform = "translateY(0)";
+                  event.currentTarget.style.borderColor = "rgba(99,102,241,0.18)";
+                  event.currentTarget.style.boxShadow = "none";
                 }}
               >
                 <FileText size={16} />
@@ -195,12 +230,23 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
                   height: 42,
                   padding: "0 14px",
                   borderRadius: 16,
-                  border: "1px solid #1f2937",
+                  border: "1px solid rgba(99,102,241,0.18)",
                   background: "rgba(255,255,255,0.03)",
                   color: "#e5e7eb",
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: "pointer",
+                  transition: "transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.transform = "translateY(-1px)";
+                  event.currentTarget.style.borderColor = "rgba(99,102,241,0.30)";
+                  event.currentTarget.style.boxShadow = "0 0 20px rgba(99,102,241,0.10)";
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.transform = "translateY(0)";
+                  event.currentTarget.style.borderColor = "rgba(99,102,241,0.18)";
+                  event.currentTarget.style.boxShadow = "none";
                 }}
               >
                 <FileText size={16} />
@@ -222,12 +268,23 @@ export function UserHomeFooter({ discordUrl, instagramUrl }) {
                   height: 42,
                   padding: "0 14px",
                   borderRadius: 16,
-                  border: "1px solid #1f2937",
+                  border: "1px solid rgba(99,102,241,0.18)",
                   background: "rgba(255,255,255,0.03)",
                   color: "#e5e7eb",
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: "pointer",
+                  transition: "transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.transform = "translateY(-1px)";
+                  event.currentTarget.style.borderColor = "rgba(99,102,241,0.30)";
+                  event.currentTarget.style.boxShadow = "0 0 20px rgba(99,102,241,0.10)";
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.transform = "translateY(0)";
+                  event.currentTarget.style.borderColor = "rgba(99,102,241,0.18)";
+                  event.currentTarget.style.boxShadow = "none";
                 }}
               >
                 <FileText size={16} />

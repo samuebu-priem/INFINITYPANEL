@@ -13,25 +13,36 @@ function SectionCard({ title, subtitle, children }) {
   return (
     <section
       style={{
+        position: "relative",
+        overflow: "hidden",
         background:
-          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid #1f2937",
+          "linear-gradient(180deg, rgba(12,16,24,0.98) 0%, rgba(7,10,16,0.98) 100%)",
+        border: "1px solid rgba(99,102,241,0.18)",
         borderRadius: 28,
         padding: 22,
-        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
+        boxShadow: "0 14px 44px rgba(0,0,0,0.26)",
       }}
     >
-      <div style={{ marginBottom: 18 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#f3f4f6" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at top right, rgba(34,211,238,0.08), transparent 32%), radial-gradient(circle at bottom left, rgba(99,102,241,0.08), transparent 28%)",
+        }}
+      />
+      <div style={{ position: "relative", zIndex: 1, marginBottom: 18 }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#f8fafc" }}>
           {title}
         </h2>
         {subtitle ? (
-          <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14 }}>
+          <p style={{ margin: "8px 0 0", color: "#94a3b8", fontSize: 14, lineHeight: 1.6 }}>
             {subtitle}
           </p>
         ) : null}
       </div>
-      {children}
+      <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
     </section>
   );
 }
@@ -45,16 +56,26 @@ function PeriodButton({ active, children, onClick }) {
         height: 44,
         padding: "0 16px",
         borderRadius: 14,
-        border: active
-          ? "1px solid rgba(99,102,241,0.45)"
-          : "1px solid #1f2937",
+        border: active ? "1px solid rgba(34,211,238,0.45)" : "1px solid #1f2937",
         background: active
-          ? "rgba(99,102,241,0.14)"
+          ? "linear-gradient(180deg, rgba(34,211,238,0.16) 0%, rgba(99,102,241,0.10) 100%)"
           : "rgba(255,255,255,0.03)",
-        color: active ? "#c7d2fe" : "#e5e7eb",
+        color: active ? "#cffafe" : "#e5e7eb",
         fontSize: 14,
         fontWeight: 800,
         cursor: "pointer",
+        transition:
+          "transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-1px)";
+        event.currentTarget.style.boxShadow = active
+          ? "0 10px 24px rgba(34,211,238,0.16)"
+          : "0 10px 24px rgba(0,0,0,0.16)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "none";
       }}
     >
       {children}
@@ -67,6 +88,111 @@ function formatPrice(value) {
     style: "currency",
     currency: "BRL",
   });
+}
+
+function SkeletonRow() {
+  return (
+    <div
+      style={{
+        height: 76,
+        borderRadius: 18,
+        border: "1px solid rgba(255,255,255,0.05)",
+        background:
+          "linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(34,211,238,0.06) 50%, rgba(255,255,255,0.03) 100%)",
+        backgroundSize: "200% 100%",
+        animation: "rankingShimmer 1.5s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+function EmptyState({ title, description, hint }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        border: "1px solid rgba(99,102,241,0.18)",
+        borderRadius: 28,
+        padding: 34,
+        textAlign: "center",
+        background:
+          "linear-gradient(180deg, rgba(99,102,241,0.09) 0%, rgba(7,10,16,0.54) 100%)",
+        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at top, rgba(34,211,238,0.12), transparent 42%)",
+        }}
+      />
+      <div
+        style={{
+          position: "relative",
+          width: 68,
+          height: 68,
+          borderRadius: 22,
+          margin: "0 auto 16px",
+          background: "rgba(34,211,238,0.12)",
+          display: "grid",
+          placeItems: "center",
+          fontSize: 26,
+          color: "#a5f3fc",
+          boxShadow: "0 0 36px rgba(34,211,238,0.22)",
+        }}
+      >
+        ✦
+      </div>
+      <h3
+        style={{
+          position: "relative",
+          margin: 0,
+          color: "#f8fafc",
+          fontSize: 19,
+          fontWeight: 900,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {title}
+      </h3>
+      <p
+        style={{
+          position: "relative",
+          margin: "10px auto 0",
+          maxWidth: 500,
+          color: "#94a3b8",
+          fontSize: 14,
+          lineHeight: 1.7,
+        }}
+      >
+        {description}
+      </p>
+      {hint ? (
+        <div
+          style={{
+            position: "relative",
+            marginTop: 16,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "9px 14px",
+            borderRadius: 999,
+            color: "#cffafe",
+            background: "rgba(34,211,238,0.12)",
+            border: "1px solid rgba(34,211,238,0.18)",
+            fontSize: 12,
+            fontWeight: 800,
+          }}
+        >
+          {hint}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export default function AdminMediatorRanking() {
@@ -92,11 +218,55 @@ export default function AdminMediatorRanking() {
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
+      <style>{`
+        .ranking-periods {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .ranking-list-grid {
+          display: grid;
+          gap: 12px;
+        }
+
+        .ranking-row {
+          position: relative;
+          overflow: hidden;
+          border: 1px solid #1f2937;
+          border-radius: 18px;
+          background: rgba(255,255,255,0.02);
+          padding: 16px;
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+          align-items: center;
+          transition:
+            transform 160ms ease,
+            box-shadow 160ms ease,
+            border-color 160ms ease,
+            background 160ms ease;
+        }
+
+        .ranking-row:hover {
+          transform: translateY(-2px);
+          border-color: rgba(34,211,238,0.22);
+          box-shadow: 0 14px 28px rgba(0,0,0,0.18);
+          background: rgba(255,255,255,0.03);
+        }
+
+        @keyframes rankingShimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+      `}</style>
+
       <SectionCard
         title="Ranking de mediadores"
         subtitle="Disponível apenas para Admin e Owner."
       >
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+        <div className="ranking-periods">
           <PeriodButton active={period === "total"} onClick={() => setPeriod("total")}>
             Total
           </PeriodButton>
@@ -114,42 +284,41 @@ export default function AdminMediatorRanking() {
         subtitle="Lucro e filas intermediadas."
       >
         {loading ? (
-          <div style={{ color: "#9ca3af" }}>Carregando ranking...</div>
+          <div className="ranking-list-grid">
+            {[1, 2, 3, 4, 5].map((row) => (
+              <SkeletonRow key={row} />
+            ))}
+          </div>
         ) : ranking.length === 0 ? (
-          <div style={{ color: "#9ca3af" }}>Nenhum dado encontrado.</div>
+          <EmptyState
+            title="Nenhum dado encontrado"
+            description="Ainda não há informações suficientes para montar este ranking neste período."
+            hint="Tente outro período ou aguarde novos registros."
+          />
         ) : (
-          <div style={{ display: "grid", gap: 12 }}>
+          <div className="ranking-list-grid">
             {ranking.map((item) => (
               <div
                 key={`${item.mediatorId}-${item.position}`}
-                style={{
-                  border: "1px solid #1f2937",
-                  borderRadius: 18,
-                  background: "rgba(255,255,255,0.02)",
-                  padding: 16,
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 16,
-                  flexWrap: "wrap",
-                }}
+                className="ranking-row"
               >
-                <div>
-                  <div style={{ color: "#818cf8", fontWeight: 800 }}>
+                <div style={{ display: "grid", gap: 6 }}>
+                  <div style={{ color: "#22d3ee", fontWeight: 900, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
                     #{item.position}
                   </div>
-                  <div style={{ color: "#f3f4f6", fontWeight: 800, marginTop: 6 }}>
+                  <div style={{ color: "#f8fafc", fontWeight: 900, marginTop: 0, fontSize: 16 }}>
                     {item.mediatorName}
                   </div>
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>
+                  <div style={{ color: "#94a3b8", fontSize: 13 }}>
                     ID: {item.mediatorId}
                   </div>
                 </div>
 
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "#86efac", fontWeight: 900 }}>
+                <div style={{ textAlign: "right", marginLeft: "auto" }}>
+                  <div style={{ color: "#86efac", fontWeight: 900, fontSize: 18 }}>
                     {formatPrice(item.totalRevenue)}
                   </div>
-                  <div style={{ color: "#9ca3af", fontSize: 13 }}>
+                  <div style={{ color: "#94a3b8", fontSize: 13, marginTop: 4 }}>
                     {item.matches} fila(s) intermediada(s)
                   </div>
                 </div>
