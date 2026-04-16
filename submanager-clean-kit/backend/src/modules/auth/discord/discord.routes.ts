@@ -1,8 +1,10 @@
 import { Router } from "express";
-
-
+import { requireAuth } from "../../../middlewares/auth.middleware.js";
 import { discordAuthController } from "./discord.controller.js";
 
 export const discordAuthRouter = Router();
 
+discordAuthRouter.get("/url", requireAuth, discordAuthController.getUrl);
 discordAuthRouter.get("/callback", discordAuthController.callback);
+discordAuthRouter.post("/refresh", requireAuth, discordAuthController.refresh);
+discordAuthRouter.delete("/", requireAuth, discordAuthController.disconnect);
