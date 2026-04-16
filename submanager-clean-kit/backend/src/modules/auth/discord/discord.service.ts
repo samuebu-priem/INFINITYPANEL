@@ -30,13 +30,19 @@ function normalizeDiscordId(value: unknown): string | null {
 }
 
 function getDiscordRedirectUri(): string {
-  const baseUrl = normalizeText(process.env.BACKEND_URL) || normalizeText(process.env.PUBLIC_BACKEND_URL);
+  if (process.env.DISCORD_REDIRECT_URI) {
+    return process.env.DISCORD_REDIRECT_URI;
+  }
+
+  const baseUrl =
+    normalizeText(process.env.BACKEND_URL) ||
+    normalizeText(process.env.PUBLIC_BACKEND_URL);
 
   if (baseUrl) {
     return `${baseUrl.replace(/\/$/, "")}/api/auth/discord/callback`;
   }
 
-  return `http://localhost:${env.PORT}/api/auth/discord/callback`;
+  throw new Error("DISCORD_REDIRECT_URI ou BACKEND_URL não configurado");
 }
 
 function getDiscordClientConfig() {
