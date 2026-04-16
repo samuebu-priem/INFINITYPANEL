@@ -1,168 +1,1024 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
 import { UserHomeFooter } from "../components/layout/UserHomeFooter.jsx";
+import { Crown, Trophy, Sword, Flame, ShieldCheck, Users } from "lucide-react";
 
-/* ================= HELPERS ================= */
-
-function getPlansList(res) {
-  if (Array.isArray(res)) return res;
-  if (Array.isArray(res?.plans)) return res.plans;
-  if (Array.isArray(res?.data)) return res.data;
+function getPlansList(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.plans)) return response.plans;
+  if (Array.isArray(response?.data)) return response.data;
   return [];
 }
 
-function getSubscriptionsList(res) {
-  if (!res) return [];
-  if (Array.isArray(res)) return res;
-  if (Array.isArray(res?.subscriptions)) return res.subscriptions;
-  if (res?.subscription) return [res.subscription];
+function isPlanActive(plan) {
+  if (typeof plan?.active === "boolean") return plan.active;
+  if (typeof plan?.isActive === "boolean") return plan.isActive;
+  if (typeof plan?.enabled === "boolean") return plan.enabled;
+  if (typeof plan?.available === "boolean") return plan.available;
+  return true;
+}
+
+function getSubscriptionsList(response) {
+  if (!response) return [];
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.subscriptions)) return response.subscriptions;
+  if (Array.isArray(response?.data?.subscriptions)) return response.data.subscriptions;
+  if (Array.isArray(response?.data)) return response.data;
+  if (response?.subscription) return [response.subscription];
   return [];
 }
 
-function isSubscriptionActive(sub) {
-  if (!sub) return false;
-  if (sub?.isActive) return true;
-
-  const end = new Date(sub?.endsAt || 0);
-  return end.getTime() > Date.now();
+function getPlanName(subscription) {
+  return (
+    subscription?.plan?.name ||
+    subscription?.plan?.title ||
+    subscription?.planName ||
+    subscription?.plan?.label ||
+    "Plano ativo"
+  );
 }
 
-function normalizeRanking(item, i) {
+function getSubscriptionEndsAt(subscription) {
+  return (
+    subscription?.endsAt ||
+    subscription?.expiresAt ||
+    subscription?.validUntil ||
+    subscription?.endDate ||
+    null
+  );
+}
+
+function getRankingList(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.ranking)) return response.ranking;
+  if (Array.isArray(response?.data?.ranking)) return response.data.ranking;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+}
+
+function normalizeRankingItem(item, index) {
+  const position = Number(item?.position ?? index + 1);
+  const name =
+    item?.username ??
+    item?.nick ??
+    item?.nickname ??
+    item?.name ??
+    item?.playerName ??
+    item?.displayName ??
+    "Jogador";
+
+  const avatar =
+    item?.avatar ??
+    item?.avatarUrl ??
+    item?.photoUrl ??
+    item?.imageUrl ??
+    item?.profileImage ??
+    null;
+
+  const wins = Number(
+    item?.wins ?? item?.vitórias ?? item?.vitorias ?? item?.victories ?? 0
+  );
+  const matches = Number(item?.matches ?? item?.partidas ?? item?.games ?? 0);
+
   return {
-    name: item?.username || "player",
-    wins: Number(item?.wins || 0),
-    position: i + 1,
+    raw: item,
+    position,
+    name,
+    avatar,
+    wins,
+    matches,
   };
 }
 
-/* ================= COMPONENT ================= */
+function isSubscriptionActive(subscription) {
+  if (!subscription) return false;
+  if (subscription?.isActive === true) return true;
+
+  const status = String(subscription?.status || "").toUpperCase();
+  if (status !== "ACTIVE") return false;
+
+  const endsAt = getSubscriptionEndsAt(subscription);
+  if (!endsAt) return false;
+
+  const endDate = new Date(endsAt);
+  if (Number.isNaN(endDate.getTime())) return false;
+
+  return endDate.getTime() > Date.now();
+}
+
+function buildCountdown(endsAt, nowTs) {
+  if (!endsAt) {
+    return {
+      expired: true,
+      label: "Expirada",
+    };
+  }
+
+  const endDate = new Date(endsAt);
+  if (Number.isNaN(endDate.getTime())) {
+    return {
+      expired: true,
+      label: "Expirada",
+    };
+  }
+
+  const diffMs = endDate.getTime() - nowTs;
+
+  if (diffMs <= 0) {
+    return {
+      expired: true,
+      label: "Expirada",
+    };
+  }
+
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    expired: false,
+    label: `${days}d ${hours}h ${minutes}m ${seconds}s`,
+  };
+}
+
+function EmptyState({ title, description }) {
+  return (
+    <div
+      style={{
+        borderRadius: 28,
+        border: "1px solid rgba(255,255,255,0.08)",
+        background: "rgba(255,255,255,0.03)",
+        padding: 24,
+        color: "#9ca3af",
+      }}
+    >
+      <div
+        style={{
+          color: "#f3f4f6",
+          fontSize: 18,
+          fontWeight: 900,
+          marginBottom: 10,
+        }}
+      >
+        {title}
+      </div>
+
+      <div style={{ fontSize: 14, lineHeight: 1.7 }}>{description}</div>
+    </div>
+  );
+}
+
+function ActiveSubscriptionCard({ subscription, nowTs }) {
+  const endsAt = getSubscriptionEndsAt(subscription);
+  const countdown = buildCountdown(endsAt, nowTs);
+  const active = isSubscriptionActive(subscription);
+
+  return (
+    <div
+      style={{
+        border: "1px solid rgba(34,197,94,0.18)",
+        borderRadius: 26,
+        background:
+          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+        padding: 20,
+        boxShadow: "0 18px 40px rgba(0,0,0,0.20)",
+        display: "grid",
+        gap: 14,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          flexWrap: "wrap",
+          alignItems: "flex-start",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid rgba(34,197,94,0.18)",
+              background: "rgba(34,197,94,0.08)",
+              color: "#86efac",
+              fontSize: 11,
+              fontWeight: 900,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: 10,
+            }}
+          >
+            <ShieldCheck size={12} />
+            Liberado
+          </div>
+
+          <div
+            style={{
+              color: "#f3f4f6",
+              fontSize: 19,
+              fontWeight: 900,
+              lineHeight: 1.2,
+              letterSpacing: "-0.03em",
+            }}
+          >
+            {getPlanName(subscription)}
+          </div>
+        </div>
+
+        <div
+          style={{
+            color: active ? "#86efac" : "#fca5a5",
+            fontSize: 13,
+            fontWeight: 800,
+          }}
+        >
+          {countdown.label}
+        </div>
+      </div>
+
+      <div
+        style={{
+          color: "#9ca3af",
+          fontSize: 14,
+          lineHeight: 1.6,
+        }}
+      >
+        Expira em{" "}
+        <span style={{ color: "#f3f4f6", fontWeight: 700 }}>
+          {endsAt ? new Date(endsAt).toLocaleString("pt-BR") : "—"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function RankingPodiumCard({ item, variant = "side" }) {
+  const isChampion = variant === "center";
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        borderRadius: isChampion ? 30 : 24,
+        border: isChampion
+          ? "1px solid rgba(250,204,21,0.30)"
+          : "1px solid rgba(88,101,242,0.20)",
+        background: isChampion
+          ? "linear-gradient(180deg, rgba(250,204,21,0.14) 0%, rgba(17,24,39,0.98) 100%)"
+          : "linear-gradient(180deg, rgba(88,101,242,0.10) 0%, rgba(17,24,39,0.98) 100%)",
+        padding: isChampion ? 22 : 18,
+        minHeight: isChampion ? 260 : 220,
+        display: "grid",
+        alignContent: "space-between",
+        boxShadow: isChampion
+          ? "0 0 34px rgba(250,204,21,0.14)"
+          : "0 0 24px rgba(88,101,242,0.10)",
+        transform: isChampion ? "translateY(-10px)" : "translateY(0)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 14,
+          right: 14,
+          width: isChampion ? 42 : 36,
+          height: isChampion ? 42 : 36,
+          borderRadius: 14,
+          display: "grid",
+          placeItems: "center",
+          background: isChampion
+            ? "rgba(250,204,21,0.16)"
+            : "rgba(88,101,242,0.16)",
+          color: isChampion ? "#fde68a" : "#c7d2fe",
+          border: isChampion
+            ? "1px solid rgba(250,204,21,0.22)"
+            : "1px solid rgba(88,101,242,0.20)",
+        }}
+      >
+        {isChampion ? <Crown size={18} /> : <Trophy size={16} />}
+      </div>
+
+      <div>
+        <div
+          style={{
+            width: isChampion ? 84 : 72,
+            height: isChampion ? 84 : 72,
+            borderRadius: isChampion ? 28 : 22,
+            overflow: "hidden",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            display: "grid",
+            placeItems: "center",
+            color: "#f3f4f6",
+            fontWeight: 900,
+            fontSize: isChampion ? 24 : 20,
+            marginBottom: 16,
+          }}
+        >
+          {item?.avatar ? (
+            <img
+              src={item.avatar}
+              alt={item.name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            (item?.name || "J").slice(0, 1).toUpperCase()
+          )}
+        </div>
+
+        <div
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "6px 10px",
+            borderRadius: 999,
+            background: isChampion
+              ? "rgba(250,204,21,0.12)"
+              : "rgba(88,101,242,0.12)",
+            color: isChampion ? "#fde68a" : "#c7d2fe",
+            fontSize: 11,
+            fontWeight: 900,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            marginBottom: 12,
+          }}
+        >
+          #{item.position}
+        </div>
+
+        <div
+          style={{
+            color: "#f3f4f6",
+            fontSize: isChampion ? 22 : 18,
+            fontWeight: 900,
+            lineHeight: 1.15,
+            letterSpacing: "-0.03em",
+            marginBottom: 8,
+            wordBreak: "break-word",
+          }}
+        >
+          {item.name}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            color: "#dbeafe",
+            fontSize: 14,
+            fontWeight: 800,
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <Trophy size={15} />
+            Wins
+          </span>
+          <span>{item.wins}</span>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "center",
+            color: "#9ca3af",
+            fontSize: 14,
+            fontWeight: 800,
+          }}
+        >
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+            <Sword size={15} />
+            Partidas
+          </span>
+          <span>{item.matches}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RankingListItem({ item }) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "auto 1fr auto",
+        gap: 14,
+        alignItems: "center",
+        borderRadius: 20,
+        border: "1px solid rgba(255,255,255,0.07)",
+        background: "rgba(255,255,255,0.03)",
+        padding: "14px 16px",
+      }}
+    >
+      <div
+        style={{
+          width: 42,
+          height: 42,
+          borderRadius: 14,
+          display: "grid",
+          placeItems: "center",
+          background: "rgba(88,101,242,0.14)",
+          border: "1px solid rgba(88,101,242,0.18)",
+          color: "#c7d2fe",
+          fontWeight: 900,
+        }}
+      >
+        #{item.position}
+      </div>
+
+      <div style={{ minWidth: 0 }}>
+        <div
+          style={{
+            color: "#f3f4f6",
+            fontSize: 15,
+            fontWeight: 800,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {item.name}
+        </div>
+
+        <div
+          style={{
+            color: "#9ca3af",
+            fontSize: 13,
+            marginTop: 4,
+          }}
+        >
+          {item.matches} partidas
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          color: "#86efac",
+          fontWeight: 900,
+          fontSize: 14,
+        }}
+      >
+        <Flame size={15} />
+        {item.wins}
+      </div>
+    </div>
+  );
+}
 
 export default function UserHome() {
   const { user } = useAuth();
 
   const [plans, setPlans] = useState([]);
-  const [subs, setSubs] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
   const [ranking, setRanking] = useState([]);
+  const [loadingPlans, setLoadingPlans] = useState(true);
+  const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
+  const [loadingRanking, setLoadingRanking] = useState(true);
+  const [subscriptionsError, setSubscriptionsError] = useState("");
+  const [rankingError, setRankingError] = useState("");
+  const [nowTs, setNowTs] = useState(Date.now());
 
   useEffect(() => {
-    load();
+    const interval = window.setInterval(() => {
+      setNowTs(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(interval);
   }, []);
 
-  async function load() {
-    try {
-      const [p, s, r] = await Promise.all([
-        api.get("/plans"),
-        api.get("/subscriptions/me", { auth: true }),
-        api.get("/rankings/public"),
-      ]);
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const response = await api.get("/plans");
+        setPlans(getPlansList(response).filter(isPlanActive));
+      } catch {
+        setPlans([]);
+      } finally {
+        setLoadingPlans(false);
+      }
+    };
 
-      setPlans(getPlansList(p));
-      setSubs(getSubscriptionsList(s));
-      setRanking((r?.ranking || []).map(normalizeRanking));
-    } catch (e) {
-      console.error(e);
-    }
-  }
+    const loadSubscriptions = async () => {
+      try {
+        const response = await api.get("/subscriptions/me", { auth: true });
+        setSubscriptions(getSubscriptionsList(response));
+      } catch (error) {
+        setSubscriptions([]);
+        setSubscriptionsError(error?.response?.data?.message || "");
+      } finally {
+        setLoadingSubscriptions(false);
+      }
+    };
 
-  const activeSubs = useMemo(
-    () => subs.filter(isSubscriptionActive),
-    [subs]
-  );
+    const loadRanking = async () => {
+      try {
+        const response = await api.get("/rankings/public?period=total");
+        setRanking(getRankingList(response).map(normalizeRankingItem).slice(0, 5));
+      } catch (error) {
+        setRanking([]);
+        setRankingError(error?.response?.data?.message || "");
+      } finally {
+        setLoadingRanking(false);
+      }
+    };
 
-  const top3 = ranking.slice(0, 3);
+    loadPlans();
+    loadSubscriptions();
+    loadRanking();
+  }, []);
 
-  /* ================= UI ================= */
+  const activeSubscriptions = useMemo(() => {
+    return subscriptions.filter(isSubscriptionActive);
+  }, [subscriptions, nowTs]);
+
+  const totalActiveAccess = activeSubscriptions.length;
+
+  const nextExpiration = useMemo(() => {
+    if (!activeSubscriptions.length) return null;
+
+    const sorted = [...activeSubscriptions].sort((a, b) => {
+      const aTime = new Date(getSubscriptionEndsAt(a) || 0).getTime();
+      const bTime = new Date(getSubscriptionEndsAt(b) || 0).getTime();
+      return aTime - bTime;
+    });
+
+    return sorted[0] || null;
+  }, [activeSubscriptions]);
+
+  const nextExpirationCountdown = useMemo(() => {
+    if (!nextExpiration) return null;
+    return buildCountdown(getSubscriptionEndsAt(nextExpiration), nowTs);
+  }, [nextExpiration, nowTs]);
+
+  const top3 = useMemo(() => ranking.slice(0, 3), [ranking]);
+  const extraRanking = useMemo(() => ranking.slice(3, 5), [ranking]);
 
   return (
-    <div className="min-h-screen text-white px-4 py-6 space-y-8">
+    <div style={{ display: "grid", gap: 20 }}>
+      <style>{`
+        .user-home-hero-grid {
+          display: grid;
+          gap: 20px;
+          grid-template-columns: 1.15fr 0.85fr;
+        }
 
-      {/* HEADER */}
-      <div>
-        <h1 className="text-2xl font-bold">
-          Fala, {user?.username}
-        </h1>
-        <p className="text-sm text-zinc-400">
-          Bora dominar hoje?
-        </p>
-      </div>
+        .user-home-subscriptions-grid {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
 
-      {/* ACESSO */}
-      <div className="bg-zinc-900 p-4 rounded-xl">
-        <p className="text-sm text-zinc-400">teu acesso</p>
-        <p className="font-bold">
-          {activeSubs.length
-            ? activeSubs[0]?.plan?.name
-            : "sem acesso"}
-        </p>
-      </div>
+        .user-home-ranking-top3 {
+          display: grid;
+          gap: 16px;
+          grid-template-columns: 0.9fr 1.15fr 0.9fr;
+          align-items: end;
+        }
 
-      {/* PÓDIO */}
-      {top3.length > 0 && (
-        <div className="flex justify-center items-end gap-4 mt-6">
+        .user-home-ranking-rest {
+          display: grid;
+          gap: 12px;
+          margin-top: 16px;
+        }
 
-          {/* #2 */}
-          {top3[1] && (
-            <div className="text-center">
-              <div className="bg-zinc-800 p-3 rounded-xl w-24 scale-95">
-                <p className="text-xs text-zinc-400">#2</p>
-                <p className="font-bold text-sm">
-                  {top3[1].name}
-                </p>
-                <p className="text-green-400 text-xs">
-                  {top3[1].wins} wins
-                </p>
+        .user-home-plans-grid {
+          display: grid;
+          gap: 18px;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          align-items: start;
+        }
+
+        @media (max-width: 1180px) {
+          .user-home-hero-grid,
+          .user-home-subscriptions-grid,
+          .user-home-plans-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+          }
+
+          .user-home-ranking-top3 {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 860px) {
+          .user-home-hero-grid,
+          .user-home-subscriptions-grid,
+          .user-home-plans-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+
+      <section
+        style={{
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: 34,
+          padding: 28,
+          border: "1px solid rgba(88,101,242,0.22)",
+          background:
+            "linear-gradient(135deg, rgba(11,17,28,0.98) 0%, rgba(8,11,18,0.99) 55%, rgba(14,22,38,0.98) 100%)",
+          boxShadow: "0 22px 72px rgba(0,0,0,0.32)",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(circle at 85% 15%, rgba(88,101,242,0.18), transparent 24%)",
+          }}
+        />
+
+        <div className="user-home-hero-grid" style={{ position: "relative", zIndex: 1 }}>
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 14,
+                padding: "7px 12px",
+                borderRadius: 999,
+                background: "rgba(88,101,242,0.12)",
+                border: "1px solid rgba(88,101,242,0.18)",
+                color: "#c7d2fe",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+              }}
+            >
+              Lobby da org
+            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                color: "#f3f4f6",
+                fontSize: 40,
+                lineHeight: 1.02,
+                fontWeight: 900,
+                letterSpacing: "-0.04em",
+              }}
+            >
+              Fala, {user?.username || user?.name || "jogador"}
+            </h1>
+
+            <p
+              style={{
+                margin: "14px 0 0",
+                color: "#9ca3af",
+                fontSize: 15,
+                lineHeight: 1.7,
+                maxWidth: 680,
+              }}
+            >
+              Confere teus acessos, vê quem tá dominando e escolhe teu próximo plano.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+              minWidth: 0,
+            }}
+          >
+            <div
+              style={{
+                borderRadius: 20,
+                border: "1px solid rgba(34,197,94,0.18)",
+                background: "rgba(34,197,94,0.06)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  fontWeight: 800,
+                  marginBottom: 6,
+                }}
+              >
+                Acessos ativos
+              </div>
+              <div
+                style={{
+                  color: "#86efac",
+                  fontWeight: 900,
+                  fontSize: 24,
+                }}
+              >
+                {loadingSubscriptions ? "..." : totalActiveAccess}
               </div>
             </div>
-          )}
 
-          {/* #1 */}
-          {top3[0] && (
-            <div className="text-center">
-              <div className="bg-zinc-700 p-4 rounded-2xl w-28 scale-110 shadow-lg">
-                <p className="text-yellow-400 font-bold">#1</p>
-                <p className="font-bold">
-                  {top3[0].name}
-                </p>
-                <p className="text-green-400">
-                  {top3[0].wins} wins
-                </p>
+            <div
+              style={{
+                borderRadius: 20,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.04)",
+                padding: "14px 16px",
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#9ca3af",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  fontWeight: 800,
+                  marginBottom: 6,
+                }}
+              >
+                Próximo vencimento
+              </div>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontWeight: 800,
+                  fontSize: 15,
+                }}
+              >
+                {loadingSubscriptions ? "..." : nextExpirationCountdown?.label || "—"}
               </div>
             </div>
-          )}
-
-          {/* #3 */}
-          {top3[2] && (
-            <div className="text-center">
-              <div className="bg-zinc-800 p-3 rounded-xl w-24 scale-95">
-                <p className="text-xs text-zinc-400">#3</p>
-                <p className="font-bold text-sm">
-                  {top3[2].name}
-                </p>
-                <p className="text-green-400 text-xs">
-                  {top3[2].wins} wins
-                </p>
-              </div>
-            </div>
-          )}
-
+          </div>
         </div>
-      )}
+      </section>
 
-      {/* PLANOS */}
-      <div>
-        <h2 className="font-bold mb-3">
-          entra pra jogar
-        </h2>
+      <div className="user-home-hero-grid">
+        <section
+          style={{
+            borderRadius: 30,
+            border: "1px solid rgba(88,101,242,0.18)",
+            background:
+              "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+              marginBottom: 18,
+            }}
+          >
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#f3f4f6",
+                  fontSize: 24,
+                  fontWeight: 900,
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                Quem tá dominando
+              </h2>
 
-        <div className="space-y-3">
-          {plans.map((plan) => (
-            <PlanCard key={plan.id} plan={plan} />
-          ))}
-        </div>
+              <p
+                style={{
+                  margin: "8px 0 0",
+                  color: "#9ca3af",
+                  fontSize: 14,
+                  lineHeight: 1.6,
+                }}
+              >
+                Os caras que tão puxando a frente agora.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(250,204,21,0.10)",
+                border: "1px solid rgba(250,204,21,0.18)",
+                color: "#fde68a",
+                fontSize: 12,
+                fontWeight: 900,
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+              }}
+            >
+              <Crown size={14} />
+              Top da org
+            </div>
+          </div>
+
+          {loadingRanking ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={{ height: 220, borderRadius: 24, background: "rgba(255,255,255,0.05)" }} />
+              <div style={{ height: 76, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
+              <div style={{ height: 76, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
+            </div>
+          ) : top3.length === 0 ? (
+            <EmptyState
+              title="Sem ranking no momento"
+              description={rankingError || "Ainda não tem movimento suficiente pra mostrar aqui."}
+            />
+          ) : (
+            <>
+              <div className="user-home-ranking-top3">
+                {top3[1] ? <RankingPodiumCard item={top3[1]} variant="side" /> : <div />}
+                {top3[0] ? <RankingPodiumCard item={top3[0]} variant="center" /> : <div />}
+                {top3[2] ? <RankingPodiumCard item={top3[2]} variant="side" /> : <div />}
+              </div>
+
+              {extraRanking.length > 0 ? (
+                <div className="user-home-ranking-rest">
+                  {extraRanking.map((item) => (
+                    <RankingListItem key={`${item.position}-${item.name}`} item={item} />
+                  ))}
+                </div>
+              ) : null}
+            </>
+          )}
+        </section>
+
+        <section
+          style={{
+            borderRadius: 30,
+            border: "1px solid rgba(255,255,255,0.08)",
+            background:
+              "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+            padding: 24,
+          }}
+        >
+          <div
+            style={{
+              marginBottom: 18,
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                color: "#f3f4f6",
+                fontSize: 24,
+                fontWeight: 900,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              Teus acessos
+            </h2>
+
+            <p
+              style={{
+                margin: "8px 0 0",
+                color: "#9ca3af",
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
+              O que tá liberado na tua conta agora.
+            </p>
+          </div>
+
+          {loadingSubscriptions ? (
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={{ height: 110, borderRadius: 24, background: "rgba(255,255,255,0.05)" }} />
+              <div style={{ height: 110, borderRadius: 24, background: "rgba(255,255,255,0.05)" }} />
+            </div>
+          ) : activeSubscriptions.length === 0 ? (
+            <EmptyState
+              title="Sem acesso ativo"
+              description={subscriptionsError || "Assina um plano pra liberar teu acesso dentro da Infinity."}
+            />
+          ) : (
+            <div style={{ display: "grid", gap: 14 }}>
+              {activeSubscriptions.map((subscription) => (
+                <ActiveSubscriptionCard
+                  key={subscription.id || `${getPlanName(subscription)}-${getSubscriptionEndsAt(subscription)}`}
+                  subscription={subscription}
+                  nowTs={nowTs}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
+
+      <section
+        style={{
+          borderRadius: 30,
+          border: "1px solid rgba(255,255,255,0.08)",
+          background:
+            "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+          padding: 24,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 16,
+            alignItems: "flex-start",
+            flexWrap: "wrap",
+            marginBottom: 20,
+          }}
+        >
+          <div>
+            <h2
+              style={{
+                margin: 0,
+                color: "#f3f4f6",
+                fontSize: 24,
+                fontWeight: 900,
+                letterSpacing: "-0.03em",
+              }}
+            >
+              Escolhe teu acesso
+            </h2>
+
+            <p
+              style={{
+                margin: "8px 0 0",
+                color: "#9ca3af",
+                fontSize: 14,
+                lineHeight: 1.6,
+              }}
+            >
+              Pega o plano que encaixa melhor no teu jogo.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 12px",
+              borderRadius: 999,
+              background: "rgba(88,101,242,0.10)",
+              border: "1px solid rgba(88,101,242,0.18)",
+              color: "#c7d2fe",
+              fontSize: 12,
+              fontWeight: 900,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+            }}
+          >
+            <Users size={14} />
+            Planos disponíveis
+          </div>
+        </div>
+
+        {loadingPlans ? (
+          <div className="user-home-plans-grid">
+            <div style={{ height: 220, borderRadius: 24, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 220, borderRadius: 24, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 220, borderRadius: 24, background: "rgba(255,255,255,0.05)" }} />
+          </div>
+        ) : plans.length === 0 ? (
+          <EmptyState
+            title="Nenhum plano disponível"
+            description="No momento não há planos ativos para assinatura."
+          />
+        ) : (
+          <div className="user-home-plans-grid">
+            {plans.map((plan) => (
+              <div key={plan.id} style={{ minWidth: 0 }}>
+                <PlanCard plan={plan} user={user} showCheckout />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       <UserHomeFooter />
     </div>
