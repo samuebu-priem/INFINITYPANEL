@@ -101,7 +101,6 @@ function formatCurrency(value, fallback = "R$ 0,00") {
 
 function getAvatarText(user) {
   const source = String(user?.displayName || user?.name || user?.username || user?.email || "U").trim();
-
   const first = source.split(/\s+/)[0]?.[0] || "U";
   const second = source.split(/\s+/)[1]?.[0] || "";
   return `${first}${second}`.toUpperCase();
@@ -113,8 +112,8 @@ function SectionCard({ title, subtitle, children, action }) {
       style={{
         position: "relative",
         overflow: "hidden",
-        background: "linear-gradient(180deg, rgba(16,19,28,0.98) 0%, rgba(9,11,16,0.99) 100%)",
-        border: "2px solid rgba(99,102,241,0.26)",
+        background: "linear-gradient(180deg, rgba(18,24,38,0.98) 0%, rgba(10,13,20,0.99) 100%)",
+        border: "2px solid rgba(34,211,238,0.18)",
         borderRadius: 30,
         padding: 24,
         boxShadow: "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)",
@@ -122,13 +121,13 @@ function SectionCard({ title, subtitle, children, action }) {
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-3px)";
-        event.currentTarget.style.boxShadow = "0 24px 66px rgba(0,0,0,0.42), 0 0 34px rgba(99,102,241,0.10)";
+        event.currentTarget.style.boxShadow = "0 24px 66px rgba(0,0,0,0.42), 0 0 34px rgba(34,211,238,0.10)";
         event.currentTarget.style.borderColor = "rgba(34,211,238,0.30)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
+        event.currentTarget.style.borderColor = "rgba(34,211,238,0.18)";
       }}
     >
       <div
@@ -390,7 +389,7 @@ function AccessCard({ subscription, nowTs }) {
               maxWidth: 360,
             }}
           >
-            Esse plano está liberado para sua conta com contagem em tempo real.
+            Esse plano está ativo na sua conta e segue contando em tempo real.
           </div>
         </div>
 
@@ -513,14 +512,14 @@ function DiscordIcon() {
   );
 }
 
-function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
+function AvatarPanel({ user }) {
   const [photoHover, setPhotoHover] = useState(false);
   const fileInputRef = useRef(null);
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
   const [savingAvatar, setSavingAvatar] = useState(false);
 
-  const currentAvatar = avatarPreview || avatarUrl || "";
+  const currentAvatar = avatarPreview || "";
   const avatarLabel = user?.username || "Usuário";
   const avatarInitials = getAvatarText(user);
 
@@ -550,8 +549,7 @@ function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
       });
 
       setAvatarPreview(String(preview || ""));
-      onAvatarSaved?.(String(preview || ""));
-      setAvatarMessage("Avatar trocado com sucesso.");
+      setAvatarMessage("Avatar trocado na sua tela.");
     } catch (error) {
       setAvatarMessage(error?.message || "Não foi possível trocar seu avatar.");
     } finally {
@@ -566,7 +564,7 @@ function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
         position: "relative",
         overflow: "hidden",
         borderRadius: 34,
-        border: "2px solid rgba(99,102,241,0.24)",
+        border: "2px solid rgba(34,211,238,0.24)",
         background: "linear-gradient(180deg, rgba(16,19,28,0.98) 0%, rgba(9,11,16,0.99) 100%)",
         boxShadow: "0 22px 60px rgba(0,0,0,0.34)",
         padding: 26,
@@ -612,7 +610,7 @@ function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
                 textTransform: "uppercase",
               }}
             >
-              Seu visual
+              Sua identidade
             </div>
 
             <h2
@@ -637,7 +635,7 @@ function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
                 maxWidth: 360,
               }}
             >
-              Deixe seu perfil com a sua cara dentro da Infinity.
+              Deixe seu perfil com mais cara de jogador dentro da Infinity.
             </p>
           </div>
         </div>
@@ -754,7 +752,7 @@ function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
                 maxWidth: 520,
               }}
             >
-              Escolha uma imagem para deixar seu perfil com mais identidade.
+              Escolha uma imagem e veja como seu perfil fica na hora.
             </div>
 
             <button
@@ -786,7 +784,7 @@ function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
             {avatarMessage ? (
               <div
                 style={{
-                  color: avatarMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
+                  color: avatarMessage.toLowerCase().includes("trocado") ? "#86efac" : "#fca5a5",
                   fontSize: 13,
                   fontWeight: 700,
                 }}
@@ -804,8 +802,8 @@ function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
 function ProfileStatusCard({ statusValue, setStatusValue, saveMessage, onSave, saving }) {
   return (
     <SectionCard
-      title="Seu status"
-      subtitle="Mostre sua vibe dentro da comunidade."
+      title="Sua frase"
+      subtitle="Mostre sua energia dentro da comunidade."
       action={
         <button
           type="button"
@@ -823,7 +821,7 @@ function ProfileStatusCard({ statusValue, setStatusValue, saveMessage, onSave, s
             opacity: saving ? 0.75 : 1,
           }}
         >
-          {saving ? "Salvando..." : "Atualizar"}
+          {saving ? "Atualizando..." : "Atualizar"}
         </button>
       }
     >
@@ -880,7 +878,7 @@ function ProfileStatusCard({ statusValue, setStatusValue, saveMessage, onSave, s
             }}
           >
             <span>{statusValue ? `${statusValue.length}/80` : "0/80"}</span>
-            <span>Mostre sua energia na Infinity</span>
+            <span>Mostre sua vibe na Infinity</span>
           </div>
         </div>
 
@@ -895,13 +893,13 @@ function ProfileStatusCard({ statusValue, setStatusValue, saveMessage, onSave, s
             lineHeight: 1.7,
           }}
         >
-          {statusValue ? "Esse é o seu status atual na comunidade." : "Defina uma frase que represente você."}
+          {statusValue ? "Essa é a frase que aparece no seu perfil." : "Coloque uma frase que combine com você."}
         </div>
 
         {saveMessage ? (
           <div
             style={{
-              color: saveMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
+              color: saveMessage.toLowerCase().includes("atualizado") ? "#86efac" : "#fca5a5",
               fontSize: 13,
               fontWeight: 700,
             }}
@@ -922,14 +920,14 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
   const bestDay = profileSummary?.bestMediatorDay || null;
 
   return (
-    <SectionCard title="Seu desempenho" subtitle="Veja sua presença na org de forma rápida.">
+    <SectionCard title="Seu desempenho" subtitle="Veja como você está se saindo dentro da Infinity.">
       <div className="profile-metrics-grid">
         <StatCard label="Acessos ativos" value={loadingSummary ? "..." : activeSubscriptions.length} helpText="Planos válidos no momento." accent="success" highlight />
-        <StatCard label="Próximo vencimento" value={loadingSummary ? "..." : nextExpirationCountdown?.label || "—"} helpText="Contagem do acesso que vence primeiro." accent="cyan" />
+        <StatCard label="Próximo vencimento" value={loadingSummary ? "..." : nextExpirationCountdown?.label || "—"} helpText="O acesso que vence primeiro." accent="cyan" />
         <StatCard label="Vitórias" value={loadingSummary ? "..." : formatNumber(preparedWins, "0")} helpText="Vitórias registradas no seu perfil." />
         <StatCard label="Partidas" value={loadingSummary ? "..." : formatNumber(preparedMatches, "0")} helpText="Partidas ligadas à sua conta." />
         <StatCard label="Partidas mediadas" value={loadingSummary ? "..." : formatNumber(preparedMediated, "0")} helpText="Vezes em que você atuou como mediador." accent="cyan" />
-        <StatCard label="Bônus acumulado" value={loadingSummary ? "..." : formatCurrency(preparedProfit)} helpText="Total acumulado mediando partidas." accent="success" />
+        <StatCard label="Ganhos como mediador" value={loadingSummary ? "..." : formatCurrency(preparedProfit)} helpText="Total que você já acumulou mediando partidas." accent="success" />
       </div>
 
       <div
@@ -980,7 +978,7 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
               lineHeight: 1.7,
             }}
           >
-            {bestDay?.amount ? `${formatCurrency(bestDay.amount)} no seu melhor dia como mediador.` : "Ainda não há um melhor dia registrado."}
+            {bestDay?.amount ? `${formatCurrency(bestDay.amount)} no seu melhor dia como mediador.` : "Ainda não apareceu um melhor dia para você aqui."}
           </div>
         </div>
 
@@ -1002,7 +1000,7 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
               marginBottom: 10,
             }}
           >
-            Visão rápida
+            Seu momento
           </div>
 
           <div style={{ display: "grid", gap: 10 }}>
@@ -1020,7 +1018,7 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
 }
 
 export default function Profile() {
-  const { user, refreshMe } = useAuth();
+  const { user } = useAuth();
 
   const [subscriptions, setSubscriptions] = useState([]);
   const [profileSummary, setProfileSummary] = useState(null);
@@ -1035,8 +1033,6 @@ export default function Profile() {
   const [statusInput, setStatusInput] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [savingStatus, setSavingStatus] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [avatarMessage, setAvatarMessage] = useState("");
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -1066,10 +1062,8 @@ export default function Profile() {
         setProfileSummary(summary);
         setDiscordIdInput(summary?.discordId || "");
         setStatusInput(summary?.status || summary?.customStatus || summary?.profileStatus || summary?.bio || "");
-        setAvatarUrl(summary?.avatarUrl || user?.avatarUrl || user?.avatar || "");
       } catch {
         setProfileSummary(null);
-        setAvatarUrl(user?.avatarUrl || user?.avatar || "");
       } finally {
         setLoadingSummary(false);
       }
@@ -1077,7 +1071,7 @@ export default function Profile() {
 
     loadSubscriptions();
     loadSummary();
-  }, [user?.avatar, user?.avatarUrl]);
+  }, []);
 
   const activeSubscriptions = useMemo(() => subscriptions.filter(isSubscriptionActive), [subscriptions]);
 
@@ -1098,16 +1092,6 @@ export default function Profile() {
     return buildCountdown(getEndsAt(nextExpiration), nowTs);
   }, [nextExpiration, nowTs]);
 
-  const syncSummary = async () => {
-    const response = await api.get("/profile/summary");
-    const summary = getSummaryObject(response);
-    setProfileSummary(summary);
-    setDiscordIdInput(summary?.discordId || "");
-    setStatusInput(summary?.status || summary?.customStatus || summary?.profileStatus || summary?.bio || "");
-    setAvatarUrl(summary?.avatarUrl || user?.avatarUrl || user?.avatar || "");
-    return summary;
-  };
-
   const handleSaveDiscordId = async (event) => {
     event.preventDefault();
     setSavingDiscordId(true);
@@ -1125,10 +1109,9 @@ export default function Profile() {
         discordId: savedDiscordId,
       }));
 
-      await syncSummary();
-      setDiscordMessage("Discord vinculado com sucesso.");
+      setDiscordMessage("Discord conectado com sucesso.");
     } catch (error) {
-      setDiscordMessage(error?.response?.data?.message || "Não foi possível vincular seu Discord.");
+      setDiscordMessage(error?.response?.data?.message || "Não foi possível conectar seu Discord.");
     } finally {
       setSavingDiscordId(false);
     }
@@ -1137,6 +1120,7 @@ export default function Profile() {
   const handleSaveStatus = () => {
     setSavingStatus(true);
     setStatusMessage("");
+
     try {
       setProfileSummary((current) => ({
         ...(current || {}),
@@ -1145,15 +1129,13 @@ export default function Profile() {
         profileStatus: statusInput,
         bio: statusInput,
       }));
-      setStatusMessage("Status salvo no seu perfil.");
-      refreshMe?.().catch(() => null);
+      setStatusMessage("Status atualizado na sua tela.");
     } finally {
       setSavingStatus(false);
     }
   };
 
   const displayStatus = statusInput || profileSummary?.status || profileSummary?.customStatus || "Manda uma frase aí";
-  const displayAvatar = avatarUrl || user?.avatarUrl || user?.avatar || "";
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -1207,8 +1189,8 @@ export default function Profile() {
           overflow: "hidden",
           borderRadius: 34,
           padding: 30,
-          border: "2px solid rgba(99, 102, 241, 0.28)",
-          background: "linear-gradient(135deg, rgba(12,16,24,0.98) 0%, rgba(7,9,14,0.99) 100%)",
+          border: "2px solid rgba(34,211,238,0.24)",
+          background: "linear-gradient(135deg, rgba(11,17,28,0.98) 0%, rgba(8,11,18,0.99) 55%, rgba(14,22,38,0.98) 100%)",
           boxShadow: "0 24px 76px rgba(0,0,0,0.38)",
         }}
       >
@@ -1217,7 +1199,7 @@ export default function Profile() {
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
-            background: "radial-gradient(circle at 85% 15%, rgba(99,102,241,0.22), transparent 24%)",
+            background: "radial-gradient(circle at 85% 15%, rgba(34,211,238,0.18), transparent 24%)",
           }}
         />
 
@@ -1241,9 +1223,9 @@ export default function Profile() {
                 marginBottom: 14,
                 padding: "7px 12px",
                 borderRadius: 999,
-                background: "rgba(99,102,241,0.12)",
-                border: "1px solid rgba(99,102,241,0.22)",
-                color: "#c7d2fe",
+                background: "rgba(34,211,238,0.10)",
+                border: "1px solid rgba(34,211,238,0.18)",
+                color: "#cffafe",
                 fontSize: 12,
                 fontWeight: 800,
                 letterSpacing: 0.8,
@@ -1266,6 +1248,24 @@ export default function Profile() {
             >
               {user?.username || "Usuário"}
             </h1>
+
+            <div
+              style={{
+                marginTop: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 12px",
+                borderRadius: 999,
+                background: "rgba(99,102,241,0.12)",
+                border: "1px solid rgba(99,102,241,0.18)",
+                color: "#c7d2fe",
+                fontSize: 13,
+                fontWeight: 700,
+              }}
+            >
+              {displayStatus}
+            </div>
 
             <p
               style={{
@@ -1341,7 +1341,7 @@ export default function Profile() {
       </section>
 
       <div className="profile-top-grid">
-        <AvatarPanel user={user} avatarUrl={displayAvatar} onAvatarSaved={(nextAvatar) => setAvatarUrl(nextAvatar)} />
+        <AvatarPanel user={user} />
         <ProfileStatusCard
           statusValue={statusInput}
           setStatusValue={setStatusInput}
@@ -1352,7 +1352,7 @@ export default function Profile() {
       </div>
 
       <div className="profile-top-grid">
-        <SectionCard title="Dados da conta" subtitle="Informações principais da sua conta.">
+        <SectionCard title="Sua conta" subtitle="O básico da sua conta dentro da Infinity.">
           <div style={{ display: "grid", gap: 14 }}>
             <div
               style={{
@@ -1434,7 +1434,7 @@ export default function Profile() {
           </div>
         </SectionCard>
 
-        <SectionCard title="Seu momento" subtitle="Um resumo rápido do seu perfil.">
+        <SectionCard title="Sua marca na Infinity" subtitle="Seu nome, sua frase e sua presença dentro da org.">
           <div style={{ display: "grid", gap: 16 }}>
             <div
               style={{
@@ -1454,7 +1454,7 @@ export default function Profile() {
                   marginBottom: 10,
                 }}
               >
-                Seu status
+                Sua frase
               </div>
               <div
                 style={{
@@ -1632,7 +1632,9 @@ export default function Profile() {
               {discordMessage ? (
                 <div
                   style={{
-                    color: discordMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
+                    color: discordMessage.toLowerCase().includes("sucesso")
+                      ? "#86efac"
+                      : "#fca5a5",
                     fontSize: 13,
                     fontWeight: 700,
                   }}

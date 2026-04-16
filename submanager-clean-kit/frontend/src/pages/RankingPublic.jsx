@@ -70,7 +70,7 @@ function SectionCard({ title, subtitle, children, style = {} }) {
         overflow: "hidden",
         background:
           "linear-gradient(180deg, rgba(12,16,24,0.98) 0%, rgba(7,10,16,0.98) 100%)",
-        border: "1px solid rgba(99,102,241,0.18)",
+        border: "2px solid rgba(34,211,238,0.16)",
         borderRadius: 30,
         padding: 24,
         boxShadow: "0 18px 54px rgba(0,0,0,0.28)",
@@ -81,12 +81,12 @@ function SectionCard({ title, subtitle, children, style = {} }) {
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-3px)";
         event.currentTarget.style.boxShadow = "0 24px 72px rgba(0,0,0,0.34)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.30)";
+        event.currentTarget.style.borderColor = "rgba(34,211,238,0.28)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
         event.currentTarget.style.boxShadow = "0 18px 54px rgba(0,0,0,0.28)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.18)";
+        event.currentTarget.style.borderColor = "rgba(34,211,238,0.16)";
       }}
     >
       <div
@@ -141,7 +141,7 @@ function PeriodButton({ active, children, onClick }) {
         padding: "0 16px",
         borderRadius: 14,
         border: active
-          ? "1px solid rgba(34,211,238,0.45)"
+          ? "2px solid rgba(34,211,238,0.40)"
           : "1px solid #1f2937",
         background: active
           ? "linear-gradient(180deg, rgba(34,211,238,0.16) 0%, rgba(99,102,241,0.10) 100%)"
@@ -298,21 +298,21 @@ function Avatar({ avatar, username, position, accent }) {
   return (
     <div
       style={{
-        width: 76,
-        height: 76,
-        borderRadius: 22,
+        width: 82,
+        height: 82,
+        borderRadius: 24,
         overflow: "hidden",
         flex: "0 0 auto",
         background:
           position === 1
-            ? "linear-gradient(180deg, rgba(251,191,36,0.26), rgba(17,24,39,0.96))"
+            ? "linear-gradient(180deg, rgba(251,191,36,0.35), rgba(17,24,39,0.96))"
             : position === 2
-            ? "linear-gradient(180deg, rgba(226,232,240,0.18), rgba(17,24,39,0.96))"
+            ? "linear-gradient(180deg, rgba(226,232,240,0.28), rgba(17,24,39,0.96))"
             : position === 3
-            ? "linear-gradient(180deg, rgba(251,146,60,0.20), rgba(17,24,39,0.96))"
-            : `linear-gradient(180deg, ${accent}26, rgba(17,24,39,0.96))`,
-        border: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: `0 0 0 1px rgba(255,255,255,0.02), 0 0 28px ${accent}33`,
+            ? "linear-gradient(180deg, rgba(251,146,60,0.28), rgba(17,24,39,0.96))"
+            : `linear-gradient(180deg, ${accent}30, rgba(17,24,39,0.96))`,
+        border: "2px solid rgba(255,255,255,0.10)",
+        boxShadow: `0 0 0 2px rgba(255,255,255,0.03), 0 0 30px ${accent}44`,
         display: "grid",
         placeItems: "center",
         color: "#f8fafc",
@@ -416,8 +416,8 @@ function StatsBlock({ item }) {
 function UserCard({ item }) {
   return (
     <SectionCard
-      title="Seu lugar no ranking"
-      subtitle="Veja sua posição atual na Infinity."
+      title="Sua posição na tropa"
+      subtitle="Veja onde você está no topo da Infinity."
       style={{
         borderColor: "rgba(34,211,238,0.30)",
         boxShadow: "0 22px 70px rgba(34,211,238,0.08)",
@@ -470,12 +470,12 @@ function UserCard({ item }) {
             {item.status ? (
               <div
                 style={{
-                  padding: "7px 10px",
+                  padding: "6px 10px",
                   borderRadius: 999,
-                  background: "rgba(99,102,241,0.10)",
-                  border: "1px solid rgba(99,102,241,0.18)",
-                  color: "#c7d2fe",
-                  fontSize: 11,
+                  background: "rgba(34,211,238,0.12)",
+                  border: "1px solid rgba(34,211,238,0.25)",
+                  color: "#22d3ee",
+                  fontSize: 12,
                   fontWeight: 800,
                 }}
               >
@@ -492,7 +492,7 @@ function UserCard({ item }) {
               maxWidth: 760,
             }}
           >
-            Seu card mostra sua posição, seu desempenho e a movimentação da sua conta.
+            Seu card mostra sua posição e o seu ritmo dentro da Infinity.
           </div>
 
           <StatsBlock item={item} />
@@ -503,22 +503,39 @@ function UserCard({ item }) {
 }
 
 function PodiumCard({ item, rank, meta }) {
-  const variantLabel = rank === 1 ? "🥇 Top 1" : rank === 2 ? "🥈 Top 2" : "🥉 Top 3";
+  const variantLabel =
+    rank === 1 ? "Líder da temporada" : rank === 2 ? "Top 2" : "Top 3";
 
   return (
     <div
       style={{
+        position: "relative",
         borderRadius: 28,
         padding: 22,
-        border: `1px solid ${meta.border}`,
+        border: `2px solid ${meta.border}`,
         background: meta.bg,
         boxShadow: `0 24px 70px ${meta.glow}`,
         display: "grid",
         gap: 16,
         minHeight: meta.height,
-        transform: rank === 1 ? "translateY(-10px) scale(1.02)" : "none",
+        transform: rank === 1 ? "translateY(-10px) scale(1.03)" : "none",
       }}
     >
+      {rank === 1 ? (
+        <div
+          style={{
+            position: "absolute",
+            top: -12,
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: 38,
+            filter: "drop-shadow(0 0 12px rgba(251,191,36,0.45))",
+          }}
+        >
+          👑
+        </div>
+      ) : null}
+
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
         <div
           style={{
@@ -571,9 +588,26 @@ function PodiumCard({ item, rank, meta }) {
           <div style={{ color: "#f8fafc", fontSize: 20, fontWeight: 900 }}>
             {item.username}
           </div>
-          <div style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
-            {item.status ? `${item.status} · ` : ""}
-            {formatPlural(item.matches, "partida", "partidas")}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            {item.status ? (
+              <div
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(255,255,255,0.06)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  color: "#e5e7eb",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                {item.status}
+              </div>
+            ) : null}
+
+            <div style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
+              {formatPlural(item.matches, "partida", "partidas")}
+            </div>
           </div>
         </div>
       </div>
@@ -661,10 +695,10 @@ function RankCard({ item }) {
                   width: "fit-content",
                   padding: "6px 10px",
                   borderRadius: 999,
-                  background: "rgba(99,102,241,0.10)",
-                  border: "1px solid rgba(99,102,241,0.18)",
-                  color: "#c7d2fe",
-                  fontSize: 11,
+                  background: "rgba(34,211,238,0.12)",
+                  border: "1px solid rgba(34,211,238,0.25)",
+                  color: "#22d3ee",
+                  fontSize: 12,
                   fontWeight: 800,
                 }}
               >
@@ -684,6 +718,25 @@ function RankCard({ item }) {
         >
           {formatPlural(item.wins, "vitória", "vitórias")}
         </div>
+      </div>
+
+      <div
+        style={{
+          height: 6,
+          borderRadius: 999,
+          background: "rgba(255,255,255,0.05)",
+          overflow: "hidden",
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            width: `${Math.min((item.wins / 50) * 100, 100)}%`,
+            height: "100%",
+            background: "linear-gradient(90deg, #22d3ee, #3b82f6)",
+          }}
+        />
       </div>
 
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -815,7 +868,7 @@ export default function RankingPublic() {
           overflow: "hidden",
           borderRadius: 34,
           padding: 30,
-          border: "1px solid rgba(99, 102, 241, 0.22)",
+          border: "2px solid rgba(34,211,238,0.18)",
           background:
             "linear-gradient(135deg, rgba(14,18,29,0.98) 0%, rgba(7,10,16,0.98) 100%)",
           boxShadow: "0 24px 80px rgba(0,0,0,0.34)",
@@ -865,7 +918,7 @@ export default function RankingPublic() {
                   maxWidth: 820,
                 }}
               >
-                Top da Infinity
+                Ranking da Infinity
               </h1>
 
               <p
@@ -877,8 +930,7 @@ export default function RankingPublic() {
                   maxWidth: 740,
                 }}
               >
-                Veja quem está no topo, compare vitórias e partidas e acompanhe sua
-                posição dentro da comunidade.
+                Veja quem está amassando no topo, acompanhe sua posição e descubra quem está mais perto do pódio.
               </p>
             </div>
 
@@ -889,8 +941,9 @@ export default function RankingPublic() {
                 alignContent: "start",
                 padding: 18,
                 borderRadius: 24,
-                border: "1px solid rgba(34,211,238,0.16)",
-                background: "rgba(255,255,255,0.03)",
+                border: "2px solid rgba(34,211,238,0.18)",
+                background: "linear-gradient(180deg, rgba(34,211,238,0.10), rgba(255,255,255,0.03))",
+                boxShadow: "0 0 26px rgba(34,211,238,0.10)",
               }}
             >
               <div
@@ -902,13 +955,13 @@ export default function RankingPublic() {
                   letterSpacing: "0.08em",
                 }}
               >
-                Destaque da org
+                Pico da temporada
               </div>
               <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
-                Quem está dominando a Infinity agora?
+                Quem está puxando a tropa?
               </div>
               <div style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.6 }}>
-                Um jeito mais bonito de acompanhar o topo da comunidade.
+                O topo muda rápido. Quem estiver mais forte sobe no pódio.
               </div>
             </div>
           </div>
@@ -931,7 +984,7 @@ export default function RankingPublic() {
 
       {selfItem ? <UserCard item={selfItem} /> : null}
 
-      <SectionCard title="Pódio" subtitle="Os três nomes que estão na frente agora.">
+      <SectionCard title="Pódio da Infinity" subtitle="Os três jogadores que estão dominando o momento.">
         {loading ? (
           <div className="ranking-top-grid">
             {[1, 2, 3].map((position) => (
@@ -962,8 +1015,8 @@ export default function RankingPublic() {
       </SectionCard>
 
       <SectionCard
-        title="Da 4ª posição em diante"
-        subtitle="A galera que está na disputa pelo topo."
+        title="Quem tá subindo"
+        subtitle="A galera que ainda tá correndo atrás do pódio."
       >
         {loading ? (
           <div className="ranking-list-grid">
