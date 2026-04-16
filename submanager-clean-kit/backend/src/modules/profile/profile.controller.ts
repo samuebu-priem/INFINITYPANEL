@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
+
 import { asyncHandler } from "../../shared/utils/asyncHandler.js";
 import { profileService } from "./profile.service.js";
+import { discordAuthService } from "../auth/discord/discord.service.js";
 
 export const profileController = {
   summary: asyncHandler(async (req: Request, res: Response) => {
@@ -23,6 +25,16 @@ export const profileController = {
       status: req.body?.status,
     });
 
+    res.json(result);
+  }),
+
+  refreshDiscord: asyncHandler(async (req: Request, res: Response) => {
+    const result = await discordAuthService.refresh(req.auth!.id);
+    res.json(result);
+  }),
+
+  disconnectDiscord: asyncHandler(async (req: Request, res: Response) => {
+    const result = await discordAuthService.disconnect(req.auth!.id);
     res.json(result);
   }),
 };

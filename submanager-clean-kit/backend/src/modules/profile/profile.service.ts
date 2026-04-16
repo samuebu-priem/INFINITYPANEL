@@ -10,73 +10,88 @@ function normalizeText(value: unknown): string | null {
   return text ? text : null;
 }
 
+function getDiscordDisplayName(user: {
+  username: string;
+  discordUsername: string | null;
+  discordGlobalName: string | null;
+  discordGuildNick: string | null;
+}) {
+  return (
+    user.discordGuildNick ??
+    user.discordGlobalName ??
+    user.discordUsername ??
+    user.username
+  );
+}
+
 export const profileService = {
   summary: async (userId: string) => {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
+        username: true,
         discordId: true,
+        discordUsername: true,
+        discordGlobalName: true,
+        discordAvatar: true,
+        discordGuildNick: true,
+        discordConnectedAt: true,
         avatarUrl: true,
         status: true,
       },
     });
 
-    if (!user?.discordId) {
-      return {
-        summary: {
-          wins: 0,
-          matchesPlayed: 0,
-          latestWinAt: null,
-          discordId: null,
-          avatarUrl: user?.avatarUrl ?? null,
-          status: user?.status ?? null,
-          mediatorProfitTotal: 0,
-          mediatedMatchesCount: 0,
-          bestMediatorDay: null,
-          mediatorSeries: [],
-        },
-      };
+    if (!user) {
+      throw new ApiError(404, "User not found");
     }
 
-    const wins = await prisma.supervisorMatchRecord.count({
-      where: {
-        winner: user.discordId,
-      },
-    });
+    const wins = user.discordId
+      ? await prisma.supervisorMatchRecord.count({
+          where: {
+            winner: user.discordId,
+          },
+        })
+      : 0;
 
-    const matchesPlayed = await prisma.supervisorMatchRecord.count({
-      where: {
-        players: {
-          array_contains: user.discordId,
-        } as any,
-      },
-    });
+    const matchesPlayed = user.discordId
+      ? await prisma.supervisorMatchRecord.count({
+          where: {
+            players: {
+              array_contains: user.discordId,
+            } as any,
+          },
+        })
+      : 0;
 
-    const latestWin = await prisma.supervisorMatchRecord.findFirst({
-      where: {
-        winner: user.discordId,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      select: {
-        createdAt: true,
-      },
-    });
+    const latestWin = user.discordId
+      ? await prisma.supervisorMatchRecord.findFirst({
+          where: {
+            winner: user.discordId,
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
+          select: {
+            createdAt: true,
+          },
+        })
+      : null;
 
-    const mediatedRecords = await prisma.supervisorMatchRecord.findMany({
-      where: {
-        mediatorId: user.discordId,
-      },
-      orderBy: {
-        createdAt: "asc",
-      },
-      select: {
-        mediatorRevenue: true,
-        createdAt: true,
-      },
-    });
+    const mediatedRecords = user.discordId
+      ? await prisma.supervisorMatchRecord.findMany({
+          where: {
+            mediatorId: user.discordId,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+          select: {
+            mediatorRevenue: true,
+            createdAt: true,
+          },
+        })
+      : [];
 
     const mediatorProfitTotal = mediatedRecords.reduce(
       (acc: number, item: typeof mediatedRecords[number]) => acc + Number(item.mediatorRevenue || 0),
@@ -112,6 +127,12 @@ export const profileService = {
         matchesPlayed,
         latestWinAt: latestWin?.createdAt ?? null,
         discordId: user.discordId,
+        discordUsername: user.discordUsername ?? null,
+        discordGlobalName: user.discordGlobalName ?? null,
+        discordAvatar: user.discordAvatar ?? null,
+        discordGuildNick: user.discordGuildNick ?? null,
+        discordConnectedAt: user.discordConnectedAt ?? null,
+        discordDisplayName: getDiscordDisplayName(user),
         avatarUrl: user.avatarUrl ?? null,
         status: user.status ?? null,
         mediatorProfitTotal,
