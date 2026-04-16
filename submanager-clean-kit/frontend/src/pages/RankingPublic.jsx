@@ -751,14 +751,6 @@ export default function RankingPublic() {
                 background: "rgba(255,255,255,0.03)",
               }}
             >
-              <div style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700 }}>Leitura rápida</div>
-              <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
-                {ranking.length} jogador(es) neste período
-              </div>
-              <div style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.6 }}>
-                Top 1, Top 2 e Top 3 ganham o palco; da 4ª à 99ª posição, a lista fica rolável e
-                organizada.
-              </div>
             </div>
           </div>
         </div>

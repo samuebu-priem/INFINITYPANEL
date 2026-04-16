@@ -324,7 +324,8 @@ function StatCard({
 }
 
 function AccessCard({ subscription, nowTs }) {
-  const countdown = buildCountdown(getEndsAt(subscription), nowTs);
+  const endsAt = getEndsAt(subscription);
+  const countdown = buildCountdown(endsAt, nowTs);
   const active = isSubscriptionActive(subscription);
 
   return (
