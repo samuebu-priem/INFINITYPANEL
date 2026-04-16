@@ -91,43 +91,63 @@ function formatDate(value) {
   });
 }
 
-function SectionCard({ title, subtitle, children }) {
+function SectionCard({ title, subtitle, children, action }) {
   return (
     <section
       style={{
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid #1f2937",
+        border: "1px solid rgba(99,102,241,0.14)",
         borderRadius: 28,
         padding: 22,
         boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
+        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-2px)";
+        event.currentTarget.style.boxShadow = "0 18px 48px rgba(0,0,0,0.28)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.24)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.22)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.14)";
       }}
     >
-      <div style={{ marginBottom: 18 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontSize: 22,
-            fontWeight: 900,
-            color: "#f3f4f6",
-          }}
-        >
-          {title}
-        </h2>
+      {(title || subtitle || action) && (
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+            <div>
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: 22,
+                  fontWeight: 900,
+                  color: "#f3f4f6",
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {title}
+              </h2>
 
-        {subtitle ? (
-          <p
-            style={{
-              margin: "8px 0 0",
-              color: "#9ca3af",
-              fontSize: 14,
-              lineHeight: 1.6,
-            }}
-          >
-            {subtitle}
-          </p>
-        ) : null}
-      </div>
+              {subtitle ? (
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    color: "#9ca3af",
+                    fontSize: 14,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {subtitle}
+                </p>
+              ) : null}
+            </div>
+
+            {action ? <div>{action}</div> : null}
+          </div>
+        </div>
+      )}
 
       {children}
     </section>
@@ -157,6 +177,17 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
         borderRadius: 22,
         background: theme.bg,
         padding: 18,
+        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-2px)";
+        event.currentTarget.style.boxShadow = "0 16px 34px rgba(0,0,0,0.16)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.22)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.borderColor = theme.border;
       }}
     >
       <div
@@ -178,6 +209,7 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
           fontSize: 32,
           lineHeight: 1.05,
           fontWeight: 900,
+          letterSpacing: "-0.03em",
         }}
       >
         {value}

@@ -129,10 +129,21 @@ function SectionCard({ title, subtitle, children, action }) {
       style={{
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid #1f2937",
+        border: "1px solid rgba(99,102,241,0.14)",
         borderRadius: 28,
         padding: 22,
         boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
+        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-2px)";
+        event.currentTarget.style.boxShadow = "0 18px 48px rgba(0,0,0,0.28)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.24)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.22)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.14)";
       }}
     >
       {(title || subtitle || action) && (
@@ -154,6 +165,7 @@ function SectionCard({ title, subtitle, children, action }) {
                   fontSize: 22,
                   fontWeight: 900,
                   color: "#f3f4f6",
+                  letterSpacing: "-0.02em",
                 }}
               >
                 {title}
@@ -206,6 +218,17 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
         borderRadius: 22,
         background: theme.bg,
         padding: 18,
+        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-2px)";
+        event.currentTarget.style.boxShadow = "0 16px 34px rgba(0,0,0,0.16)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.22)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.borderColor = theme.border;
       }}
     >
       <div
@@ -227,6 +250,7 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
           fontSize: 34,
           lineHeight: 1.05,
           fontWeight: 900,
+          letterSpacing: "-0.03em",
         }}
       >
         {value}
@@ -246,7 +270,7 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
   );
 }
 
-function EmptyState({ title, description }) {
+function EmptyState({ title, description, hint }) {
   return (
     <div
       style={{
@@ -256,6 +280,7 @@ function EmptyState({ title, description }) {
         textAlign: "center",
         background:
           "linear-gradient(180deg, rgba(99,102,241,0.05) 0%, rgba(11,15,20,0.4) 100%)",
+        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
       }}
     >
       <div
@@ -281,6 +306,7 @@ function EmptyState({ title, description }) {
           color: "#f3f4f6",
           fontSize: 18,
           fontWeight: 900,
+          letterSpacing: "-0.02em",
         }}
       >
         {title}
@@ -297,6 +323,26 @@ function EmptyState({ title, description }) {
       >
         {description}
       </p>
+
+      {hint ? (
+        <div
+          style={{
+            marginTop: 14,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 12px",
+            borderRadius: 999,
+            color: "#c7d2fe",
+            background: "rgba(99,102,241,0.10)",
+            border: "1px solid rgba(99,102,241,0.16)",
+            fontSize: 12,
+            fontWeight: 800,
+          }}
+        >
+          {hint}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -309,7 +355,7 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
   return (
     <div
       style={{
-        border: "1px solid #1f2937",
+        border: "1px solid rgba(34,197,94,0.16)",
         borderRadius: 24,
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
@@ -317,6 +363,17 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
         boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
         display: "grid",
         gap: 14,
+        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-3px)";
+        event.currentTarget.style.boxShadow = "0 18px 40px rgba(0,0,0,0.24)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.22)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.16)";
+        event.currentTarget.style.borderColor = "rgba(34,197,94,0.16)";
       }}
     >
       <div
@@ -335,6 +392,7 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
               fontSize: 18,
               fontWeight: 800,
               lineHeight: 1.25,
+              letterSpacing: "-0.02em",
             }}
           >
             {getPlanName(subscription)}
@@ -589,6 +647,17 @@ export default function UserHome() {
           background:
             "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
           boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
+          transition: "transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease",
+        }}
+        onMouseEnter={(event) => {
+          event.currentTarget.style.transform = "translateY(-2px)";
+          event.currentTarget.style.boxShadow = "0 22px 72px rgba(0,0,0,0.30)";
+          event.currentTarget.style.borderColor = "rgba(99,102,241,0.28)";
+        }}
+        onMouseLeave={(event) => {
+          event.currentTarget.style.transform = "translateY(0)";
+          event.currentTarget.style.boxShadow = "0 18px 60px rgba(0,0,0,0.25)";
+          event.currentTarget.style.borderColor = "rgba(99,102,241,0.18)";
         }}
       >
         <div
@@ -818,13 +887,16 @@ export default function UserHome() {
         subtitle="Cada plano possui seu próprio tempo e sua própria validade."
       >
         {loadingSubscriptions ? (
-          <div style={{ color: "#9ca3af", fontSize: 14 }}>
-            Carregando assinaturas...
+          <div style={{ color: "#9ca3af", fontSize: 14, display: "grid", gap: 10 }}>
+            <div style={{ height: 14, width: "42%", borderRadius: 999, background: "rgba(255,255,255,0.06)" }} />
+            <div style={{ height: 14, width: "68%", borderRadius: 999, background: "rgba(255,255,255,0.06)" }} />
+            <div style={{ height: 14, width: "56%", borderRadius: 999, background: "rgba(255,255,255,0.06)" }} />
           </div>
         ) : activeSubscriptions.length === 0 ? (
           <EmptyState
             title="Nenhum acesso ativo"
             description="Você ainda não possui uma assinatura ativa neste momento."
+            hint="Assine um plano para liberar acessos e ver o contador em tempo real."
           />
         ) : (
           <div className="user-home-subscriptions-grid">
@@ -844,13 +916,16 @@ export default function UserHome() {
         subtitle="Escolha um novo plano e habilite novos acessos."
       >
         {loadingPlans ? (
-          <div style={{ color: "#9ca3af", fontSize: 14 }}>
-            Carregando planos...
+          <div style={{ color: "#9ca3af", fontSize: 14, display: "grid", gap: 10 }}>
+            <div style={{ height: 180, borderRadius: 22, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 180, borderRadius: 22, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 180, borderRadius: 22, background: "rgba(255,255,255,0.05)" }} />
           </div>
         ) : plans.length === 0 ? (
           <EmptyState
             title="Nenhum plano encontrado"
             description="No momento não há planos disponíveis para assinatura."
+            hint="Assim que houver planos ativos, eles aparecerão aqui."
           />
         ) : (
           <div className="user-home-plans-grid">
