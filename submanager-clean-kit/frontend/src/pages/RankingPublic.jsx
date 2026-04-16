@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { api } from "../services/api.js";
+import { useAuth } from "../context/auth.jsx";
 
 function getRankingList(response) {
   if (Array.isArray(response)) return response;
@@ -9,7 +10,68 @@ function getRankingList(response) {
   return [];
 }
 
-function SectionCard({ title, subtitle, children }) {
+function normalizeRankingItem(item, index) {
+  const position = Number(item?.position ?? index + 1);
+  const username =
+    item?.username ??
+    item?.nick ??
+    item?.nickname ??
+    item?.name ??
+    item?.playerName ??
+    item?.displayName ??
+    "Jogador";
+
+  const status = item?.status ?? item?.title ?? item?.rankTitle ?? item?.role ?? null;
+  const avatar = item?.avatar ?? item?.photoUrl ?? item?.imageUrl ?? item?.profileImage ?? null;
+  const matches = Number(item?.matches ?? item?.partidas ?? item?.games ?? 0);
+  const wins = Number(item?.wins ?? item?.vitórias ?? item?.vitorias ?? item?.victories ?? 0);
+  const earnedValue = item?.earnedValue ?? item?.valorGanho ?? item?.valorGanhoTotal ?? item?.totalEarned ?? null;
+
+  return {
+    raw: item,
+    position,
+    username,
+    status,
+    avatar,
+    matches,
+    wins,
+    earnedValue: earnedValue !== null && earnedValue !== undefined && earnedValue !== "" ? earnedValue : null,
+    discordId: item?.discordId ?? item?.id ?? `${position}-${username}`,
+  };
+}
+
+function formatCurrency(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  return numeric.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 2,
+  });
+}
+
+function formatPlural(value, singular, plural) {
+  return `${value} ${value === 1 ? singular : plural}`;
+}
+
+function getInitials(name) {
+  return String(name || "?")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "?";
+}
+
+function getAvatarGradient(position, accent) {
+  if (position === 1) return "linear-gradient(180deg, rgba(251,191,36,0.26), rgba(17,24,39,0.96))";
+  if (position === 2) return "linear-gradient(180deg, rgba(226,232,240,0.18), rgba(17,24,39,0.96))";
+  if (position === 3) return "linear-gradient(180deg, rgba(251,146,60,0.20), rgba(17,24,39,0.96))";
+  return `linear-gradient(180deg, ${accent}26, rgba(17,24,39,0.96))`;
+}
+
+function SectionCard({ title, subtitle, children, style = {} }) {
   return (
     <section
       style={{
@@ -23,6 +85,7 @@ function SectionCard({ title, subtitle, children }) {
         boxShadow: "0 18px 54px rgba(0,0,0,0.28)",
         transition:
           "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        ...style,
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-3px)";
@@ -206,12 +269,12 @@ function EmptyState({ title, description, hint }) {
   );
 }
 
-function SkeletonCard({ height = 74 }) {
+function SkeletonPodiumCard({ height = 248 }) {
   return (
     <div
       style={{
         height,
-        borderRadius: 18,
+        borderRadius: 24,
         border: "1px solid rgba(255,255,255,0.05)",
         background:
           "linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(34,211,238,0.06) 50%, rgba(255,255,255,0.03) 100%)",
@@ -222,7 +285,276 @@ function SkeletonCard({ height = 74 }) {
   );
 }
 
+function SkeletonListItem() {
+  return (
+    <div
+      style={{
+        minHeight: 110,
+        borderRadius: 22,
+        border: "1px solid rgba(255,255,255,0.05)",
+        background:
+          "linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(34,211,238,0.06) 50%, rgba(255,255,255,0.03) 100%)",
+        backgroundSize: "200% 100%",
+        animation: "rankingShimmer 1.5s ease-in-out infinite",
+      }}
+    />
+  );
+}
+
+function LeaderboardCard({ item, variant = "default", compact = false, highlight = false }) {
+  const accentMap = {
+    gold: {
+      accent: "#fbbf24",
+      border: "rgba(251,191,36,0.36)",
+      glow: "rgba(251,191,36,0.22)",
+      background:
+        "linear-gradient(180deg, rgba(251,191,36,0.14) 0%, rgba(11,15,23,0.98) 100%)",
+    },
+    silver: {
+      accent: "#e2e8f0",
+      border: "rgba(203,213,225,0.34)",
+      glow: "rgba(203,213,225,0.16)",
+      background:
+        "linear-gradient(180deg, rgba(203,213,225,0.10) 0%, rgba(11,15,23,0.98) 100%)",
+    },
+    bronze: {
+      accent: "#fb923c",
+      border: "rgba(251,146,60,0.32)",
+      glow: "rgba(251,146,60,0.16)",
+      background:
+        "linear-gradient(180deg, rgba(251,146,60,0.10) 0%, rgba(11,15,23,0.98) 100%)",
+    },
+    default: {
+      accent: "#22d3ee",
+      border: "rgba(34,211,238,0.18)",
+      glow: "rgba(34,211,238,0.12)",
+      background:
+        "linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(7,10,16,0.98) 100%)",
+    },
+    self: {
+      accent: "#22d3ee",
+      border: "rgba(34,211,238,0.40)",
+      glow: "rgba(34,211,238,0.22)",
+      background:
+        "linear-gradient(180deg, rgba(34,211,238,0.10) 0%, rgba(11,15,23,0.98) 100%)",
+    },
+  };
+
+  const styleSet = accentMap[variant] || accentMap.default;
+  const currency = formatCurrency(item.earnedValue);
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 24,
+        padding: compact ? 18 : 20,
+        border: `1px solid ${styleSet.border}`,
+        background: styleSet.background,
+        boxShadow: highlight
+          ? `0 18px 48px ${styleSet.glow}`
+          : `0 12px 32px rgba(0,0,0,0.18)`,
+        transition:
+          "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease",
+        display: "grid",
+        gap: 14,
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-3px)";
+        event.currentTarget.style.boxShadow = `0 24px 60px ${styleSet.glow}`;
+        event.currentTarget.style.borderColor = styleSet.border;
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = highlight
+          ? `0 18px 48px ${styleSet.glow}`
+          : "0 12px 32px rgba(0,0,0,0.18)";
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at top right, rgba(255,255,255,0.06), transparent 24%), radial-gradient(circle at bottom left, rgba(34,211,238,0.08), transparent 30%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 14,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <div
+            style={{
+              width: compact ? 52 : 60,
+              height: compact ? 52 : 60,
+              borderRadius: 18,
+              flex: "0 0 auto",
+              display: "grid",
+              placeItems: "center",
+              background: getAvatarGradient(item.position, styleSet.accent),
+              border: `1px solid ${styleSet.border}`,
+              boxShadow: `0 0 0 1px rgba(255,255,255,0.02), 0 0 28px ${styleSet.glow}`,
+              overflow: "hidden",
+              color: "#f8fafc",
+              fontWeight: 900,
+              fontSize: 16,
+              textTransform: "uppercase",
+            }}
+          >
+            {item.avatar ? (
+              <img
+                src={item.avatar}
+                alt={item.username}
+                style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              getInitials(item.username)
+            )}
+          </div>
+
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 10px",
+                borderRadius: 999,
+                border: `1px solid ${styleSet.border}`,
+                background: "rgba(255,255,255,0.04)",
+                color: styleSet.accent,
+                fontSize: 11,
+                fontWeight: 900,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                marginBottom: 10,
+              }}
+            >
+              #{item.position}
+              {item.position === 1 ? " campeão" : item.position === 2 ? " vice" : item.position === 3 ? " pódio" : ""}
+            </div>
+
+            <div
+              style={{
+                color: "#f8fafc",
+                fontWeight: 900,
+                fontSize: compact ? 16 : 18,
+                letterSpacing: "-0.02em",
+                wordBreak: "break-word",
+              }}
+            >
+              {item.username}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+              {item.status ? (
+                <div
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 999,
+                    background: "rgba(99,102,241,0.10)",
+                    border: "1px solid rgba(99,102,241,0.18)",
+                    color: "#c7d2fe",
+                    fontSize: 11,
+                    fontWeight: 800,
+                  }}
+                >
+                  {item.status}
+                </div>
+              ) : null}
+
+              <div
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(34,211,238,0.10)",
+                  border: "1px solid rgba(34,211,238,0.18)",
+                  color: "#cffafe",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                {formatPlural(item.matches, "partida", "partidas")}
+              </div>
+
+              <div
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(34,197,94,0.10)",
+                  border: "1px solid rgba(34,197,94,0.18)",
+                  color: "#bbf7d0",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                {formatPlural(item.wins, "vitória", "vitórias")}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ textAlign: "right", flex: "0 0 auto" }}>
+          <div style={{ color: styleSet.accent, fontSize: compact ? 18 : 24, fontWeight: 900 }}>
+            {formatPlural(item.wins, "vitória", "vitórias")}
+          </div>
+          <div style={{ color: "#94a3b8", fontSize: 12, marginTop: 4 }}>posição competitiva</div>
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "grid",
+          gap: 10,
+          gridTemplateColumns: currency ? "repeat(2, minmax(0, 1fr))" : "1fr",
+        }}
+      >
+        <div
+          style={{
+            padding: "14px 16px",
+            borderRadius: 18,
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Participações</div>
+          <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
+            {formatPlural(item.matches, "partida", "partidas")}
+          </div>
+        </div>
+
+        {currency ? (
+          <div
+            style={{
+              padding: "14px 16px",
+              borderRadius: 18,
+              background: "rgba(34,211,238,0.06)",
+              border: "1px solid rgba(34,211,238,0.10)",
+            }}
+          >
+            <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Valor ganho total</div>
+            <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>{currency}</div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export default function RankingPublic() {
+  const { user } = useAuth();
   const [period, setPeriod] = useState("total");
   const [ranking, setRanking] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -232,7 +564,7 @@ export default function RankingPublic() {
       try {
         setLoading(true);
         const response = await api.get(`/rankings/public?period=${period}`);
-        setRanking(getRankingList(response));
+        setRanking(getRankingList(response).map(normalizeRankingItem));
       } catch {
         setRanking([]);
       } finally {
@@ -244,33 +576,49 @@ export default function RankingPublic() {
   }, [period]);
 
   const topThree = useMemo(() => ranking.slice(0, 3), [ranking]);
+  const rest = useMemo(() => ranking.slice(3, 99), [ranking]);
+  const userKey = user?.discordId ?? user?.id ?? user?.username ?? user?.nickname ?? null;
+  const selfItem = useMemo(() => {
+    if (!userKey) return null;
+    return ranking.find((item) => {
+      const candidateKeys = [
+        item.raw?.discordId,
+        item.raw?.id,
+        item.raw?.username,
+        item.raw?.nickname,
+        item.raw?.name,
+      ]
+        .filter(Boolean)
+        .map(String);
+      return candidateKeys.includes(String(userKey));
+    });
+  }, [ranking, userKey]);
 
   const podiumMeta = [
     {
-      label: "Coroa",
-      border: "rgba(251,191,36,0.34)",
-      bg: "linear-gradient(180deg, rgba(251,191,36,0.14) 0%, rgba(7,10,16,0.98) 100%)",
+      label: "Ouro",
+      border: "rgba(251,191,36,0.42)",
+      bg: "linear-gradient(180deg, rgba(251,191,36,0.16) 0%, rgba(7,10,16,0.98) 100%)",
       accent: "#fbbf24",
-      glow: "rgba(251,191,36,0.22)",
-      badgeBg: "rgba(251,191,36,0.12)",
+      glow: "rgba(251,191,36,0.26)",
     },
     {
       label: "Prata",
-      border: "rgba(148,163,184,0.30)",
-      bg: "linear-gradient(180deg, rgba(148,163,184,0.10) 0%, rgba(7,10,16,0.98) 100%)",
+      border: "rgba(203,213,225,0.38)",
+      bg: "linear-gradient(180deg, rgba(203,213,225,0.12) 0%, rgba(7,10,16,0.98) 100%)",
       accent: "#e2e8f0",
-      glow: "rgba(148,163,184,0.18)",
-      badgeBg: "rgba(148,163,184,0.10)",
+      glow: "rgba(203,213,225,0.20)",
     },
     {
       label: "Bronze",
-      border: "rgba(180,83,9,0.30)",
-      bg: "linear-gradient(180deg, rgba(180,83,9,0.12) 0%, rgba(7,10,16,0.98) 100%)",
-      accent: "#fdba74",
-      glow: "rgba(180,83,9,0.18)",
-      badgeBg: "rgba(180,83,9,0.10)",
+      border: "rgba(251,146,60,0.36)",
+      bg: "linear-gradient(180deg, rgba(251,146,60,0.14) 0%, rgba(7,10,16,0.98) 100%)",
+      accent: "#fb923c",
+      glow: "rgba(251,146,60,0.18)",
     },
   ];
+
+  const selfOutsideTop99 = Boolean(selfItem && selfItem.position > 99);
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -280,6 +628,12 @@ export default function RankingPublic() {
           gap: 16px;
           grid-template-columns: repeat(3, minmax(0, 1fr));
           align-items: stretch;
+        }
+
+        .ranking-list-wrap {
+          max-height: 920px;
+          overflow: auto;
+          padding-right: 4px;
         }
 
         .ranking-list-grid {
@@ -293,70 +647,11 @@ export default function RankingPublic() {
           flex-wrap: wrap;
         }
 
-        .ranking-row {
-          position: relative;
-          overflow: hidden;
-          border: 1px solid #1f2937;
-          border-radius: 18px;
-          background: rgba(255,255,255,0.02);
-          padding: 16px;
-          display: flex;
-          justify-content: space-between;
-          gap: 16px;
-          flex-wrap: wrap;
-          align-items: center;
-          transition:
-            transform 160ms ease,
-            box-shadow 160ms ease,
-            border-color 160ms ease,
-            background 160ms ease;
-        }
-
-        .ranking-row:hover {
-          transform: translateY(-2px);
-          border-color: rgba(34,211,238,0.22);
-          box-shadow: 0 14px 28px rgba(0,0,0,0.18);
-          background: rgba(255,255,255,0.03);
-        }
-
-        .ranking-row::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background: linear-gradient(90deg, rgba(34,211,238,0.08), transparent 40%);
-          opacity: 0;
-          transition: opacity 160ms ease;
-        }
-
-        .ranking-row:hover::before {
-          opacity: 1;
-        }
-
-        .ranking-podium-card {
-          position: relative;
-          overflow: hidden;
-          border-radius: 24px;
-          padding: 20px;
+        .ranking-header-grid {
           display: grid;
-          gap: 12px;
-          transition:
-            transform 180ms ease,
-            box-shadow 180ms ease,
-            border-color 180ms ease;
-          min-height: 216px;
-        }
-
-        .ranking-podium-card::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background: radial-gradient(circle at top right, rgba(34,211,238,0.10), transparent 28%);
-        }
-
-        .ranking-podium-card:hover {
-          transform: translateY(-3px);
+          gap: 18px;
+          grid-template-columns: 1.2fr 0.8fr;
+          align-items: stretch;
         }
 
         @keyframes rankingShimmer {
@@ -365,7 +660,8 @@ export default function RankingPublic() {
         }
 
         @media (max-width: 980px) {
-          .ranking-top-grid {
+          .ranking-top-grid,
+          .ranking-header-grid {
             grid-template-columns: 1fr;
           }
         }
@@ -393,13 +689,13 @@ export default function RankingPublic() {
           }}
         />
 
-        <div style={{ position: "relative", zIndex: 1 }}>
+        <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 18 }}>
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               gap: 8,
-              marginBottom: 14,
+              width: "fit-content",
               padding: "7px 12px",
               borderRadius: 999,
               background: "rgba(34,211,238,0.10)",
@@ -414,31 +710,57 @@ export default function RankingPublic() {
             Ranking público
           </div>
 
-          <h1
-            style={{
-              margin: 0,
-              color: "#f8fafc",
-              fontSize: 40,
-              lineHeight: 1.02,
-              fontWeight: 900,
-              letterSpacing: -0.7,
-              maxWidth: 820,
-            }}
-          >
-            Ranking de vitórias
-          </h1>
+          <div className="ranking-header-grid">
+            <div style={{ display: "grid", gap: 14 }}>
+              <h1
+                style={{
+                  margin: 0,
+                  color: "#f8fafc",
+                  fontSize: 40,
+                  lineHeight: 1.02,
+                  fontWeight: 900,
+                  letterSpacing: -0.7,
+                  maxWidth: 820,
+                }}
+              >
+                Competição pública da Infinity
+              </h1>
 
-          <p
-            style={{
-              margin: "14px 0 0",
-              color: "#94a3b8",
-              fontSize: 15,
-              lineHeight: 1.7,
-              maxWidth: 740,
-            }}
-          >
-            Veja os jogadores com mais vitórias na org em diferentes períodos.
-          </p>
+              <p
+                style={{
+                  margin: 0,
+                  color: "#94a3b8",
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                  maxWidth: 740,
+                }}
+              >
+                Acompanhe o pódio, descubra quem está dominando o período e compare posição,
+                vitórias e participação em uma apresentação mais viva e competitiva.
+              </p>
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: 12,
+                alignContent: "start",
+                padding: 18,
+                borderRadius: 24,
+                border: "1px solid rgba(34,211,238,0.16)",
+                background: "rgba(255,255,255,0.03)",
+              }}
+            >
+              <div style={{ color: "#94a3b8", fontSize: 12, fontWeight: 700 }}>Leitura rápida</div>
+              <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
+                {ranking.length} jogador(es) neste período
+              </div>
+              <div style={{ color: "#cbd5e1", fontSize: 13, lineHeight: 1.6 }}>
+                Top 1, Top 2 e Top 3 ganham o palco; da 4ª à 99ª posição, a lista fica rolável e
+                organizada.
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -460,7 +782,7 @@ export default function RankingPublic() {
         {loading ? (
           <div className="ranking-top-grid">
             {[1, 2, 3].map((position) => (
-              <SkeletonCard key={position} height={224} />
+              <SkeletonPodiumCard key={position} height={248} />
             ))}
           </div>
         ) : topThree.length === 0 ? (
@@ -473,34 +795,22 @@ export default function RankingPublic() {
           <div className="ranking-top-grid">
             {topThree.map((item, index) => {
               const podium = podiumMeta[index] || podiumMeta[2];
-              const placeLabel = index === 0 ? "1º lugar" : index === 1 ? "2º lugar" : "3º lugar";
-
               return (
                 <div
                   key={item.discordId}
-                  className="ranking-podium-card"
                   style={{
+                    borderRadius: 24,
+                    padding: 20,
                     border: `1px solid ${podium.border}`,
                     background: podium.bg,
                     boxShadow: `0 18px 42px ${podium.glow}`,
-                  }}
-                  onMouseEnter={(event) => {
-                    event.currentTarget.style.boxShadow = `0 26px 56px ${podium.glow}`;
-                    event.currentTarget.style.borderColor = podium.border;
-                  }}
-                  onMouseLeave={(event) => {
-                    event.currentTarget.style.boxShadow = `0 18px 42px ${podium.glow}`;
-                    event.currentTarget.style.borderColor = podium.border;
+                    display: "grid",
+                    gap: 12,
+                    minHeight: 248,
+                    transition: "transform 180ms ease, box-shadow 180ms ease",
                   }}
                 >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      alignItems: "flex-start",
-                    }}
-                  >
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                     <div
                       style={{
                         display: "inline-flex",
@@ -510,7 +820,7 @@ export default function RankingPublic() {
                         padding: "6px 10px",
                         borderRadius: 999,
                         border: `1px solid ${podium.border}`,
-                        background: podium.badgeBg,
+                        background: "rgba(255,255,255,0.04)",
                         color: podium.accent,
                         fontSize: 11,
                         fontWeight: 900,
@@ -518,7 +828,7 @@ export default function RankingPublic() {
                         letterSpacing: "0.08em",
                       }}
                     >
-                      {placeLabel}
+                      {podium.label}
                     </div>
 
                     <div
@@ -540,48 +850,115 @@ export default function RankingPublic() {
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gap: 6 }}>
-                    <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
-                      {item.username}
+                  <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                    <div
+                      style={{
+                        width: 72,
+                        height: 72,
+                        borderRadius: 22,
+                        overflow: "hidden",
+                        flex: "0 0 auto",
+                        background: getAvatarGradient(item.position, podium.accent),
+                        border: `1px solid ${podium.border}`,
+                        boxShadow: `0 0 30px ${podium.glow}`,
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#f8fafc",
+                        fontSize: 18,
+                        fontWeight: 900,
+                      }}
+                    >
+                      {item.avatar ? (
+                        <img
+                          src={item.avatar}
+                          alt={item.username}
+                          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      ) : (
+                        getInitials(item.username)
+                      )}
                     </div>
-                    <div style={{ color: "#94a3b8", fontSize: 13 }}>
-                      {item.matches} partida(s) · presença competitiva
+
+                    <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+                      <div style={{ color: "#f8fafc", fontSize: 20, fontWeight: 900 }}>
+                        {item.username}
+                      </div>
+                      <div style={{ color: "#94a3b8", fontSize: 13, lineHeight: 1.5 }}>
+                        {item.status ? `${item.status} · ` : ""}
+                        {formatPlural(item.matches, "partida", "partidas")}
+                      </div>
                     </div>
                   </div>
 
                   <div
                     style={{
-                      display: "flex",
-                      alignItems: "baseline",
-                      gap: 8,
-                      flexWrap: "wrap",
+                      display: "grid",
+                      gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                      gap: 10,
                     }}
                   >
-                    <div style={{ color: "#86efac", fontSize: 24, fontWeight: 900 }}>
-                      {item.wins}
+                    <div
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: 18,
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Vitórias</div>
+                      <div style={{ color: "#f8fafc", fontSize: 22, fontWeight: 900 }}>
+                        {formatPlural(item.wins, "vitória", "vitórias")}
+                      </div>
                     </div>
-                    <div style={{ color: "#cbd5e1", fontSize: 13, fontWeight: 700 }}>
-                      vitória(s)
+
+                    <div
+                      style={{
+                        padding: "14px 16px",
+                        borderRadius: 18,
+                        background: "rgba(34,211,238,0.06)",
+                        border: "1px solid rgba(34,211,238,0.10)",
+                      }}
+                    >
+                      <div style={{ color: "#94a3b8", fontSize: 12, marginBottom: 6 }}>Participações</div>
+                      <div style={{ color: "#f8fafc", fontSize: 22, fontWeight: 900 }}>
+                        {formatPlural(item.matches, "partida", "partidas")}
+                      </div>
                     </div>
                   </div>
 
-                  <div
-                    style={{
-                      display: "inline-flex",
-                      width: "fit-content",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "8px 12px",
-                      borderRadius: 999,
-                      background: "rgba(34,211,238,0.08)",
-                      border: "1px solid rgba(34,211,238,0.16)",
-                      color: "#cffafe",
-                      fontSize: 12,
-                      fontWeight: 800,
-                    }}
-                  >
-                    Elite da comunidade
-                  </div>
+                  {formatCurrency(item.earnedValue) ? (
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 18,
+                        background: "rgba(34,211,238,0.08)",
+                        border: "1px solid rgba(34,211,238,0.14)",
+                        color: "#cffafe",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        display: "inline-flex",
+                        width: "fit-content",
+                      }}
+                    >
+                      Valor ganho total: {formatCurrency(item.earnedValue)}
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        padding: "12px 14px",
+                        borderRadius: 18,
+                        background: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.05)",
+                        color: "#94a3b8",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        display: "inline-flex",
+                        width: "fit-content",
+                      }}
+                    >
+                      Valor ganho total indisponível neste contrato
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -589,11 +966,24 @@ export default function RankingPublic() {
         )}
       </SectionCard>
 
-      <SectionCard title="Ranking completo" subtitle="Lista dos jogadores com mais vitórias.">
+      {selfOutsideTop99 ? (
+        <SectionCard
+          title="Você"
+          subtitle="Seu destaque atual fora do Top 99."
+          style={{
+            borderColor: "rgba(34,211,238,0.32)",
+            boxShadow: "0 20px 60px rgba(34,211,238,0.08)",
+          }}
+        >
+          <LeaderboardCard item={selfItem} variant="self" highlight />
+        </SectionCard>
+      ) : null}
+
+      <SectionCard title="Posições 4 a 99" subtitle="Lista detalhada em formato de cards, com melhor leitura e hierarquia.">
         {loading ? (
           <div className="ranking-list-grid">
             {[1, 2, 3, 4, 5].map((row) => (
-              <SkeletonCard key={row} />
+              <SkeletonListItem key={row} />
             ))}
           </div>
         ) : ranking.length === 0 ? (
@@ -603,63 +993,12 @@ export default function RankingPublic() {
             hint="Verifique outro período ou aguarde novas partidas."
           />
         ) : (
-          <div className="ranking-list-grid">
-            {ranking.map((item) => (
-              <div
-                key={`${item.discordId}-${item.position}`}
-                className="ranking-row"
-              >
-                <div style={{ display: "grid", gap: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <div
-                      style={{
-                        color: "#22d3ee",
-                        fontWeight: 900,
-                        fontSize: 12,
-                        letterSpacing: "0.08em",
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      #{item.position}
-                    </div>
-                    <div
-                      style={{
-                        padding: "5px 10px",
-                        borderRadius: 999,
-                        border: "1px solid rgba(99,102,241,0.20)",
-                        background: "rgba(99,102,241,0.08)",
-                        color: "#c7d2fe",
-                        fontSize: 11,
-                        fontWeight: 800,
-                      }}
-                    >
-                      Competitivo
-                    </div>
-                  </div>
-                  <div style={{ color: "#f8fafc", fontWeight: 900, fontSize: 16 }}>
-                    {item.username}
-                  </div>
-                  <div style={{ color: "#94a3b8", fontSize: 13 }}>
-                    {item.matches} partida(s) · presença pública
-                  </div>
-                </div>
-
-                <div style={{ textAlign: "right", marginLeft: "auto" }}>
-                  <div style={{ color: "#86efac", fontWeight: 900, fontSize: 18 }}>
-                    {item.wins} vitória(s)
-                  </div>
-                  <div
-                    style={{
-                      color: "#94a3b8",
-                      fontSize: 13,
-                      marginTop: 4,
-                    }}
-                  >
-                    Contribuição atual
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="ranking-list-wrap">
+            <div className="ranking-list-grid">
+              {rest.map((item) => (
+                <LeaderboardCard key={`${item.discordId}-${item.position}`} item={item} compact />
+              ))}
+            </div>
           </div>
         )}
       </SectionCard>

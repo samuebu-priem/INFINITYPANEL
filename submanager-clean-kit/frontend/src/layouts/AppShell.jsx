@@ -64,11 +64,10 @@ export default function AppShell({ children, showHeader = true }) {
               maxWidth: 1400,
               margin: "0 auto",
               padding: "18px 24px",
-              display: "flex",
+              display: "grid",
+              gridTemplateColumns: "1fr auto 1fr",
               alignItems: "center",
-              justifyContent: "space-between",
               gap: 16,
-              flexWrap: "wrap",
             }}
           >
             <div
@@ -76,6 +75,7 @@ export default function AppShell({ children, showHeader = true }) {
                 display: "flex",
                 alignItems: "center",
                 gap: 14,
+                minWidth: 0,
               }}
             >
               <div
@@ -90,33 +90,10 @@ export default function AppShell({ children, showHeader = true }) {
                     "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
                   boxShadow: "0 0 24px rgba(99,102,241,0.16)",
                   color: "#6366f1",
+                  flexShrink: 0,
                 }}
               >
                 <ShieldCheck size={20} />
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 800,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    color: "#818cf8",
-                    marginBottom: 4,
-                  }}
-                >
-                  InfinityPainel
-                </div>
-                <div
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 800,
-                    color: "#f3f4f6",
-                  }}
-                >
-                  Painel
-                </div>
               </div>
             </div>
 
@@ -124,8 +101,10 @@ export default function AppShell({ children, showHeader = true }) {
               style={{
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: 10,
                 flexWrap: "wrap",
+                minWidth: 0,
               }}
             >
               {links.map((link) => {
@@ -158,6 +137,13 @@ export default function AppShell({ children, showHeader = true }) {
                       boxShadow: active
                         ? "0 0 24px rgba(99,102,241,0.14)"
                         : "none",
+                      transition: "transform 140ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease, color 140ms ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
                     }}
                   >
                     <Icon size={16} />
@@ -165,7 +151,16 @@ export default function AppShell({ children, showHeader = true }) {
                   </Link>
                 );
               })}
+            </nav>
 
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                minWidth: 0,
+              }}
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -184,12 +179,19 @@ export default function AppShell({ children, showHeader = true }) {
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: "pointer",
+                  transition: "transform 140ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
                 }}
               >
                 <LogOut size={16} />
                 Sair
               </button>
-            </nav>
+            </div>
           </div>
         </header>
       ) : null}

@@ -91,6 +91,36 @@ function formatDate(value) {
   });
 }
 
+function formatNumber(value, fallback = "0") {
+  if (value === null || value === undefined || value === "") return fallback;
+  const number = Number(value);
+  if (Number.isNaN(number)) return fallback;
+  return new Intl.NumberFormat("pt-BR").format(number);
+}
+
+function formatCurrency(value, fallback = "R$ 0,00") {
+  const number = Number(value);
+  if (Number.isNaN(number)) return fallback;
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(number);
+}
+
+function getAvatarText(user) {
+  const source = String(
+    user?.displayName ||
+      user?.name ||
+      user?.username ||
+      user?.email ||
+      "U"
+  ).trim();
+
+  const first = source.split(/\s+/)[0]?.[0] || "U";
+  const second = source.split(/\s+/)[1]?.[0] || "";
+  return `${first}${second}`.toUpperCase();
+}
+
 function SectionCard({ title, subtitle, children, action, flush = false }) {
   return (
     <section
@@ -181,7 +211,13 @@ function SectionCard({ title, subtitle, children, action, flush = false }) {
   );
 }
 
-function StatCard({ label, value, helpText, accent = "primary", highlight = false }) {
+function StatCard({
+  label,
+  value,
+  helpText,
+  accent = "primary",
+  highlight = false,
+}) {
   const accents = {
     primary: {
       value: "#f3f4f6",
@@ -194,6 +230,12 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
       border: "rgba(34,197,94,0.18)",
       bg: "rgba(34,197,94,0.06)",
       glow: "rgba(34,197,94,0.16)",
+    },
+    cyan: {
+      value: "#67e8f9",
+      border: "rgba(34,211,238,0.18)",
+      bg: "rgba(34,211,238,0.06)",
+      glow: "rgba(34,211,238,0.16)",
     },
   };
 
@@ -231,7 +273,8 @@ function StatCard({ label, value, helpText, accent = "primary", highlight = fals
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background: "linear-gradient(135deg, rgba(99,102,241,0.08), transparent 42%)",
+          background:
+            "linear-gradient(135deg, rgba(99,102,241,0.08), transparent 42%)",
         }}
       />
 
@@ -374,7 +417,8 @@ function AccessCard({ subscription, nowTs }) {
               maxWidth: 360,
             }}
           >
-            Acesso vinculado à sua conta com validade individual e atualização em tempo real.
+            Acesso vinculado à sua conta com validade individual e atualização em
+            tempo real.
           </div>
         </div>
 
@@ -509,6 +553,492 @@ function DiscordIcon() {
   );
 }
 
+function AvatarPanel({ user }) {
+  const [photoHover, setPhotoHover] = useState(false);
+
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 34,
+        border: "1px solid rgba(99,102,241,0.20)",
+        background:
+          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+        boxShadow: "0 20px 54px rgba(0,0,0,0.28)",
+        padding: 26,
+        display: "grid",
+        gap: 18,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at 15% 15%, rgba(34,211,238,0.16), transparent 30%), radial-gradient(circle at 85% 0%, rgba(99,102,241,0.18), transparent 28%)",
+        }}
+      />
+
+      <div style={{ position: "relative", zIndex: 1, display: "grid", gap: 18 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+            alignItems: "flex-start",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 12,
+                padding: "7px 12px",
+                borderRadius: 999,
+                background: "rgba(34,211,238,0.10)",
+                border: "1px solid rgba(34,211,238,0.18)",
+                color: "#a5f3fc",
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: 0.8,
+                textTransform: "uppercase",
+              }}
+            >
+              Identidade
+            </div>
+
+            <h2
+              style={{
+                margin: 0,
+                color: "#f3f4f6",
+                fontSize: 24,
+                lineHeight: 1.1,
+                fontWeight: 900,
+                letterSpacing: "-0.04em",
+              }}
+            >
+              Avatar e presença
+            </h2>
+
+            <p
+              style={{
+                margin: "10px 0 0",
+                color: "#9ca3af",
+                fontSize: 14,
+                lineHeight: 1.7,
+                maxWidth: 360,
+              }}
+            >
+              Sua identidade visual no hub Infinity. A área já está preparada para
+              foto de perfil e atualização futura sem quebrar o fluxo atual.
+            </p>
+          </div>
+
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "8px 12px",
+              borderRadius: 999,
+              border: "1px solid rgba(99,102,241,0.18)",
+              background: "rgba(255,255,255,0.03)",
+              color: "#c7d2fe",
+              fontSize: 12,
+              fontWeight: 800,
+            }}
+          >
+            {user?.role || "PLAYER"}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: 18,
+            alignItems: "center",
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              width: 122,
+              height: 122,
+              borderRadius: 36,
+              padding: 4,
+              background:
+                "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
+              boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: 32,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background:
+                  "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%), linear-gradient(180deg, rgba(17,24,39,0.98), rgba(11,15,20,0.98))",
+                display: "grid",
+                placeItems: "center",
+                color: "#a5f3fc",
+                fontSize: 34,
+                fontWeight: 900,
+                letterSpacing: "-0.06em",
+                position: "relative",
+                overflow: "hidden",
+              }}
+              onMouseEnter={() => setPhotoHover(true)}
+              onMouseLeave={() => setPhotoHover(false)}
+            >
+              <span
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: photoHover
+                    ? "radial-gradient(circle at center, rgba(34,211,238,0.12), transparent 48%)"
+                    : "radial-gradient(circle at center, rgba(99,102,241,0.08), transparent 48%)",
+                  transition: "opacity 180ms ease",
+                }}
+              />
+              <span style={{ position: "relative", zIndex: 1 }}>
+                {getAvatarText(user)}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 12, flex: 1, minWidth: 220 }}>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 10,
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontSize: 20,
+                  fontWeight: 900,
+                  letterSpacing: "-0.03em",
+                }}
+              >
+                {user?.username || "Usuário"}
+              </div>
+
+              <div
+                style={{
+                  color: "#c7d2fe",
+                  fontSize: 13,
+                  fontWeight: 700,
+                  padding: "7px 10px",
+                  borderRadius: 999,
+                  border: "1px solid rgba(99,102,241,0.20)",
+                  background: "rgba(99,102,241,0.08)",
+                }}
+              >
+                Foto não vinculada
+              </div>
+            </div>
+
+            <div
+              style={{
+                color: "#9ca3af",
+                fontSize: 14,
+                lineHeight: 1.7,
+                maxWidth: 520,
+              }}
+            >
+              Clique na área da foto quando a integração de upload estiver disponível.
+              Por enquanto, a interface fica pronta para receber imagem sem alterar o
+              backend atual.
+            </div>
+
+            <button
+              type="button"
+              style={{
+                width: "fit-content",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 10,
+                height: 46,
+                padding: "0 16px",
+                borderRadius: 16,
+                border: "1px solid rgba(34,211,238,0.28)",
+                background: "rgba(34,211,238,0.08)",
+                color: "#cffafe",
+                fontSize: 14,
+                fontWeight: 800,
+                cursor: "pointer",
+                boxShadow: "0 0 22px rgba(34,211,238,0.10)",
+              }}
+              onClick={(event) => event.preventDefault()}
+            >
+              Alterar foto
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProfileStatusCard({ statusValue, setStatusValue, canPersist, saveMessage }) {
+  return (
+    <SectionCard
+      title="Status personalizado"
+      subtitle="Mensagem curta que representa seu momento na comunidade."
+    >
+      <div style={{ display: "grid", gap: 14 }}>
+        <div
+          style={{
+            display: "grid",
+            gap: 10,
+            padding: 18,
+            borderRadius: 22,
+            border: "1px solid rgba(99,102,241,0.16)",
+            background: "rgba(255,255,255,0.02)",
+          }}
+        >
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 12,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+            }}
+          >
+            Status visível
+          </div>
+
+          <input
+            type="text"
+            value={statusValue}
+            onChange={(event) => setStatusValue(event.target.value)}
+            placeholder="Ex: Focado na próxima temporada"
+            maxLength={80}
+            style={{
+              height: 56,
+              borderRadius: 16,
+              border: "1px solid rgba(34,211,238,0.18)",
+              background: "rgba(255,255,255,0.03)",
+              color: "#f3f4f6",
+              padding: "0 16px",
+              outline: "none",
+              fontSize: 15,
+              boxShadow: "0 0 18px rgba(34,211,238,0.05)",
+            }}
+          />
+
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              color: "#9ca3af",
+              fontSize: 13,
+            }}
+          >
+            <span>{statusValue ? `${statusValue.length}/80` : "0/80"}</span>
+            <span>{canPersist ? "Pronto para salvar" : "Pré-visualização apenas"}</span>
+          </div>
+        </div>
+
+        <div
+          style={{
+            borderRadius: 20,
+            border: "1px solid rgba(99,102,241,0.14)",
+            background: "rgba(99,102,241,0.06)",
+            padding: 16,
+            color: "#c7d2fe",
+            fontSize: 14,
+            lineHeight: 1.7,
+          }}
+        >
+          {canPersist
+            ? "O status pode ser sincronizado com o perfil usando o contrato existente."
+            : "Nenhum contrato seguro de persistência foi encontrado. A interface está pronta, mas este campo permanece apenas visual nesta versão."}
+        </div>
+
+        {saveMessage ? (
+          <div
+            style={{
+              color: saveMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
+              fontSize: 13,
+              fontWeight: 700,
+            }}
+          >
+            {saveMessage}
+          </div>
+        ) : null}
+      </div>
+    </SectionCard>
+  );
+}
+
+function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, nextExpirationCountdown }) {
+  const preparedWins = profileSummary?.wins ?? profileSummary?.victories ?? 0;
+  const preparedMatches = profileSummary?.matchesPlayed ?? profileSummary?.matches ?? 0;
+  const preparedProfit = profileSummary?.mediatorProfitTotal ?? profileSummary?.valueEarned ?? null;
+  const preparedMediated = profileSummary?.mediatedMatchesCount ?? profileSummary?.moderatedMatchesCount ?? 0;
+  const bestDay = profileSummary?.bestMediatorDay || null;
+
+  return (
+    <SectionCard
+      title="Resumo da comunidade"
+      subtitle="Leitura rápida da sua atividade, acessos e impacto no hub."
+    >
+      <div className="profile-metrics-grid">
+        <StatCard
+          label="Assinaturas ativas"
+          value={loadingSummary ? "..." : activeSubscriptions.length}
+          helpText="Planos válidos no momento."
+          accent="success"
+          highlight
+        />
+
+        <StatCard
+          label="Próximo vencimento"
+          value={loadingSummary ? "..." : nextExpirationCountdown?.label || "—"}
+          helpText="Contagem regressiva da menor validade."
+          accent="cyan"
+        />
+
+        <StatCard
+          label="Vitórias"
+          value={loadingSummary ? "..." : formatNumber(preparedWins, "0")}
+          helpText="Somente campo confiável do resumo."
+        />
+
+        <StatCard
+          label="Partidas"
+          value={loadingSummary ? "..." : formatNumber(preparedMatches, "0")}
+          helpText="Total presente no contrato atual."
+        />
+
+        <StatCard
+          label="Partidas mediadas"
+          value={loadingSummary ? "..." : formatNumber(preparedMediated, "0")}
+          helpText="Atuação como mediador, se disponível."
+          accent="cyan"
+        />
+
+        <StatCard
+          label="Lucro do mediador"
+          value={loadingSummary ? "..." : formatCurrency(preparedProfit, "R$ 0,00")}
+          helpText="Campo exibido somente se enviado pela API."
+          accent="success"
+        />
+      </div>
+
+      <div
+        style={{
+          marginTop: 16,
+          display: "grid",
+          gap: 16,
+          gridTemplateColumns: "1.1fr 0.9fr",
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 26,
+            border: "1px solid rgba(99,102,241,0.16)",
+            background: "rgba(255,255,255,0.02)",
+            padding: 18,
+          }}
+        >
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 12,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              marginBottom: 10,
+            }}
+          >
+            Melhor dia registrado
+          </div>
+
+          <div
+            style={{
+              color: "#f3f4f6",
+              fontSize: 18,
+              fontWeight: 900,
+              letterSpacing: "-0.03em",
+            }}
+          >
+            {loadingSummary
+              ? "..."
+              : bestDay?.date
+              ? new Date(`${bestDay.date}T00:00:00`).toLocaleDateString("pt-BR")
+              : "—"}
+          </div>
+
+          <div
+            style={{
+              marginTop: 8,
+              color: "#9ca3af",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            {bestDay?.amount
+              ? `R$ ${Number(bestDay.amount).toFixed(2)} no melhor desempenho.`.replace(
+                  ".",
+                  ","
+                )
+              : "Sem referência confiável para esse indicador."}
+          </div>
+        </div>
+
+        <div
+          style={{
+            borderRadius: 26,
+            border: "1px solid rgba(34,211,238,0.18)",
+            background: "linear-gradient(180deg, rgba(34,211,238,0.08), rgba(255,255,255,0.02))",
+            padding: 18,
+          }}
+        >
+          <div
+            style={{
+              color: "#9ca3af",
+              fontSize: 12,
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              marginBottom: 10,
+            }}
+          >
+            Leitura rápida
+          </div>
+
+          <div style={{ display: "grid", gap: 10 }}>
+            <div style={{ color: "#cffafe", fontSize: 14, fontWeight: 700 }}>
+              {activeSubscriptions.length
+                ? `${activeSubscriptions.length} plano(s) ativo(s) agora`
+                : "Nenhum plano ativo no momento"}
+            </div>
+            <div style={{ color: "#c7d2fe", fontSize: 14, lineHeight: 1.7 }}>
+              {nextExpirationCountdown?.label
+                ? `Validade mais próxima: ${nextExpirationCountdown.label}`
+                : "Não há vencimento futuro disponível para exibir."}
+            </div>
+          </div>
+        </div>
+      </div>
+    </SectionCard>
+  );
+}
+
 export default function Profile() {
   const { user } = useAuth();
 
@@ -522,6 +1052,16 @@ export default function Profile() {
   const [discordIdInput, setDiscordIdInput] = useState("");
   const [savingDiscordId, setSavingDiscordId] = useState(false);
   const [discordMessage, setDiscordMessage] = useState("");
+  const [customStatus, setCustomStatus] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+
+  const hasDiscordSaveContract = true;
+  const hasStatusSaveContract = Boolean(
+    profileSummary?.canSaveStatus ||
+      profileSummary?.supportsStatus ||
+      profileSummary?.statusEditable ||
+      profileSummary?.statusEndpoint
+  );
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -550,6 +1090,13 @@ export default function Profile() {
         const summary = getSummaryObject(response);
         setProfileSummary(summary);
         setDiscordIdInput(summary?.discordId || "");
+        setCustomStatus(
+          summary?.status ||
+            summary?.customStatus ||
+            summary?.profileStatus ||
+            summary?.bio ||
+            ""
+        );
       } catch {
         setProfileSummary(null);
       } finally {
@@ -614,19 +1161,58 @@ export default function Profile() {
     }
   };
 
+  const handleSaveStatus = async (event) => {
+    event.preventDefault();
+    setStatusMessage("");
+
+    if (!hasStatusSaveContract) {
+      setStatusMessage(
+        "Status atualizado apenas na interface. Nenhum contrato seguro para persistência foi detectado."
+      );
+      return;
+    }
+
+    try {
+      const response = await api.patch("/profile/status", {
+        status: customStatus,
+      });
+
+      const savedStatus =
+        response?.profile?.status ||
+        response?.data?.profile?.status ||
+        customStatus;
+
+      setProfileSummary((current) => ({
+        ...(current || {}),
+        status: savedStatus,
+        customStatus: savedStatus,
+      }));
+
+      setCustomStatus(savedStatus);
+      setStatusMessage("Status atualizado com sucesso.");
+    } catch (error) {
+      setStatusMessage(
+        error?.response?.data?.message ||
+          "Não foi possível atualizar o status."
+      );
+    }
+  };
+
+  const displayStatus = profileSummary?.status || profileSummary?.customStatus || customStatus || "Sem status definido";
+
   return (
     <div style={{ display: "grid", gap: 20 }}>
       <style>{`
         .profile-top-grid {
           display: grid;
           gap: 20px;
-          grid-template-columns: 1.1fr 0.9fr;
+          grid-template-columns: 1.05fr 0.95fr;
         }
 
-        .profile-stats-grid {
+        .profile-metrics-grid {
           display: grid;
           gap: 16px;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(3, minmax(0, 1fr));
         }
 
         .profile-access-grid {
@@ -644,6 +1230,7 @@ export default function Profile() {
 
         @media (max-width: 1180px) {
           .profile-top-grid,
+          .profile-metrics-grid,
           .profile-access-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
           }
@@ -651,7 +1238,7 @@ export default function Profile() {
 
         @media (max-width: 860px) {
           .profile-top-grid,
-          .profile-stats-grid,
+          .profile-metrics-grid,
           .profile-access-grid,
           .profile-discord-grid {
             grid-template-columns: 1fr;
@@ -816,6 +1403,16 @@ export default function Profile() {
       </section>
 
       <div className="profile-top-grid">
+        <AvatarPanel user={user} />
+        <ProfileStatusCard
+          statusValue={displayStatus}
+          setStatusValue={setCustomStatus}
+          canPersist={hasStatusSaveContract}
+          saveMessage={statusMessage}
+        />
+      </div>
+
+      <div className="profile-top-grid">
         <SectionCard
           title="Dados da conta"
           subtitle="Informações principais da sua conta."
@@ -906,31 +1503,79 @@ export default function Profile() {
         </SectionCard>
 
         <SectionCard
-          title="Resumo do acesso"
-          subtitle="Status atual das suas assinaturas."
+          title="Status da presença"
+          subtitle="Leitura rápida da sua identidade e atuação."
         >
-          <div className="profile-stats-grid">
-            <StatCard
-              label="Acessos ativos"
-              value={loadingSubscriptions ? "..." : activeSubscriptions.length}
-              helpText="Planos válidos no momento."
-              accent="success"
-              highlight
-            />
+          <div style={{ display: "grid", gap: 16 }}>
+            <div
+              style={{
+                borderRadius: 26,
+                border: "1px solid rgba(99,102,241,0.16)",
+                background: "rgba(255,255,255,0.02)",
+                padding: 18,
+              }}
+            >
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  marginBottom: 10,
+                }}
+              >
+                Seu status
+              </div>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontSize: 17,
+                  fontWeight: 800,
+                  lineHeight: 1.6,
+                }}
+              >
+                {displayStatus}
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#9ca3af",
+                  fontSize: 14,
+                  lineHeight: 1.7,
+                }}
+              >
+                O campo fica preparado visualmente para uma futura persistência,
+                sem alterar o contrato atual quando a rota segura não existe.
+              </div>
+            </div>
 
-            <StatCard
-              label="Próximo vencimento"
-              value={
-                loadingSubscriptions
-                  ? "..."
-                  : nextExpirationCountdown?.label || "—"
-              }
-              helpText={
-                nextExpiration
-                  ? getPlanName(nextExpiration)
-                  : subscriptionsError || "Nenhum vencimento próximo."
-              }
-            />
+            <div
+              style={{
+                borderRadius: 26,
+                border: "1px solid rgba(34,211,238,0.16)",
+                background: "rgba(34,211,238,0.05)",
+                padding: 18,
+              }}
+            >
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
+                  marginBottom: 10,
+                }}
+              >
+                Disponibilidade
+              </div>
+              <div style={{ color: "#cffafe", fontSize: 14, lineHeight: 1.7 }}>
+                {hasStatusSaveContract
+                  ? "Persistência detectada pelo contrato atual."
+                  : "Somente UI preparada; nenhum caminho seguro para salvar foi confirmado em api.js/contexto de autenticação."}
+              </div>
+            </div>
           </div>
         </SectionCard>
       </div>
@@ -1099,60 +1744,38 @@ export default function Profile() {
         </div>
       </SectionCard>
 
+      <MetricsOverview
+        loadingSummary={loadingSummary}
+        profileSummary={profileSummary}
+        activeSubscriptions={activeSubscriptions}
+        nextExpirationCountdown={nextExpirationCountdown}
+      />
+
       <SectionCard title="Atividade" subtitle="Resumo real da sua atuação na org.">
-        <div className="profile-stats-grid">
-          <StatCard
-            label="Vitórias"
-            value={loadingSummary ? "..." : profileSummary?.wins ?? 0}
-            helpText="Vitórias registradas pelo supervisor."
-            accent="success"
-          />
-
-          <StatCard
-            label="Partidas"
-            value={loadingSummary ? "..." : profileSummary?.matchesPlayed ?? 0}
-            helpText="Partidas em que sua conta apareceu no registro."
-          />
-
-          <StatCard
-            label="Lucro como mediador"
-            value={
-              loadingSummary
-                ? "..."
-                : `R$ ${Number(profileSummary?.mediatorProfitTotal || 0).toFixed(2)}`
-            }
-            helpText="Total acumulado mediando partidas."
-            accent="success"
-          />
-
-          <StatCard
-            label="Partidas mediadas"
-            value={loadingSummary ? "..." : profileSummary?.mediatedMatchesCount ?? 0}
-            helpText="Quantidade de partidas em que você mediou."
-          />
-        </div>
-
-        <div style={{ marginTop: 16 }}>
-          <StatCard
-            label="Dia com mais lucro"
-            value={
-              loadingSummary
-                ? "..."
-                : profileSummary?.bestMediatorDay?.date
-                ? new Date(
-                    `${profileSummary.bestMediatorDay.date}T00:00:00`
-                  ).toLocaleDateString("pt-BR")
-                : "—"
-            }
-            helpText={
-              profileSummary?.bestMediatorDay?.amount
-                ? `R$ ${Number(profileSummary.bestMediatorDay.amount).toFixed(
-                    2
-                  )} no melhor dia`
-                : "Sem lucro como mediador registrado."
-            }
-            accent="success"
-          />
+        <div style={{ display: "grid", gap: 16 }}>
+          <div className="profile-access-grid">
+            {loadingSubscriptions ? (
+              <StatCard label="Assinaturas" value="..." helpText="Carregando dados." />
+            ) : subscriptions.length ? (
+              subscriptions.slice(0, 4).map((subscription, index) => (
+                <AccessCard key={`${getPlanName(subscription)}-${index}`} subscription={subscription} nowTs={nowTs} />
+              ))
+            ) : (
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  borderRadius: 26,
+                  border: "1px solid rgba(99,102,241,0.16)",
+                  background: "rgba(255,255,255,0.02)",
+                  padding: 20,
+                  color: "#9ca3af",
+                  lineHeight: 1.7,
+                }}
+              >
+                {subscriptionsError || "Nenhuma assinatura disponível para exibição."}
+              </div>
+            )}
+          </div>
         </div>
       </SectionCard>
     </div>
