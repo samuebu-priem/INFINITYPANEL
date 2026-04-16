@@ -2,6 +2,12 @@ import { prisma } from "../../config/prisma.js";
 
 type RankingPeriod = "total" | "weekly" | "24h";
 
+type RankedUser = {
+  username: string;
+  avatarUrl: string | null;
+  status: string | null;
+};
+
 function startOfWindow(period: RankingPeriod): Date | null {
   const now = new Date();
 
@@ -26,7 +32,7 @@ export const rankingsService = {
             gte: startDate,
           },
         }
-      : undefined;
+      : null;
 
     const records = await prisma.supervisorMatchRecord.findMany({
       ...(whereClause ? { where: whereClause } : {}),
@@ -46,20 +52,24 @@ export const rankingsService = {
 
     for (const record of records) {
       const winner = String(record.winner || "").trim();
+
       if (winner) {
         const current = winsMap.get(winner) || {
           discordId: winner,
           wins: 0,
           matches: 0,
         };
+
         current.wins += 1;
         winsMap.set(winner, current);
       }
 
       const players = Array.isArray(record.players) ? record.players : [];
+
       for (const player of players) {
         const discordId = String(player || "").trim();
         if (!discordId) continue;
+
         matchesMap.set(discordId, (matchesMap.get(discordId) || 0) + 1);
       }
     }
@@ -81,51 +91,45 @@ export const rankingsService = {
           },
         })
       : [];
+const usersMap = new Map<string, RankedUser>();
 
-    const usersMap = new Map(
-      users
-        .filter((user: { username: string | null; discordId: string | null }) => Boolean(user.discordId))
-        .map((user: { username: string | null; discordId: string | null; avatarUrl: string | null; status: string | null }) => [
-          user.discordId || "",
-          {
-            username: user.username || "",
-            avatarUrl: user.avatarUrl ?? null,
-            status: user.status ?? null,
-          },
-        ]),
-    );
+for (const user of users) {
+  if (!user.discordId) continue;
 
-   type RankedUser = {
-  username: string;
-  avatarUrl: string | null;
-  status: string | null;
-};
+  usersMap.set(user.discordId, {
+    username: user.username || "Usuário",
+    avatarUrl: user.avatarUrl ?? null,
+    status: user.status ?? null,
+  });
+}
 
-const usersMap = new Map<string, RankedUser>(
-  users.map((user) => [
-    user.discordId,
-    {
-      username: user.username || "",
-      avatarUrl: user.avatarUrl ?? null,
-      status: user.status ?? null,
-    },
-  ]),
-);
+    const ranking = [...winsMap.values()]
+      .map((item) => {
+        const user = usersMap.get(item.discordId);
 
-const ranking = [...winsMap.values()]
-  .filter((item) => usersMap.has(item.discordId))
-  .map((item) => {
-    const user = usersMap.get(item.discordId);
-    return {
-      discordId: item.discordId,
-      username: user?.username ?? "",
-      avatarUrl: user?.avatarUrl ?? null,
-      status: user?.status ?? null,
-      wins: item.wins,
-      matches: matchesMap.get(item.discordId) || item.wins,
-    };
-  })
-      .filter((item) => Boolean(item.username))
+        if (!user) return null;
+
+        return {
+          discordId: item.discordId,
+          username: user.username,
+          avatarUrl: user.avatarUrl,
+          status: user.status,
+          wins: item.wins,
+          matches: matchesMap.get(item.discordId) || item.wins,
+        };
+      })
+      .filter(
+        (
+          item
+        ): item is {
+          discordId: string;
+          username: string;
+          avatarUrl: string | null;
+          status: string | null;
+          wins: number;
+          matches: number;
+        } => item !== null
+      )
       .sort((a, b) => b.wins - a.wins)
       .slice(0, 99)
       .map((item, index) => ({
@@ -148,7 +152,7 @@ const ranking = [...winsMap.values()]
             gte: startDate,
           },
         }
-      : undefined;
+      : null;
 
     const records = await prisma.supervisorMatchRecord.findMany({
       ...(whereClause ? { where: whereClause } : {}),
