@@ -3,6 +3,7 @@ import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
 import { UserHomeFooter } from "../components/layout/UserHomeFooter.jsx";
+import { Trophy, Users, Sword, ShieldCheck } from "lucide-react";
 
 function getPlansList(response) {
   if (Array.isArray(response)) return response;
@@ -48,6 +49,48 @@ function getSubscriptionEndsAt(subscription) {
     subscription?.endDate ||
     null
   );
+}
+
+function getRankingList(response) {
+  if (Array.isArray(response)) return response;
+  if (Array.isArray(response?.ranking)) return response.ranking;
+  if (Array.isArray(response?.data?.ranking)) return response.data.ranking;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+}
+
+function normalizeRankingItem(item, index) {
+  const position = Number(item?.position ?? index + 1);
+  const name =
+    item?.username ??
+    item?.nick ??
+    item?.nickname ??
+    item?.name ??
+    item?.playerName ??
+    item?.displayName ??
+    "Jogador";
+
+  const avatar =
+    item?.avatar ??
+    item?.avatarUrl ??
+    item?.photoUrl ??
+    item?.imageUrl ??
+    item?.profileImage ??
+    null;
+
+  const wins = Number(
+    item?.wins ?? item?.vitórias ?? item?.vitorias ?? item?.victories ?? 0
+  );
+  const matches = Number(item?.matches ?? item?.partidas ?? item?.games ?? 0);
+
+  return {
+    raw: item,
+    position,
+    name,
+    avatar,
+    wins,
+    matches,
+  };
 }
 
 function isSubscriptionActive(subscription) {
@@ -603,9 +646,12 @@ export default function UserHome() {
 
   const [plans, setPlans] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [ranking, setRanking] = useState([]);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
+  const [loadingRanking, setLoadingRanking] = useState(true);
   const [subscriptionsError, setSubscriptionsError] = useState("");
+  const [rankingError, setRankingError] = useState("");
   const [nowTs, setNowTs] = useState(Date.now());
 
   useEffect(() => {
@@ -640,8 +686,25 @@ export default function UserHome() {
       }
     };
 
+    const loadRanking = async () => {
+      try {
+        const response = await api.get("/rankings/public?period=total");
+        setRanking(
+          getRankingList(response)
+            .map(normalizeRankingItem)
+            .slice(0, 5)
+        );
+      } catch (error) {
+        setRanking([]);
+        setRankingError(error?.response?.data?.message || "");
+      } finally {
+        setLoadingRanking(false);
+      }
+    };
+
     loadPlans();
     loadSubscriptions();
+    loadRanking();
   }, []);
 
   const activeSubscriptions = useMemo(() => {
@@ -666,6 +729,10 @@ export default function UserHome() {
     if (!nextExpiration) return null;
     return buildCountdown(getSubscriptionEndsAt(nextExpiration), nowTs);
   }, [nextExpiration, nowTs]);
+
+  const topRanking = useMemo(() => {
+    return Array.isArray(ranking) ? ranking.slice(0, 5) : [];
+  }, [ranking]);
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -981,6 +1048,144 @@ export default function UserHome() {
                 subscription={subscription}
                 nowTs={nowTs}
               />
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Melhores jogadores da org"
+        subtitle={null}
+      >
+        {loadingRanking ? (
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            <div style={{ height: 72, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 72, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 72, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 72, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
+            <div style={{ height: 72, borderRadius: 20, background: "rgba(255,255,255,0.05)" }} />
+          </div>
+        ) : topRanking.length === 0 ? (
+          <div
+            style={{
+              borderRadius: 24,
+              border: "1px solid rgba(99,102,241,0.18)",
+              background: "rgba(255,255,255,0.03)",
+              padding: 20,
+              color: "#9ca3af",
+              fontSize: 14,
+              lineHeight: 1.7,
+            }}
+          >
+            {rankingError || "Sem ranking no momento."}
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gap: 12,
+            }}
+          >
+            {topRanking.map((item) => (
+              <div
+                key={`${item.position}-${item.name}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto 1fr auto",
+                  alignItems: "center",
+                  gap: 14,
+                  padding: "14px 16px",
+                  borderRadius: 22,
+                  border: "1px solid rgba(88,101,242,0.18)",
+                  background:
+                    "linear-gradient(180deg, rgba(88,101,242,0.10) 0%, rgba(17,24,39,0.96) 100%)",
+                  boxShadow: "0 0 28px rgba(88,101,242,0.08)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: 16,
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#dbeafe",
+                    fontWeight: 900,
+                    background: "rgba(88,101,242,0.16)",
+                    border: "1px solid rgba(88,101,242,0.22)",
+                  }}
+                >
+                  #{item.position}
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
+                      overflow: "hidden",
+                      flexShrink: 0,
+                      background: "rgba(255,255,255,0.05)",
+                      display: "grid",
+                      placeItems: "center",
+                      color: "#e5e7eb",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {item.avatar ? (
+                      <img
+                        src={item.avatar}
+                        alt={item.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <Users size={18} />
+                    )}
+                  </div>
+
+                  <div style={{ minWidth: 0 }}>
+                    <div
+                      style={{
+                        color: "#f3f4f6",
+                        fontSize: 15,
+                        fontWeight: 800,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.name}
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    alignItems: "center",
+                    color: "#c7d2fe",
+                    fontSize: 13,
+                    fontWeight: 800,
+                  }}
+                >
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Trophy size={14} />
+                    {item.wins}
+                  </span>
+                  <span style={{ color: "#64748b" }}>|</span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Sword size={14} />
+                    {item.matches}
+                  </span>
+                </div>
+              </div>
             ))}
           </div>
         )}

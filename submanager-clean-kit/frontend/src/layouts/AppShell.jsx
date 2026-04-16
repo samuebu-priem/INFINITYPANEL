@@ -8,6 +8,8 @@ import {
   Users,
   User,
   Trophy,
+  MessageCircle,
+  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "../context/auth.jsx";
 
@@ -18,13 +20,19 @@ export default function AppShell({ children, showHeader = true }) {
 
   const isAdmin = user?.role === "ADMIN" || user?.role === "OWNER";
 
+  const discordInviteUrl = import.meta.env.VITE_DISCORD_INVITE_URL || "";
+  const showDiscordLink = Boolean(discordInviteUrl);
+
   const links = [
     ...(isAdmin
       ? [{ to: "/admin", label: "Dashboard", icon: LayoutDashboard }]
       : [{ to: "/dashboard", label: "Início", icon: Home }]),
 
     { to: "/profile", label: "Perfil", icon: User },
-    { to: "/ranking", label: "Ranking público", icon: Trophy },
+
+    ...(isAdmin
+      ? [{ to: "/ranking", label: "Ranking público", icon: Trophy }]
+      : []),
 
     ...(isAdmin ? [{ to: "/plans", label: "Planos", icon: FileText }] : []),
 
@@ -152,6 +160,77 @@ export default function AppShell({ children, showHeader = true }) {
                 );
               })}
             </nav>
+
+            {showDiscordLink ? (
+              <a
+                href={discordInviteUrl}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Entrar no Discord"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "11px 16px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(88,101,242,0.28)",
+                  background:
+                    "linear-gradient(180deg, rgba(88,101,242,0.18) 0%, rgba(17,24,39,0.96) 100%)",
+                  color: "#dbeafe",
+                  textDecoration: "none",
+                  boxShadow: "0 0 28px rgba(88,101,242,0.14)",
+                  transition:
+                    "transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease, background 140ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.borderColor = "rgba(88,101,242,0.42)";
+                  e.currentTarget.style.boxShadow = "0 0 34px rgba(88,101,242,0.22)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.borderColor = "rgba(88,101,242,0.28)";
+                  e.currentTarget.style.boxShadow = "0 0 28px rgba(88,101,242,0.14)";
+                }}
+              >
+                <span
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 12,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "rgba(88,101,242,0.16)",
+                    border: "1px solid rgba(88,101,242,0.24)",
+                    color: "#c7d2fe",
+                    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <MessageCircle size={17} />
+                </span>
+
+                <span
+                  style={{
+                    display: "grid",
+                    lineHeight: 1.1,
+                  }}
+                >
+                  <span style={{ fontSize: 13, fontWeight: 800 }}>Discord</span>
+                  <span
+                    style={{
+                      fontSize: 11,
+                      color: "#93c5fd",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                    }}
+                  >
+                    Comunidade
+                    <ExternalLink size={12} />
+                  </span>
+                </span>
+              </a>
+            ) : null}
 
             <div
               style={{

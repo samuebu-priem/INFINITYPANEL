@@ -111,9 +111,9 @@ export default function AppRoutes() {
         path="/ranking"
         element={
           <AppShell>
-            <ProtectedRoute>
+            <AdminOnlyRoute>
               <RankingPublic />
-            </ProtectedRoute>
+            </AdminOnlyRoute>
           </AppShell>
         }
       />
