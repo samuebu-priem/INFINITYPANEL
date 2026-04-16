@@ -54,15 +54,15 @@ export const profileService = {
       })
     : 0;
 
-  const matchesPlayed = user.discordId
-    ? await prisma.supervisorMatchRecord.count({
-        where: {
-          players: {
-            has: user.discordId,
-          },
+ const matchesPlayed = user.discordId
+  ? await prisma.supervisorMatchRecord.count({
+      where: {
+        players: {
+          array_contains: [user.discordId],
         },
-      })
-    : 0;
+      },
+    })
+  : 0;
 
   const latestWin = user.discordId
     ? await prisma.supervisorMatchRecord.findFirst({
