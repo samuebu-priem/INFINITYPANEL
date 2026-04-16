@@ -3,7 +3,7 @@ import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 import { PlanCard } from "../components/subscriptions/PlanCard.jsx";
 import { UserHomeFooter } from "../components/layout/UserHomeFooter.jsx";
-import { Crown, Trophy, Sword, Flame, ShieldCheck, Users } from "lucide-react";
+import { Crown, Flame, ShieldCheck, Users } from "lucide-react";
 
 function getPlansList(response) {
   if (Array.isArray(response)) return response;
@@ -59,7 +59,7 @@ function getRankingList(response) {
 }
 
 function getDiscordAvatarUrlFromRankingItem(item) {
-  const avatar =
+  const directAvatar =
     item?.avatar ??
     item?.avatarUrl ??
     item?.photoUrl ??
@@ -67,13 +67,15 @@ function getDiscordAvatarUrlFromRankingItem(item) {
     item?.profileImage ??
     null;
 
-  if (avatar) return avatar;
+  if (directAvatar) return directAvatar;
 
   const discordId = item?.discordId ?? item?.userDiscordId ?? null;
   const discordAvatar = item?.discordAvatar ?? item?.userDiscordAvatar ?? null;
 
   if (discordId && discordAvatar) {
-    return `https://cdn.discordapp.com/avatars/${discordId}/${discordAvatar}.png?size=128`;
+    const isAnimated = String(discordAvatar).startsWith("a_");
+    const ext = isAnimated ? "gif" : "png";
+    return `https://cdn.discordapp.com/avatars/${discordId}/${discordAvatar}.${ext}?size=128`;
   }
 
   if (discordId) {
@@ -108,6 +110,7 @@ function normalizeRankingItem(item, index) {
     matches,
   };
 }
+
 function isSubscriptionActive(subscription) {
   if (!subscription) return false;
   if (subscription?.isActive === true) return true;
@@ -126,27 +129,18 @@ function isSubscriptionActive(subscription) {
 
 function buildCountdown(endsAt, nowTs) {
   if (!endsAt) {
-    return {
-      expired: true,
-      label: "Expirada",
-    };
+    return { expired: true, label: "Expirada" };
   }
 
   const endDate = new Date(endsAt);
   if (Number.isNaN(endDate.getTime())) {
-    return {
-      expired: true,
-      label: "Expirada",
-    };
+    return { expired: true, label: "Expirada" };
   }
 
   const diffMs = endDate.getTime() - nowTs;
 
   if (diffMs <= 0) {
-    return {
-      expired: true,
-      label: "Expirada",
-    };
+    return { expired: true, label: "Expirada" };
   }
 
   const totalSeconds = Math.floor(diffMs / 1000);
@@ -184,6 +178,41 @@ function EmptyState({ title, description }) {
       </div>
 
       <div style={{ fontSize: 14, lineHeight: 1.7 }}>{description}</div>
+    </div>
+  );
+}
+
+function RankingAvatar({ item, size = 42, radius = 14, fontSize = 16 }) {
+  const [failed, setFailed] = useState(false);
+  const showImage = Boolean(item?.avatar) && !failed;
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: radius,
+        overflow: "hidden",
+        background: "rgba(255,255,255,0.05)",
+        border: "1px solid rgba(255,255,255,0.08)",
+        display: "grid",
+        placeItems: "center",
+        color: "#f3f4f6",
+        fontWeight: 900,
+        fontSize,
+        flexShrink: 0,
+      }}
+    >
+      {showImage ? (
+        <img
+          src={item.avatar}
+          alt={item.name}
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        (item?.name || "J").slice(0, 1).toUpperCase()
+      )}
     </div>
   );
 }
@@ -318,32 +347,7 @@ function RankingLeaderCard({ item }) {
           flexWrap: "wrap",
         }}
       >
-        <div
-          style={{
-            width: 84,
-            height: 84,
-            borderRadius: 28,
-            overflow: "hidden",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            display: "grid",
-            placeItems: "center",
-            color: "#f3f4f6",
-            fontWeight: 900,
-            fontSize: 24,
-            flexShrink: 0,
-          }}
-        >
-          {item?.avatar ? (
-            <img
-              src={item.avatar}
-              alt={item.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            (item?.name || "J").slice(0, 1).toUpperCase()
-          )}
-        </div>
+        <RankingAvatar item={item} size={84} radius={28} fontSize={24} />
 
         <div style={{ minWidth: 0 }}>
           <div
@@ -487,31 +491,7 @@ function RankingListItem({ item }) {
           gap: 12,
         }}
       >
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 14,
-            overflow: "hidden",
-            background: "rgba(255,255,255,0.05)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            display: "grid",
-            placeItems: "center",
-            color: "#f3f4f6",
-            fontWeight: 900,
-            flexShrink: 0,
-          }}
-        >
-          {item.avatar ? (
-            <img
-              src={item.avatar}
-              alt={item.name}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
-          ) : (
-            item.name.slice(0, 1).toUpperCase()
-          )}
-        </div>
+        <RankingAvatar item={item} size={42} radius={14} fontSize={16} />
 
         <div
           style={{
@@ -921,7 +901,21 @@ export default function UserHome() {
                     <RankingListItem key={`${item.position}-${item.name}`} item={item} />
                   ))}
                 </div>
-              ) : null}
+              ) : (
+                <div
+                  style={{
+                    borderRadius: 20,
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    background: "rgba(255,255,255,0.03)",
+                    padding: 16,
+                    color: "#9ca3af",
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                  }}
+                >
+                  Ainda não tem jogadores suficientes no ranking pra preencher a lista.
+                </div>
+              )}
             </div>
           )}
         </section>
@@ -935,11 +929,7 @@ export default function UserHome() {
             padding: 24,
           }}
         >
-          <div
-            style={{
-              marginBottom: 18,
-            }}
-          >
+          <div style={{ marginBottom: 18 }}>
             <h2
               style={{
                 margin: 0,
@@ -1067,8 +1057,16 @@ export default function UserHome() {
         ) : (
           <div className="user-home-plans-grid">
             {plans.map((plan) => (
-              <div key={plan.id} style={{ minWidth: 0 }}>
-                <PlanCard plan={plan} user={user} showCheckout />
+              <div
+                key={plan.id}
+                style={{
+                  minWidth: 0,
+                  display: "flex",
+                }}
+              >
+                <div style={{ width: "100%", display: "flex" }}>
+                  <PlanCard plan={plan} user={user} showCheckout />
+                </div>
               </div>
             ))}
           </div>

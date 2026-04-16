@@ -98,8 +98,15 @@ function formatCurrency(value, fallback = "R$ 0,00") {
 }
 
 function getDiscordAvatarUrl(summary) {
-  if (!summary?.discordId || !summary?.discordAvatar) return "";
-  return `https://cdn.discordapp.com/avatars/${summary.discordId}/${summary.discordAvatar}.png?size=256`;
+  if (!summary?.discordId) return "";
+
+  if (summary?.discordAvatar) {
+    const isAnimated = String(summary.discordAvatar).startsWith("a_");
+    const ext = isAnimated ? "gif" : "png";
+    return `https://cdn.discordapp.com/avatars/${summary.discordId}/${summary.discordAvatar}.${ext}?size=256`;
+  }
+
+  return `https://cdn.discordapp.com/embed/avatars/${Number(summary.discordId) % 5}.png`;
 }
 
 function getDiscordName(summary, user) {
