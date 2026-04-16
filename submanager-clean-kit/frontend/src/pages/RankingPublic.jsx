@@ -34,13 +34,6 @@ function normalizeRankingItem(item, index) {
   const wins = Number(
     item?.wins ?? item?.vitórias ?? item?.vitorias ?? item?.victories ?? 0
   );
-  const earnedValue =
-    item?.earnedValue ??
-    item?.totalRevenue ??
-    item?.valorGanho ??
-    item?.valorGanhoTotal ??
-    item?.totalEarned ??
-    null;
 
   return {
     raw: item,
@@ -50,23 +43,8 @@ function normalizeRankingItem(item, index) {
     avatar,
     matches,
     wins,
-    earnedValue:
-      earnedValue !== null && earnedValue !== undefined && earnedValue !== ""
-        ? earnedValue
-        : null,
     discordId: item?.discordId ?? item?.id ?? `${position}-${username}`,
   };
-}
-
-function formatCurrency(value) {
-  if (value === null || value === undefined || value === "") return "R$ 0,00";
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return "R$ 0,00";
-  return numeric.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-    maximumFractionDigits: 2,
-  });
 }
 
 function formatPlural(value, singular, plural) {
@@ -372,11 +350,6 @@ function StatPill({ label, value, accent = "neutral" }) {
       border: "rgba(34,211,238,0.16)",
       text: "#a5f3fc",
     },
-    gold: {
-      bg: "rgba(251,191,36,0.08)",
-      border: "rgba(251,191,36,0.16)",
-      text: "#fde68a",
-    },
   };
 
   const theme = styles[accent] || styles.neutral;
@@ -418,13 +391,12 @@ function StatPill({ label, value, accent = "neutral" }) {
 }
 
 function StatsBlock({ item }) {
-  const currency = formatCurrency(item.earnedValue);
   return (
     <div
       style={{
         display: "grid",
         gap: 10,
-        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+        gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
       }}
     >
       <StatPill
@@ -437,7 +409,6 @@ function StatsBlock({ item }) {
         value={formatPlural(item.matches, "partida", "partidas")}
         accent="cyan"
       />
-      <StatPill label="Lucro total" value={currency} accent="gold" />
     </div>
   );
 }
@@ -521,7 +492,7 @@ function UserCard({ item }) {
               maxWidth: 760,
             }}
           >
-            Seu card mostra sua posição, seu desempenho e o quanto você acumulou.
+            Seu card mostra sua posição, seu desempenho e a movimentação da sua conta.
           </div>
 
           <StatsBlock item={item} />
@@ -612,6 +583,116 @@ function PodiumCard({ item, rank, meta }) {
   );
 }
 
+function RankCard({ item }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        borderRadius: 24,
+        padding: 18,
+        border: "1px solid rgba(255,255,255,0.06)",
+        background:
+          "linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(7,10,16,0.98) 100%)",
+        display: "grid",
+        gap: 14,
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at top right, rgba(34,211,238,0.06), transparent 26%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          justifyContent: "space-between",
+          gap: 12,
+          alignItems: "flex-start",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              width: 58,
+              height: 58,
+              borderRadius: 18,
+              display: "grid",
+              placeItems: "center",
+              color: "#67e8f9",
+              fontWeight: 900,
+              border: "1px solid rgba(34,211,238,0.16)",
+              background: "rgba(34,211,238,0.06)",
+              flex: "0 0 auto",
+              boxShadow: "0 0 22px rgba(34,211,238,0.12)",
+            }}
+          >
+            #{item.position}
+          </div>
+
+          <Avatar
+            avatar={item.avatar}
+            username={item.username}
+            position={item.position}
+            accent="#22d3ee"
+          />
+
+          <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
+            <div style={{ color: "#f8fafc", fontSize: 17, fontWeight: 900 }}>
+              {item.username}
+            </div>
+            {item.status ? (
+              <div
+                style={{
+                  width: "fit-content",
+                  padding: "6px 10px",
+                  borderRadius: 999,
+                  background: "rgba(99,102,241,0.10)",
+                  border: "1px solid rgba(99,102,241,0.18)",
+                  color: "#c7d2fe",
+                  fontSize: 11,
+                  fontWeight: 800,
+                }}
+              >
+                {item.status}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div
+          style={{
+            textAlign: "right",
+            color: "#22d3ee",
+            fontWeight: 900,
+            fontSize: 18,
+          }}
+        >
+          {formatPlural(item.wins, "vitória", "vitórias")}
+        </div>
+      </div>
+
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <StatsBlock item={item} />
+      </div>
+    </div>
+  );
+}
+
 export default function RankingPublic() {
   const { user } = useAuth();
   const [period, setPeriod] = useState("total");
@@ -634,15 +715,16 @@ export default function RankingPublic() {
     loadRanking();
   }, [period]);
 
-  const topThree = useMemo(() => ranking.slice(0, 3), [ranking]);
-  const rest = useMemo(() => ranking.slice(3, 99), [ranking]);
+  const safeRanking = Array.isArray(ranking) ? ranking : [];
+  const topThree = useMemo(() => safeRanking.slice(0, 3), [safeRanking]);
+  const rest = useMemo(() => safeRanking.slice(3, 99), [safeRanking]);
 
   const userKey =
     user?.discordId ?? user?.id ?? user?.username ?? user?.nickname ?? null;
 
   const selfItem = useMemo(() => {
     if (!userKey) return null;
-    return ranking.find((item) => {
+    return safeRanking.find((item) => {
       const candidateKeys = [
         item.raw?.discordId,
         item.raw?.id,
@@ -654,7 +736,7 @@ export default function RankingPublic() {
         .map(String);
       return candidateKeys.includes(String(userKey));
     });
-  }, [ranking, userKey]);
+  }, [safeRanking, userKey]);
 
   const podiumMeta = [
     {
@@ -795,8 +877,8 @@ export default function RankingPublic() {
                   maxWidth: 740,
                 }}
               >
-                Veja quem está no topo, compare vitórias, partidas e lucro total
-                e acompanhe sua posição dentro da comunidade.
+                Veja quem está no topo, compare vitórias e partidas e acompanhe sua
+                posição dentro da comunidade.
               </p>
             </div>
 
@@ -868,9 +950,9 @@ export default function RankingPublic() {
         ) : (
           <div className="ranking-top-grid">
             {[
-              { item: topThree[2], meta: podiumMeta[2], rank: 3 },
-              { item: topThree[0], meta: podiumMeta[0], rank: 1 },
               { item: topThree[1], meta: podiumMeta[1], rank: 2 },
+              { item: topThree[0], meta: podiumMeta[0], rank: 1 },
+              { item: topThree[2], meta: podiumMeta[2], rank: 3 },
             ].map(({ item, meta, rank }, index) => {
               if (!item) return <div key={`empty-${index}`} />;
               return <PodiumCard key={item.discordId} item={item} rank={rank} meta={meta} />;
@@ -880,8 +962,8 @@ export default function RankingPublic() {
       </SectionCard>
 
       <SectionCard
-        title="Top 4 ao 99"
-        subtitle="A lista completa de quem está correndo atrás do topo."
+        title="Da 4ª posição em diante"
+        subtitle="A galera que está na disputa pelo topo."
       >
         {loading ? (
           <div className="ranking-list-grid">
@@ -889,7 +971,7 @@ export default function RankingPublic() {
               <SkeletonListItem key={row} />
             ))}
           </div>
-        ) : ranking.length === 0 ? (
+        ) : safeRanking.length === 0 ? (
           <EmptyState
             title="Ainda não tem jogadores no ranking"
             description="Quando começarem a entrar resultados, a lista aparece aqui."
@@ -899,112 +981,7 @@ export default function RankingPublic() {
           <div className="ranking-list-wrap">
             <div className="ranking-list-grid">
               {rest.map((item) => (
-                <div
-                  key={`${item.discordId}-${item.position}`}
-                  style={{
-                    position: "relative",
-                    overflow: "hidden",
-                    borderRadius: 24,
-                    padding: 18,
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    background:
-                      "linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(7,10,16,0.98) 100%)",
-                    display: "grid",
-                    gap: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      pointerEvents: "none",
-                      background:
-                        "radial-gradient(circle at top right, rgba(34,211,238,0.06), transparent 26%)",
-                    }}
-                  />
-
-                  <div
-                    style={{
-                      position: "relative",
-                      zIndex: 1,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 12,
-                      alignItems: "flex-start",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 14,
-                        minWidth: 0,
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 58,
-                          height: 58,
-                          borderRadius: 18,
-                          display: "grid",
-                          placeItems: "center",
-                          color: "#67e8f9",
-                          fontWeight: 900,
-                          border: "1px solid rgba(34,211,238,0.16)",
-                          background: "rgba(34,211,238,0.06)",
-                          flex: "0 0 auto",
-                          boxShadow: "0 0 22px rgba(34,211,238,0.12)",
-                        }}
-                      >
-                        #{item.position}
-                      </div>
-
-                      <Avatar
-                        avatar={item.avatar}
-                        username={item.username}
-                        position={item.position}
-                        accent="#22d3ee"
-                      />
-
-                      <div style={{ display: "grid", gap: 6, minWidth: 0 }}>
-                        <div style={{ color: "#f8fafc", fontSize: 17, fontWeight: 900 }}>
-                          {item.username}
-                        </div>
-                        {item.status ? (
-                          <div
-                            style={{
-                              width: "fit-content",
-                              padding: "6px 10px",
-                              borderRadius: 999,
-                              background: "rgba(99,102,241,0.10)",
-                              border: "1px solid rgba(99,102,241,0.18)",
-                              color: "#c7d2fe",
-                              fontSize: 11,
-                              fontWeight: 800,
-                            }}
-                          >
-                            {item.status}
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        textAlign: "right",
-                        color: "#22d3ee",
-                        fontWeight: 900,
-                        fontSize: 18,
-                      }}
-                    >
-                      {formatPlural(item.wins, "vitória", "vitórias")}
-                    </div>
-                  </div>
-
-                  <div style={{ position: "relative", zIndex: 1 }}>
-                    <StatsBlock item={item} />
-                  </div>
-                </div>
+                <RankCard key={`${item.discordId}-${item.position}`} item={item} />
               ))}
             </div>
           </div>

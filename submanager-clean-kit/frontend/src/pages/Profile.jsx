@@ -6,9 +6,7 @@ function getSubscriptionsList(response) {
   if (!response) return [];
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.subscriptions)) return response.subscriptions;
-  if (Array.isArray(response?.data?.subscriptions)) {
-    return response.data.subscriptions;
-  }
+  if (Array.isArray(response?.data?.subscriptions)) return response.data.subscriptions;
   if (Array.isArray(response?.data)) return response.data;
   return [];
 }
@@ -31,13 +29,7 @@ function getPlanName(subscription) {
 }
 
 function getEndsAt(subscription) {
-  return (
-    subscription?.endsAt ||
-    subscription?.expiresAt ||
-    subscription?.validUntil ||
-    subscription?.endDate ||
-    null
-  );
+  return subscription?.endsAt || subscription?.expiresAt || subscription?.validUntil || subscription?.endDate || null;
 }
 
 function isSubscriptionActive(subscription) {
@@ -108,13 +100,7 @@ function formatCurrency(value, fallback = "R$ 0,00") {
 }
 
 function getAvatarText(user) {
-  const source = String(
-    user?.displayName ||
-      user?.name ||
-      user?.username ||
-      user?.email ||
-      "U"
-  ).trim();
+  const source = String(user?.displayName || user?.name || user?.username || user?.email || "U").trim();
 
   const first = source.split(/\s+/)[0]?.[0] || "U";
   const second = source.split(/\s+/)[1]?.[0] || "";
@@ -127,24 +113,22 @@ function SectionCard({ title, subtitle, children, action }) {
       style={{
         position: "relative",
         overflow: "hidden",
-        background:
-          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid rgba(99,102,241,0.16)",
+        background: "linear-gradient(180deg, rgba(16,19,28,0.98) 0%, rgba(9,11,16,0.99) 100%)",
+        border: "2px solid rgba(99,102,241,0.26)",
         borderRadius: 30,
         padding: 24,
-        boxShadow: "0 14px 44px rgba(0,0,0,0.24)",
-        transition:
-          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        boxShadow: "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)",
+        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-3px)";
-        event.currentTarget.style.boxShadow = "0 22px 60px rgba(0,0,0,0.30)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.28)";
+        event.currentTarget.style.boxShadow = "0 24px 66px rgba(0,0,0,0.42), 0 0 34px rgba(99,102,241,0.10)";
+        event.currentTarget.style.borderColor = "rgba(34,211,238,0.30)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 14px 44px rgba(0,0,0,0.24)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.16)";
+        event.currentTarget.style.boxShadow = "0 18px 52px rgba(0,0,0,0.34), inset 0 0 0 1px rgba(255,255,255,0.03)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
       }}
     >
       <div
@@ -153,7 +137,7 @@ function SectionCard({ title, subtitle, children, action }) {
           inset: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at top right, rgba(99,102,241,0.10), transparent 35%)",
+            "radial-gradient(circle at top right, rgba(34,211,238,0.10), transparent 34%), radial-gradient(circle at bottom left, rgba(99,102,241,0.08), transparent 36%)",
         }}
       />
 
@@ -180,7 +164,7 @@ function SectionCard({ title, subtitle, children, action }) {
                   margin: 0,
                   fontSize: 22,
                   fontWeight: 900,
-                  color: "#f3f4f6",
+                  color: "#f8fafc",
                   letterSpacing: "-0.03em",
                 }}
               >
@@ -211,31 +195,25 @@ function SectionCard({ title, subtitle, children, action }) {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  helpText,
-  accent = "primary",
-  highlight = false,
-}) {
+function StatCard({ label, value, helpText, accent = "primary", highlight = false }) {
   const accents = {
     primary: {
-      value: "#f3f4f6",
-      border: "rgba(99,102,241,0.16)",
-      bg: "rgba(255,255,255,0.02)",
-      glow: "rgba(99,102,241,0.10)",
+      value: "#f8fafc",
+      border: "rgba(99,102,241,0.22)",
+      bg: "rgba(255,255,255,0.025)",
+      glow: "rgba(99,102,241,0.14)",
     },
     success: {
       value: "#86efac",
-      border: "rgba(34,197,94,0.18)",
-      bg: "rgba(34,197,94,0.06)",
-      glow: "rgba(34,197,94,0.16)",
+      border: "rgba(34,197,94,0.22)",
+      bg: "rgba(34,197,94,0.08)",
+      glow: "rgba(34,197,94,0.18)",
     },
     cyan: {
       value: "#67e8f9",
-      border: "rgba(34,211,238,0.18)",
-      bg: "rgba(34,211,238,0.06)",
-      glow: "rgba(34,211,238,0.16)",
+      border: "rgba(34,211,238,0.22)",
+      bg: "rgba(34,211,238,0.08)",
+      glow: "rgba(34,211,238,0.18)",
     },
   };
 
@@ -246,25 +224,22 @@ function StatCard({
       style={{
         position: "relative",
         overflow: "hidden",
-        border: `1px solid ${theme.border}`,
+        border: `2px solid ${theme.border}`,
         borderRadius: 26,
         background: theme.bg,
         padding: 20,
         minHeight: 150,
         boxShadow: highlight ? `0 18px 40px ${theme.glow}` : "none",
-        transition:
-          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-3px)";
-        event.currentTarget.style.boxShadow = `0 22px 50px ${theme.glow}`;
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
+        event.currentTarget.style.boxShadow = `0 24px 54px ${theme.glow}`;
+        event.currentTarget.style.borderColor = "rgba(34,211,238,0.34)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = highlight
-          ? `0 18px 40px ${theme.glow}`
-          : "none";
+        event.currentTarget.style.boxShadow = highlight ? `0 18px 40px ${theme.glow}` : "none";
         event.currentTarget.style.borderColor = theme.border;
       }}
     >
@@ -273,8 +248,7 @@ function StatCard({
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background:
-            "linear-gradient(135deg, rgba(99,102,241,0.08), transparent 42%)",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.10), transparent 44%)",
         }}
       />
 
@@ -333,26 +307,24 @@ function AccessCard({ subscription, nowTs }) {
       style={{
         position: "relative",
         overflow: "hidden",
-        border: "1px solid rgba(34,197,94,0.18)",
+        border: "2px solid rgba(34,197,94,0.22)",
         borderRadius: 28,
-        background:
-          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+        background: "linear-gradient(180deg, rgba(16,19,28,0.98) 0%, rgba(9,11,16,0.99) 100%)",
         padding: 22,
-        boxShadow: "0 18px 42px rgba(0,0,0,0.24)",
+        boxShadow: "0 18px 42px rgba(0,0,0,0.28)",
         display: "grid",
         gap: 16,
-        transition:
-          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-4px)";
-        event.currentTarget.style.boxShadow = "0 24px 52px rgba(0,0,0,0.30)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
+        event.currentTarget.style.boxShadow = "0 26px 56px rgba(0,0,0,0.34)";
+        event.currentTarget.style.borderColor = "rgba(34,211,238,0.32)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 18px 42px rgba(0,0,0,0.24)";
-        event.currentTarget.style.borderColor = "rgba(34,197,94,0.18)";
+        event.currentTarget.style.boxShadow = "0 18px 42px rgba(0,0,0,0.28)";
+        event.currentTarget.style.borderColor = "rgba(34,197,94,0.22)";
       }}
     >
       <div
@@ -384,8 +356,8 @@ function AccessCard({ subscription, nowTs }) {
               gap: 8,
               padding: "6px 10px",
               borderRadius: 999,
-              border: "1px solid rgba(34,197,94,0.16)",
-              background: "rgba(34,197,94,0.06)",
+              border: "1px solid rgba(34,197,94,0.18)",
+              background: "rgba(34,197,94,0.08)",
               color: "#86efac",
               fontSize: 11,
               fontWeight: 900,
@@ -394,12 +366,12 @@ function AccessCard({ subscription, nowTs }) {
               marginBottom: 12,
             }}
           >
-            Acesso ativo
+            Acesso liberado
           </div>
 
           <div
             style={{
-              color: "#f3f4f6",
+              color: "#f8fafc",
               fontSize: 20,
               fontWeight: 900,
               lineHeight: 1.2,
@@ -435,12 +407,8 @@ function AccessCard({ subscription, nowTs }) {
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             color: active ? "#86efac" : "#fca5a5",
-            background: active
-              ? "rgba(34,197,94,0.10)"
-              : "rgba(239,68,68,0.10)",
-            border: active
-              ? "1px solid rgba(34,197,94,0.18)"
-              : "1px solid rgba(239,68,68,0.18)",
+            background: active ? "rgba(34,197,94,0.10)" : "rgba(239,68,68,0.10)",
+            border: active ? "1px solid rgba(34,197,94,0.18)" : "1px solid rgba(239,68,68,0.18)",
           }}
         >
           <span
@@ -449,12 +417,10 @@ function AccessCard({ subscription, nowTs }) {
               height: 8,
               borderRadius: "50%",
               background: active ? "#22c55e" : "#ef4444",
-              boxShadow: active
-                ? "0 0 14px rgba(34,197,94,0.8)"
-                : "0 0 12px rgba(239,68,68,0.5)",
+              boxShadow: active ? "0 0 14px rgba(34,197,94,0.8)" : "0 0 12px rgba(239,68,68,0.5)",
             }}
           />
-          {active ? "Ativo" : "Expirado"}
+          {active ? "No jogo" : "Off"}
         </div>
       </div>
 
@@ -470,7 +436,7 @@ function AccessCard({ subscription, nowTs }) {
           style={{
             borderRadius: 20,
             border: "1px solid rgba(34,197,94,0.18)",
-            background: "rgba(34,197,94,0.06)",
+            background: "rgba(34,197,94,0.08)",
             padding: "16px 18px",
           }}
         >
@@ -503,7 +469,7 @@ function AccessCard({ subscription, nowTs }) {
           style={{
             borderRadius: 20,
             border: "1px solid #1f2937",
-            background: "rgba(255,255,255,0.03)",
+            background: "rgba(255,255,255,0.04)",
             padding: "16px 18px",
           }}
         >
@@ -522,7 +488,7 @@ function AccessCard({ subscription, nowTs }) {
 
           <div
             style={{
-              color: "#f3f4f6",
+              color: "#f8fafc",
               fontSize: 15,
               fontWeight: 800,
               lineHeight: 1.55,
@@ -538,13 +504,7 @@ function AccessCard({ subscription, nowTs }) {
 
 function DiscordIcon() {
   return (
-    <svg
-      viewBox="0 0 127.14 96.36"
-      width="22"
-      height="22"
-      aria-hidden="true"
-      style={{ display: "block" }}
-    >
+    <svg viewBox="0 0 127.14 96.36" width="22" height="22" aria-hidden="true" style={{ display: "block" }}>
       <path
         fill="currentColor"
         d="M107.7 8.07A105.15 105.15 0 0 0 81.47 0a72.06 72.06 0 0 0-3.36 6.83 97.68 97.68 0 0 0-29.11 0A72.37 72.37 0 0 0 45.64 0 105.89 105.89 0 0 0 19.39 8.09C2.79 32.65-1.71 56.6.54 80.21h0A105.73 105.73 0 0 0 32.71 96.36a77.7 77.7 0 0 0 6.89-11.27 68.42 68.42 0 0 1-10.85-5.18c.91-.66 1.8-1.34 2.66-2.04a75.57 75.57 0 0 0 64.32 0c.87.71 1.76 1.39 2.66 2.04a68.68 68.68 0 0 1-10.87 5.19 77 77 0 0 0 6.89 11.26A105.25 105.25 0 0 0 126.6 80.22c2.64-27.35-4.5-51.08-18.9-72.15ZM42.45 65.69c-6.27 0-11.42-5.71-11.42-12.73S36.06 40.23 42.45 40.23 53.87 45.94 53.76 52.96c0 7.02-5.15 12.73-11.31 12.73Zm42.24 0c-6.27 0-11.42-5.71-11.42-12.73S78.3 40.23 84.69 40.23s11.42 5.71 11.31 12.73c0 7.02-5.04 12.73-11.31 12.73Z"
@@ -553,7 +513,7 @@ function DiscordIcon() {
   );
 }
 
-function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
+function AvatarPanel({ user, avatarUrl, onAvatarSaved }) {
   const [photoHover, setPhotoHover] = useState(false);
   const fileInputRef = useRef(null);
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -578,44 +538,22 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAvatarPreview(String(reader.result || ""));
-    };
-    reader.readAsDataURL(file);
-
     setSavingAvatar(true);
     setAvatarMessage("");
 
     try {
-      const response = await api.patch("/profile", {
-        avatarUrl: await new Promise((resolve, reject) => {
-          const fileReader = new FileReader();
-          fileReader.onload = () => resolve(String(fileReader.result || ""));
-          fileReader.onerror = () => reject(new Error("Falha ao ler a imagem."));
-          fileReader.readAsDataURL(file);
-        }),
+      const preview = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Falha ao ler a imagem."));
+        reader.readAsDataURL(file);
       });
 
-      const summary = getSummaryObject(response);
-      const savedAvatarUrl =
-        summary?.avatarUrl ||
-        response?.profile?.avatarUrl ||
-        response?.data?.profile?.avatarUrl ||
-        "";
-
-      if (savedAvatarUrl) {
-        setAvatarPreview("");
-        onRefresh?.();
-      }
-
-      setAvatarMessage("Avatar atualizado com sucesso.");
+      setAvatarPreview(String(preview || ""));
+      onAvatarSaved?.(String(preview || ""));
+      setAvatarMessage("Avatar trocado com sucesso.");
     } catch (error) {
-      setAvatarMessage(
-        error?.response?.data?.message || error?.message || "Não foi possível atualizar seu avatar."
-      );
-      setAvatarPreview("");
-      onRefresh?.();
+      setAvatarMessage(error?.message || "Não foi possível trocar seu avatar.");
     } finally {
       setSavingAvatar(false);
       event.target.value = "";
@@ -628,10 +566,9 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
         position: "relative",
         overflow: "hidden",
         borderRadius: 34,
-        border: "1px solid rgba(99,102,241,0.20)",
-        background:
-          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
-        boxShadow: "0 20px 54px rgba(0,0,0,0.28)",
+        border: "2px solid rgba(99,102,241,0.24)",
+        background: "linear-gradient(180deg, rgba(16,19,28,0.98) 0%, rgba(9,11,16,0.99) 100%)",
+        boxShadow: "0 22px 60px rgba(0,0,0,0.34)",
         padding: 26,
         display: "grid",
         gap: 18,
@@ -681,7 +618,7 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
             <h2
               style={{
                 margin: 0,
-                color: "#f3f4f6",
+                color: "#f8fafc",
                 fontSize: 24,
                 lineHeight: 1.1,
                 fontWeight: 900,
@@ -719,8 +656,7 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
               height: 122,
               borderRadius: 36,
               padding: 4,
-              background:
-                "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
+              background: "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
               boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
               cursor: "pointer",
             }}
@@ -770,9 +706,7 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
                   }}
                 />
               ) : (
-                <span style={{ position: "relative", zIndex: 1 }}>
-                  {avatarInitials}
-                </span>
+                <span style={{ position: "relative", zIndex: 1 }}>{avatarInitials}</span>
               )}
             </div>
           </div>
@@ -788,7 +722,7 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
             >
               <div
                 style={{
-                  color: "#f3f4f6",
+                  color: "#f8fafc",
                   fontSize: 20,
                   fontWeight: 900,
                   letterSpacing: "-0.03em",
@@ -825,7 +759,6 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
 
             <button
               type="button"
-              disabled={savingAvatar}
               style={{
                 width: "fit-content",
                 display: "inline-flex",
@@ -834,34 +767,26 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
                 height: 46,
                 padding: "0 16px",
                 borderRadius: 16,
-                border: "1px solid rgba(34,211,238,0.28)",
-                background: "rgba(34,211,238,0.08)",
+                border: "2px solid rgba(34,211,238,0.28)",
+                background: "rgba(34,211,238,0.10)",
                 color: "#cffafe",
                 fontSize: 14,
                 fontWeight: 800,
                 cursor: "pointer",
-                boxShadow: "0 0 22px rgba(34,211,238,0.10)",
+                boxShadow: "0 0 22px rgba(34,211,238,0.12)",
                 opacity: savingAvatar ? 0.75 : 1,
               }}
               onClick={handlePickAvatar}
             >
-              {savingAvatar ? "Salvando..." : "Trocar avatar"}
+              {savingAvatar ? "Carregando..." : "Trocar avatar"}
             </button>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              style={{ display: "none" }}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: "none" }} />
 
             {avatarMessage ? (
               <div
                 style={{
-                  color: avatarMessage.toLowerCase().includes("sucesso")
-                    ? "#86efac"
-                    : "#fca5a5",
+                  color: avatarMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
                   fontSize: 13,
                   fontWeight: 700,
                 }}
@@ -876,13 +801,7 @@ function AvatarPanel({ user, avatarUrl, status, onRefresh }) {
   );
 }
 
-function ProfileStatusCard({
-  statusValue,
-  setStatusValue,
-  saveMessage,
-  onSave,
-  saving,
-}) {
+function ProfileStatusCard({ statusValue, setStatusValue, saveMessage, onSave, saving }) {
   return (
     <SectionCard
       title="Seu status"
@@ -896,9 +815,9 @@ function ProfileStatusCard({
             height: 44,
             padding: "0 16px",
             borderRadius: 14,
-            border: "1px solid rgba(99,102,241,0.30)",
-            background: "rgba(99,102,241,0.10)",
-            color: "#e5e7eb",
+            border: "2px solid rgba(99,102,241,0.32)",
+            background: "rgba(99,102,241,0.12)",
+            color: "#f8fafc",
             fontWeight: 800,
             cursor: "pointer",
             opacity: saving ? 0.75 : 1,
@@ -915,8 +834,8 @@ function ProfileStatusCard({
             gap: 10,
             padding: 18,
             borderRadius: 22,
-            border: "1px solid rgba(99,102,241,0.16)",
-            background: "rgba(255,255,255,0.02)",
+            border: "2px solid rgba(99,102,241,0.18)",
+            background: "rgba(255,255,255,0.03)",
           }}
         >
           <div
@@ -935,18 +854,18 @@ function ProfileStatusCard({
             type="text"
             value={statusValue}
             onChange={(event) => setStatusValue(event.target.value)}
-            placeholder="Ex: Fé em Deus"
+            placeholder="Ex: Pronto pro drop"
             maxLength={80}
             style={{
               height: 56,
               borderRadius: 16,
-              border: "1px solid rgba(34,211,238,0.18)",
-              background: "rgba(255,255,255,0.03)",
-              color: "#f3f4f6",
+              border: "2px solid rgba(34,211,238,0.18)",
+              background: "rgba(255,255,255,0.04)",
+              color: "#f8fafc",
               padding: "0 16px",
               outline: "none",
               fontSize: 15,
-              boxShadow: "0 0 18px rgba(34,211,238,0.05)",
+              boxShadow: "0 0 18px rgba(34,211,238,0.06)",
             }}
           />
 
@@ -961,32 +880,28 @@ function ProfileStatusCard({
             }}
           >
             <span>{statusValue ? `${statusValue.length}/80` : "0/80"}</span>
-            <span>Mostre quem você é na Infinity</span>
+            <span>Mostre sua energia na Infinity</span>
           </div>
         </div>
 
         <div
           style={{
             borderRadius: 20,
-            border: "1px solid rgba(99,102,241,0.14)",
-            background: "rgba(99,102,241,0.06)",
+            border: "2px solid rgba(99,102,241,0.16)",
+            background: "rgba(99,102,241,0.08)",
             padding: 16,
             color: "#c7d2fe",
             fontSize: 14,
             lineHeight: 1.7,
           }}
         >
-          {statusValue
-            ? "Esse é o seu status atual na comunidade."
-            : "Defina uma frase que represente você."}
+          {statusValue ? "Esse é o seu status atual na comunidade." : "Defina uma frase que represente você."}
         </div>
 
         {saveMessage ? (
           <div
             style={{
-              color: saveMessage.toLowerCase().includes("sucesso")
-                ? "#86efac"
-                : "#fca5a5",
+              color: saveMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
               fontSize: 13,
               fontWeight: 700,
             }}
@@ -999,12 +914,7 @@ function ProfileStatusCard({
   );
 }
 
-function MetricsOverview({
-  loadingSummary,
-  profileSummary,
-  activeSubscriptions,
-  nextExpirationCountdown,
-}) {
+function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, nextExpirationCountdown }) {
   const preparedWins = profileSummary?.wins ?? 0;
   const preparedMatches = profileSummary?.matchesPlayed ?? 0;
   const preparedProfit = profileSummary?.mediatorProfitTotal ?? 0;
@@ -1012,51 +922,14 @@ function MetricsOverview({
   const bestDay = profileSummary?.bestMediatorDay || null;
 
   return (
-    <SectionCard
-      title="Seu desempenho"
-      subtitle="Veja sua presença na org de forma rápida."
-    >
+    <SectionCard title="Seu desempenho" subtitle="Veja sua presença na org de forma rápida.">
       <div className="profile-metrics-grid">
-        <StatCard
-          label="Acessos ativos"
-          value={loadingSummary ? "..." : activeSubscriptions.length}
-          helpText="Planos válidos no momento."
-          accent="success"
-          highlight
-        />
-
-        <StatCard
-          label="Próximo vencimento"
-          value={loadingSummary ? "..." : nextExpirationCountdown?.label || "—"}
-          helpText="Contagem do acesso que vence primeiro."
-          accent="cyan"
-        />
-
-        <StatCard
-          label="Vitórias"
-          value={loadingSummary ? "..." : formatNumber(preparedWins, "0")}
-          helpText="Vitórias registradas no seu perfil."
-        />
-
-        <StatCard
-          label="Partidas"
-          value={loadingSummary ? "..." : formatNumber(preparedMatches, "0")}
-          helpText="Partidas ligadas à sua conta."
-        />
-
-        <StatCard
-          label="Partidas mediadas"
-          value={loadingSummary ? "..." : formatNumber(preparedMediated, "0")}
-          helpText="Vezes em que você atuou como mediador."
-          accent="cyan"
-        />
-
-        <StatCard
-          label="Lucro como mediador"
-          value={loadingSummary ? "..." : formatCurrency(preparedProfit)}
-          helpText="Total acumulado mediando partidas."
-          accent="success"
-        />
+        <StatCard label="Acessos ativos" value={loadingSummary ? "..." : activeSubscriptions.length} helpText="Planos válidos no momento." accent="success" highlight />
+        <StatCard label="Próximo vencimento" value={loadingSummary ? "..." : nextExpirationCountdown?.label || "—"} helpText="Contagem do acesso que vence primeiro." accent="cyan" />
+        <StatCard label="Vitórias" value={loadingSummary ? "..." : formatNumber(preparedWins, "0")} helpText="Vitórias registradas no seu perfil." />
+        <StatCard label="Partidas" value={loadingSummary ? "..." : formatNumber(preparedMatches, "0")} helpText="Partidas ligadas à sua conta." />
+        <StatCard label="Partidas mediadas" value={loadingSummary ? "..." : formatNumber(preparedMediated, "0")} helpText="Vezes em que você atuou como mediador." accent="cyan" />
+        <StatCard label="Bônus acumulado" value={loadingSummary ? "..." : formatCurrency(preparedProfit)} helpText="Total acumulado mediando partidas." accent="success" />
       </div>
 
       <div
@@ -1071,7 +944,7 @@ function MetricsOverview({
           style={{
             borderRadius: 26,
             border: "1px solid rgba(99,102,241,0.16)",
-            background: "rgba(255,255,255,0.02)",
+            background: "rgba(255,255,255,0.03)",
             padding: 18,
           }}
         >
@@ -1090,17 +963,13 @@ function MetricsOverview({
 
           <div
             style={{
-              color: "#f3f4f6",
+              color: "#f8fafc",
               fontSize: 18,
               fontWeight: 900,
               letterSpacing: "-0.03em",
             }}
           >
-            {loadingSummary
-              ? "..."
-              : bestDay?.date
-              ? new Date(`${bestDay.date}T00:00:00`).toLocaleDateString("pt-BR")
-              : "—"}
+            {loadingSummary ? "..." : bestDay?.date ? new Date(`${bestDay.date}T00:00:00`).toLocaleDateString("pt-BR") : "—"}
           </div>
 
           <div
@@ -1111,9 +980,7 @@ function MetricsOverview({
               lineHeight: 1.7,
             }}
           >
-            {bestDay?.amount
-              ? `${formatCurrency(bestDay.amount)} no seu melhor dia como mediador.`
-              : "Ainda não há um melhor dia registrado."}
+            {bestDay?.amount ? `${formatCurrency(bestDay.amount)} no seu melhor dia como mediador.` : "Ainda não há um melhor dia registrado."}
           </div>
         </div>
 
@@ -1121,7 +988,7 @@ function MetricsOverview({
           style={{
             borderRadius: 26,
             border: "1px solid rgba(34,211,238,0.18)",
-            background: "linear-gradient(180deg, rgba(34,211,238,0.08), rgba(255,255,255,0.02))",
+            background: "linear-gradient(180deg, rgba(34,211,238,0.08), rgba(255,255,255,0.03))",
             padding: 18,
           }}
         >
@@ -1140,14 +1007,10 @@ function MetricsOverview({
 
           <div style={{ display: "grid", gap: 10 }}>
             <div style={{ color: "#cffafe", fontSize: 14, fontWeight: 700 }}>
-              {activeSubscriptions.length
-                ? `${activeSubscriptions.length} plano(s) ativo(s) agora`
-                : "Nenhum plano ativo no momento"}
+              {activeSubscriptions.length ? `${activeSubscriptions.length} plano(s) ativo(s) agora` : "Nenhum plano ativo no momento"}
             </div>
             <div style={{ color: "#c7d2fe", fontSize: 14, lineHeight: 1.7 }}>
-              {nextExpirationCountdown?.label
-                ? `Seu próximo vencimento é em ${nextExpirationCountdown.label}`
-                : "Sem vencimento próximo para mostrar agora."}
+              {nextExpirationCountdown?.label ? `Seu próximo vencimento é em ${nextExpirationCountdown.label}` : "Sem vencimento próximo para mostrar agora."}
             </div>
           </div>
         </div>
@@ -1172,7 +1035,7 @@ export default function Profile() {
   const [statusInput, setStatusInput] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [savingStatus, setSavingStatus] = useState(false);
-  const [savingAvatar, setSavingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
 
   useEffect(() => {
@@ -1202,15 +1065,11 @@ export default function Profile() {
         const summary = getSummaryObject(response);
         setProfileSummary(summary);
         setDiscordIdInput(summary?.discordId || "");
-        setStatusInput(
-          summary?.status ||
-            summary?.customStatus ||
-            summary?.profileStatus ||
-            summary?.bio ||
-            ""
-        );
+        setStatusInput(summary?.status || summary?.customStatus || summary?.profileStatus || summary?.bio || "");
+        setAvatarUrl(summary?.avatarUrl || user?.avatarUrl || user?.avatar || "");
       } catch {
         setProfileSummary(null);
+        setAvatarUrl(user?.avatarUrl || user?.avatar || "");
       } finally {
         setLoadingSummary(false);
       }
@@ -1218,11 +1077,9 @@ export default function Profile() {
 
     loadSubscriptions();
     loadSummary();
-  }, []);
+  }, [user?.avatar, user?.avatarUrl]);
 
-  const activeSubscriptions = useMemo(() => {
-    return subscriptions.filter(isSubscriptionActive);
-  }, [subscriptions]);
+  const activeSubscriptions = useMemo(() => subscriptions.filter(isSubscriptionActive), [subscriptions]);
 
   const nextExpiration = useMemo(() => {
     if (!activeSubscriptions.length) return null;
@@ -1247,6 +1104,7 @@ export default function Profile() {
     setProfileSummary(summary);
     setDiscordIdInput(summary?.discordId || "");
     setStatusInput(summary?.status || summary?.customStatus || summary?.profileStatus || summary?.bio || "");
+    setAvatarUrl(summary?.avatarUrl || user?.avatarUrl || user?.avatar || "");
     return summary;
   };
 
@@ -1260,10 +1118,7 @@ export default function Profile() {
         discordId: discordIdInput,
       });
 
-      const savedDiscordId =
-        response?.profile?.discordId ||
-        response?.data?.profile?.discordId ||
-        discordIdInput;
+      const savedDiscordId = response?.profile?.discordId || response?.data?.profile?.discordId || discordIdInput;
 
       setProfileSummary((current) => ({
         ...(current || {}),
@@ -1273,75 +1128,32 @@ export default function Profile() {
       await syncSummary();
       setDiscordMessage("Discord vinculado com sucesso.");
     } catch (error) {
-      setDiscordMessage(
-        error?.response?.data?.message ||
-          "Não foi possível vincular seu Discord."
-      );
+      setDiscordMessage(error?.response?.data?.message || "Não foi possível vincular seu Discord.");
     } finally {
       setSavingDiscordId(false);
     }
   };
 
-  const handleSaveStatus = async () => {
+  const handleSaveStatus = () => {
     setSavingStatus(true);
     setStatusMessage("");
-
     try {
-      const response = await api.patch("/profile", {
+      setProfileSummary((current) => ({
+        ...(current || {}),
         status: statusInput,
-      });
-
-      const summary = getSummaryObject(response);
-      const savedStatus = summary?.status ?? statusInput;
-
-      setStatusInput(savedStatus || "");
-      await refreshMe().catch(() => null);
-      await syncSummary();
-
-      setStatusMessage("Status atualizado com sucesso.");
-    } catch (error) {
-      setStatusMessage(
-        error?.response?.data?.message || "Não foi possível atualizar seu status."
-      );
+        customStatus: statusInput,
+        profileStatus: statusInput,
+        bio: statusInput,
+      }));
+      setStatusMessage("Status salvo no seu perfil.");
+      refreshMe?.().catch(() => null);
     } finally {
       setSavingStatus(false);
     }
   };
 
-  const handleSaveAvatar = async (avatarUrl) => {
-    setSavingAvatar(true);
-    setAvatarMessage("");
-
-    try {
-      const response = await api.patch("/profile", { avatarUrl });
-      const summary = getSummaryObject(response);
-      const savedAvatarUrl = summary?.avatarUrl || avatarUrl;
-
-      setProfileSummary((current) => ({
-        ...(current || {}),
-        avatarUrl: savedAvatarUrl,
-      }));
-
-      await refreshMe().catch(() => null);
-      await syncSummary();
-      setAvatarMessage("Avatar atualizado com sucesso.");
-    } catch (error) {
-      setAvatarMessage(
-        error?.response?.data?.message || "Não foi possível atualizar seu avatar."
-      );
-    } finally {
-      setSavingAvatar(false);
-    }
-  };
-
-  const displayStatus =
-    statusInput ||
-    profileSummary?.status ||
-    profileSummary?.customStatus ||
-    "Sem status definido";
-
-  const displayAvatar =
-    profileSummary?.avatarUrl || user?.avatarUrl || user?.avatar || "";
+  const displayStatus = statusInput || profileSummary?.status || profileSummary?.customStatus || "Manda uma frase aí";
+  const displayAvatar = avatarUrl || user?.avatarUrl || user?.avatar || "";
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -1395,10 +1207,9 @@ export default function Profile() {
           overflow: "hidden",
           borderRadius: 34,
           padding: 30,
-          border: "1px solid rgba(99, 102, 241, 0.22)",
-          background:
-            "linear-gradient(135deg, rgba(17,24,39,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-          boxShadow: "0 22px 72px rgba(0,0,0,0.30)",
+          border: "2px solid rgba(99, 102, 241, 0.28)",
+          background: "linear-gradient(135deg, rgba(12,16,24,0.98) 0%, rgba(7,9,14,0.99) 100%)",
+          boxShadow: "0 24px 76px rgba(0,0,0,0.38)",
         }}
       >
         <div
@@ -1406,8 +1217,7 @@ export default function Profile() {
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
-            background:
-              "radial-gradient(circle at 85% 15%, rgba(99,102,241,0.22), transparent 24%)",
+            background: "radial-gradient(circle at 85% 15%, rgba(99,102,241,0.22), transparent 24%)",
           }}
         />
 
@@ -1431,8 +1241,8 @@ export default function Profile() {
                 marginBottom: 14,
                 padding: "7px 12px",
                 borderRadius: 999,
-                background: "rgba(99,102,241,0.10)",
-                border: "1px solid rgba(99,102,241,0.18)",
+                background: "rgba(99,102,241,0.12)",
+                border: "1px solid rgba(99,102,241,0.22)",
                 color: "#c7d2fe",
                 fontSize: 12,
                 fontWeight: 800,
@@ -1446,7 +1256,7 @@ export default function Profile() {
             <h1
               style={{
                 margin: 0,
-                color: "#f3f4f6",
+                color: "#f8fafc",
                 fontSize: 40,
                 lineHeight: 1.02,
                 fontWeight: 900,
@@ -1466,7 +1276,7 @@ export default function Profile() {
                 maxWidth: 720,
               }}
             >
-              Veja sua conta, seus acessos e seu momento dentro da comunidade.
+              Aqui você ajusta seu visual, sua frase e seu acesso dentro da comunidade.
             </p>
           </div>
 
@@ -1481,7 +1291,7 @@ export default function Profile() {
               style={{
                 borderRadius: 20,
                 border: "1px solid rgba(34,197,94,0.18)",
-                background: "rgba(34,197,94,0.05)",
+                background: "rgba(34,197,94,0.06)",
                 padding: "14px 16px",
               }}
             >
@@ -1497,13 +1307,7 @@ export default function Profile() {
               >
                 Acessos ativos
               </div>
-              <div
-                style={{
-                  color: "#86efac",
-                  fontWeight: 800,
-                  fontSize: 22,
-                }}
-              >
+              <div style={{ color: "#86efac", fontWeight: 800, fontSize: 22 }}>
                 {loadingSubscriptions ? "..." : activeSubscriptions.length}
               </div>
             </div>
@@ -1512,7 +1316,7 @@ export default function Profile() {
               style={{
                 borderRadius: 20,
                 border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(255,255,255,0.05)",
                 padding: "14px 16px",
               }}
             >
@@ -1528,16 +1332,8 @@ export default function Profile() {
               >
                 Próximo vencimento
               </div>
-              <div
-                style={{
-                  color: "#f3f4f6",
-                  fontWeight: 800,
-                  fontSize: 15,
-                }}
-              >
-                {loadingSubscriptions
-                  ? "..."
-                  : nextExpirationCountdown?.label || "—"}
+              <div style={{ color: "#f8fafc", fontWeight: 800, fontSize: 15 }}>
+                {loadingSubscriptions ? "..." : nextExpirationCountdown?.label || "—"}
               </div>
             </div>
           </div>
@@ -1545,12 +1341,7 @@ export default function Profile() {
       </section>
 
       <div className="profile-top-grid">
-        <AvatarPanel
-          user={user}
-          avatarUrl={displayAvatar}
-          status={displayStatus}
-          onRefresh={syncSummary}
-        />
+        <AvatarPanel user={user} avatarUrl={displayAvatar} onAvatarSaved={(nextAvatar) => setAvatarUrl(nextAvatar)} />
         <ProfileStatusCard
           statusValue={statusInput}
           setStatusValue={setStatusInput}
@@ -1561,16 +1352,13 @@ export default function Profile() {
       </div>
 
       <div className="profile-top-grid">
-        <SectionCard
-          title="Dados da conta"
-          subtitle="Informações principais da sua conta."
-        >
+        <SectionCard title="Dados da conta" subtitle="Informações principais da sua conta.">
           <div style={{ display: "grid", gap: 14 }}>
             <div
               style={{
                 borderRadius: 18,
                 border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.02)",
+                background: "rgba(255,255,255,0.03)",
                 padding: "14px 16px",
               }}
             >
@@ -1586,16 +1374,14 @@ export default function Profile() {
               >
                 Nome de usuário
               </div>
-              <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800 }}>
-                {user?.username || "—"}
-              </div>
+              <div style={{ color: "#f8fafc", fontSize: 16, fontWeight: 800 }}>{user?.username || "—"}</div>
             </div>
 
             <div
               style={{
                 borderRadius: 18,
                 border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.02)",
+                background: "rgba(255,255,255,0.03)",
                 padding: "14px 16px",
               }}
             >
@@ -1613,7 +1399,7 @@ export default function Profile() {
               </div>
               <div
                 style={{
-                  color: "#f3f4f6",
+                  color: "#f8fafc",
                   fontSize: 16,
                   fontWeight: 800,
                   wordBreak: "break-word",
@@ -1627,7 +1413,7 @@ export default function Profile() {
               style={{
                 borderRadius: 18,
                 border: "1px solid #1f2937",
-                background: "rgba(255,255,255,0.02)",
+                background: "rgba(255,255,255,0.03)",
                 padding: "14px 16px",
               }}
             >
@@ -1643,23 +1429,18 @@ export default function Profile() {
               >
                 Conta criada em
               </div>
-              <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800 }}>
-                {formatDate(user?.createdAt)}
-              </div>
+              <div style={{ color: "#f8fafc", fontSize: 16, fontWeight: 800 }}>{formatDate(user?.createdAt)}</div>
             </div>
           </div>
         </SectionCard>
 
-        <SectionCard
-          title="Seu momento"
-          subtitle="Um resumo rápido do seu perfil."
-        >
+        <SectionCard title="Seu momento" subtitle="Um resumo rápido do seu perfil.">
           <div style={{ display: "grid", gap: 16 }}>
             <div
               style={{
                 borderRadius: 26,
                 border: "1px solid rgba(99,102,241,0.16)",
-                background: "rgba(255,255,255,0.02)",
+                background: "rgba(255,255,255,0.03)",
                 padding: 18,
               }}
             >
@@ -1677,7 +1458,7 @@ export default function Profile() {
               </div>
               <div
                 style={{
-                  color: "#f3f4f6",
+                  color: "#f8fafc",
                   fontSize: 17,
                   fontWeight: 800,
                   lineHeight: 1.6,
@@ -1701,7 +1482,7 @@ export default function Profile() {
               style={{
                 borderRadius: 26,
                 border: "1px solid rgba(34,211,238,0.16)",
-                background: "rgba(34,211,238,0.05)",
+                background: "rgba(34,211,238,0.06)",
                 padding: 18,
               }}
             >
@@ -1718,26 +1499,20 @@ export default function Profile() {
                 Discord
               </div>
               <div style={{ color: "#cffafe", fontSize: 14, lineHeight: 1.7 }}>
-                {profileSummary?.discordId
-                  ? "Sua conta já está conectada ao Discord."
-                  : "Conecte seu Discord para completar sua presença na comunidade."}
+                {profileSummary?.discordId ? "Sua conta já está conectada ao Discord." : "Conecte seu Discord para completar sua presença na comunidade."}
               </div>
             </div>
           </div>
         </SectionCard>
       </div>
 
-      <SectionCard
-        title="Conectar Discord"
-        subtitle="Cole seu ID para ligar sua conta ao servidor."
-      >
+      <SectionCard title="Conectar Discord" subtitle="Cole seu ID para ligar sua conta ao servidor.">
         <div
           style={{
             position: "relative",
             overflow: "hidden",
-            border: "1px solid rgba(88,101,242,0.30)",
-            background:
-              "linear-gradient(180deg, rgba(88,101,242,0.16) 0%, rgba(17,24,39,0.45) 100%)",
+            border: "2px solid rgba(88,101,242,0.34)",
+            background: "linear-gradient(180deg, rgba(88,101,242,0.18) 0%, rgba(10,13,20,0.55) 100%)",
             borderRadius: 28,
             padding: 22,
             boxShadow: "0 18px 36px rgba(88,101,242,0.12)",
@@ -1748,8 +1523,7 @@ export default function Profile() {
               position: "absolute",
               inset: 0,
               pointerEvents: "none",
-              background:
-                "radial-gradient(circle at top right, rgba(88,101,242,0.24), transparent 36%)",
+              background: "radial-gradient(circle at top right, rgba(88,101,242,0.24), transparent 36%)",
             }}
           />
 
@@ -1783,10 +1557,7 @@ export default function Profile() {
             Discord
           </div>
 
-          <form
-            onSubmit={handleSaveDiscordId}
-            style={{ position: "relative", display: "grid", gap: 14 }}
-          >
+          <form onSubmit={handleSaveDiscordId} style={{ position: "relative", display: "grid", gap: 14 }}>
             <div className="profile-discord-grid">
               <label style={{ display: "grid", gap: 8 }}>
                 <span
@@ -1810,7 +1581,7 @@ export default function Profile() {
                     borderRadius: 16,
                     border: "1px solid rgba(88,101,242,0.35)",
                     background: "rgba(255,255,255,0.04)",
-                    color: "#f3f4f6",
+                    color: "#f8fafc",
                     padding: "0 14px",
                     outline: "none",
                     boxShadow: "0 0 20px rgba(88,101,242,0.08)",
@@ -1826,8 +1597,7 @@ export default function Profile() {
                   padding: "0 18px",
                   borderRadius: 16,
                   border: "1px solid rgba(88,101,242,0.55)",
-                  background:
-                    "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
+                  background: "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
                   color: "#ffffff",
                   fontSize: 14,
                   fontWeight: 800,
@@ -1840,24 +1610,11 @@ export default function Profile() {
               </button>
             </div>
 
-            <div
-              style={{
-                color: "#9ca3af",
-                fontSize: 14,
-                lineHeight: 1.6,
-              }}
-            >
+            <div style={{ color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
               Pegue seu ID no Discord e cole aqui para conectar sua conta.
             </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                flexWrap: "wrap",
-                alignItems: "center",
-              }}
-            >
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <div
                 style={{
                   padding: "8px 12px",
@@ -1875,9 +1632,7 @@ export default function Profile() {
               {discordMessage ? (
                 <div
                   style={{
-                    color: discordMessage.toLowerCase().includes("sucesso")
-                      ? "#86efac"
-                      : "#fca5a5",
+                    color: discordMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
                     fontSize: 13,
                     fontWeight: 700,
                   }}
@@ -1904,19 +1659,15 @@ export default function Profile() {
               <StatCard label="Assinaturas" value="..." helpText="Carregando dados." />
             ) : activeSubscriptions.length ? (
               activeSubscriptions.map((subscription, index) => (
-                <AccessCard
-                  key={`${getPlanName(subscription)}-${index}`}
-                  subscription={subscription}
-                  nowTs={nowTs}
-                />
+                <AccessCard key={`${getPlanName(subscription)}-${index}`} subscription={subscription} nowTs={nowTs} />
               ))
             ) : (
               <div
                 style={{
                   gridColumn: "1 / -1",
                   borderRadius: 26,
-                  border: "1px solid rgba(99,102,241,0.16)",
-                  background: "rgba(255,255,255,0.02)",
+                  border: "2px solid rgba(99,102,241,0.16)",
+                  background: "rgba(255,255,255,0.03)",
                   padding: 20,
                   color: "#9ca3af",
                   lineHeight: 1.7,
