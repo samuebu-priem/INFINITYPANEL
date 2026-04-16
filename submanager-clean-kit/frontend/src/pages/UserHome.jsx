@@ -58,6 +58,31 @@ function getRankingList(response) {
   return [];
 }
 
+function getDiscordAvatarUrlFromRankingItem(item) {
+  const avatar =
+    item?.avatar ??
+    item?.avatarUrl ??
+    item?.photoUrl ??
+    item?.imageUrl ??
+    item?.profileImage ??
+    null;
+
+  if (avatar) return avatar;
+
+  const discordId = item?.discordId ?? item?.userDiscordId ?? null;
+  const discordAvatar = item?.discordAvatar ?? item?.userDiscordAvatar ?? null;
+
+  if (discordId && discordAvatar) {
+    return `https://cdn.discordapp.com/avatars/${discordId}/${discordAvatar}.png?size=128`;
+  }
+
+  if (discordId) {
+    return `https://cdn.discordapp.com/embed/avatars/${Number(discordId) % 5}.png`;
+  }
+
+  return null;
+}
+
 function normalizeRankingItem(item, index) {
   const position = Number(item?.position ?? index + 1);
   const name =
@@ -69,14 +94,6 @@ function normalizeRankingItem(item, index) {
     item?.displayName ??
     "Jogador";
 
-  const avatar =
-    item?.avatar ??
-    item?.avatarUrl ??
-    item?.photoUrl ??
-    item?.imageUrl ??
-    item?.profileImage ??
-    null;
-
   const wins = Number(
     item?.wins ?? item?.vitórias ?? item?.vitorias ?? item?.victories ?? 0
   );
@@ -86,12 +103,11 @@ function normalizeRankingItem(item, index) {
     raw: item,
     position,
     name,
-    avatar,
+    avatar: getDiscordAvatarUrlFromRankingItem(item),
     wins,
     matches,
   };
 }
-
 function isSubscriptionActive(subscription) {
   if (!subscription) return false;
   if (subscription?.isActive === true) return true;
