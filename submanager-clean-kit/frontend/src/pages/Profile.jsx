@@ -121,7 +121,7 @@ function getAvatarText(user) {
   return `${first}${second}`.toUpperCase();
 }
 
-function SectionCard({ title, subtitle, children, action, flush = false }) {
+function SectionCard({ title, subtitle, children, action }) {
   return (
     <section
       style={{
@@ -160,7 +160,7 @@ function SectionCard({ title, subtitle, children, action, flush = false }) {
       {(title || subtitle || action) && (
         <div
           style={{
-            marginBottom: flush ? 14 : 20,
+            marginBottom: 20,
             position: "relative",
             zIndex: 1,
           }}
@@ -394,7 +394,7 @@ function AccessCard({ subscription, nowTs }) {
               marginBottom: 12,
             }}
           >
-            Assinatura ativa
+            Acesso ativo
           </div>
 
           <div
@@ -418,8 +418,7 @@ function AccessCard({ subscription, nowTs }) {
               maxWidth: 360,
             }}
           >
-            Acesso vinculado à sua conta com validade individual e atualização em
-            tempo real.
+            Esse plano está liberado para sua conta com contagem em tempo real.
           </div>
         </div>
 
@@ -518,7 +517,7 @@ function AccessCard({ subscription, nowTs }) {
               marginBottom: 8,
             }}
           >
-            Expira em
+            Vai até
           </div>
 
           <div
@@ -529,7 +528,7 @@ function AccessCard({ subscription, nowTs }) {
               lineHeight: 1.55,
             }}
           >
-            {endsAt ? new Date(endsAt).toLocaleString("pt-BR") : "—"}
+            {formatDate(endsAt)}
           </div>
         </div>
       </div>
@@ -560,7 +559,8 @@ function AvatarPanel({ user }) {
   const [avatarPreview, setAvatarPreview] = useState("");
   const [avatarMessage, setAvatarMessage] = useState("");
 
-  const currentAvatar = avatarPreview || user?.avatar || user?.photoUrl || user?.imageUrl || "";
+  const currentAvatar =
+    avatarPreview || user?.avatar || user?.photoUrl || user?.imageUrl || "";
   const avatarLabel = user?.username || "Usuário";
   const avatarInitials = getAvatarText(user);
 
@@ -573,7 +573,7 @@ function AvatarPanel({ user }) {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setAvatarMessage("Escolha uma imagem para o seu avatar.");
+      setAvatarMessage("Escolha uma imagem válida.");
       event.target.value = "";
       return;
     }
@@ -581,7 +581,7 @@ function AvatarPanel({ user }) {
     const reader = new FileReader();
     reader.onload = () => {
       setAvatarPreview(String(reader.result || ""));
-      setAvatarMessage("Avatar atualizado só nesta tela.");
+      setAvatarMessage("Foto atualizada com sucesso.");
     };
     reader.readAsDataURL(file);
   };
@@ -639,7 +639,7 @@ function AvatarPanel({ user }) {
                 textTransform: "uppercase",
               }}
             >
-              Identidade
+              Seu visual
             </div>
 
             <h2
@@ -664,26 +664,8 @@ function AvatarPanel({ user }) {
                 maxWidth: 360,
               }}
             >
-              Sua identidade visual no hub Infinity. A área já está preparada para
-              foto de perfil e atualização futura sem quebrar o fluxo atual.
+              Deixe seu perfil com a sua cara dentro da Infinity.
             </p>
-          </div>
-
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              padding: "8px 12px",
-              borderRadius: 999,
-              border: "1px solid rgba(99,102,241,0.18)",
-              background: "rgba(255,255,255,0.03)",
-              color: "#c7d2fe",
-              fontSize: 12,
-              fontWeight: 800,
-            }}
-          >
-            {user?.role || "PLAYER"}
           </div>
         </div>
 
@@ -695,69 +677,69 @@ function AvatarPanel({ user }) {
             flexWrap: "wrap",
           }}
         >
-              <div
+          <div
+            style={{
+              width: 122,
+              height: 122,
+              borderRadius: 36,
+              padding: 4,
+              background:
+                "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
+              boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
+              cursor: "pointer",
+            }}
+            onClick={handlePickAvatar}
+          >
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: 32,
+                border: "1px solid rgba(255,255,255,0.08)",
+                background:
+                  "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%), linear-gradient(180deg, rgba(17,24,39,0.98), rgba(11,15,20,0.98))",
+                display: "grid",
+                placeItems: "center",
+                color: "#a5f3fc",
+                fontSize: 34,
+                fontWeight: 900,
+                letterSpacing: "-0.06em",
+                position: "relative",
+                overflow: "hidden",
+              }}
+              onMouseEnter={() => setPhotoHover(true)}
+              onMouseLeave={() => setPhotoHover(false)}
+            >
+              <span
                 style={{
-                  width: 122,
-                  height: 122,
-                  borderRadius: 36,
-                  padding: 4,
-                  background:
-                    "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
-                  boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
-                  cursor: "pointer",
+                  position: "absolute",
+                  inset: 0,
+                  background: photoHover
+                    ? "radial-gradient(circle at center, rgba(34,211,238,0.12), transparent 48%)"
+                    : "radial-gradient(circle at center, rgba(99,102,241,0.08), transparent 48%)",
+                  transition: "opacity 180ms ease",
                 }}
-                onClick={handlePickAvatar}
-              >
-                <div
+              />
+              {currentAvatar ? (
+                <img
+                  src={currentAvatar}
+                  alt={avatarLabel}
                   style={{
                     width: "100%",
                     height: "100%",
-                    borderRadius: 32,
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    background:
-                      "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%), linear-gradient(180deg, rgba(17,24,39,0.98), rgba(11,15,20,0.98))",
-                    display: "grid",
-                    placeItems: "center",
-                    color: "#a5f3fc",
-                    fontSize: 34,
-                    fontWeight: 900,
-                    letterSpacing: "-0.06em",
+                    objectFit: "cover",
+                    borderRadius: 28,
                     position: "relative",
-                    overflow: "hidden",
+                    zIndex: 1,
                   }}
-                  onMouseEnter={() => setPhotoHover(true)}
-                  onMouseLeave={() => setPhotoHover(false)}
-                >
-                  <span
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: photoHover
-                        ? "radial-gradient(circle at center, rgba(34,211,238,0.12), transparent 48%)"
-                        : "radial-gradient(circle at center, rgba(99,102,241,0.08), transparent 48%)",
-                      transition: "opacity 180ms ease",
-                    }}
-                  />
-                  {currentAvatar ? (
-                    <img
-                      src={currentAvatar}
-                      alt={avatarLabel}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        borderRadius: 28,
-                        position: "relative",
-                        zIndex: 1,
-                      }}
-                    />
-                  ) : (
-                    <span style={{ position: "relative", zIndex: 1 }}>
-                      {avatarInitials}
-                    </span>
-                  )}
-                </div>
-              </div>
+                />
+              ) : (
+                <span style={{ position: "relative", zIndex: 1 }}>
+                  {avatarInitials}
+                </span>
+              )}
+            </div>
+          </div>
 
           <div style={{ display: "grid", gap: 12, flex: 1, minWidth: 220 }}>
             <div
@@ -790,7 +772,7 @@ function AvatarPanel({ user }) {
                   background: "rgba(99,102,241,0.08)",
                 }}
               >
-                Foto não vinculada
+                Clique para trocar a foto
               </div>
             </div>
 
@@ -802,9 +784,7 @@ function AvatarPanel({ user }) {
                 maxWidth: 520,
               }}
             >
-              Clique na área da foto quando a integração de upload estiver disponível.
-              Por enquanto, a interface fica pronta para receber imagem sem alterar o
-              backend atual.
+              Escolha uma imagem para deixar seu perfil com mais identidade.
             </div>
 
             <button
@@ -841,7 +821,7 @@ function AvatarPanel({ user }) {
             {avatarMessage ? (
               <div
                 style={{
-                  color: avatarMessage.toLowerCase().includes("atualizado")
+                  color: avatarMessage.toLowerCase().includes("sucesso")
                     ? "#86efac"
                     : "#fca5a5",
                   fontSize: 13,
@@ -858,11 +838,34 @@ function AvatarPanel({ user }) {
   );
 }
 
-function ProfileStatusCard({ statusValue, setStatusValue, canPersist, saveMessage }) {
+function ProfileStatusCard({
+  statusValue,
+  setStatusValue,
+  saveMessage,
+  onSave,
+}) {
   return (
     <SectionCard
-      title="Status personalizado"
-      subtitle="Mensagem curta que representa seu momento na comunidade."
+      title="Seu status"
+      subtitle="Mostre sua vibe dentro da comunidade."
+      action={
+        <button
+          type="button"
+          onClick={onSave}
+          style={{
+            height: 44,
+            padding: "0 16px",
+            borderRadius: 14,
+            border: "1px solid rgba(99,102,241,0.30)",
+            background: "rgba(99,102,241,0.10)",
+            color: "#e5e7eb",
+            fontWeight: 800,
+            cursor: "pointer",
+          }}
+        >
+          Atualizar
+        </button>
+      }
     >
       <div style={{ display: "grid", gap: 14 }}>
         <div
@@ -884,14 +887,14 @@ function ProfileStatusCard({ statusValue, setStatusValue, canPersist, saveMessag
               letterSpacing: "0.12em",
             }}
           >
-            Status visível
+            Frase do perfil
           </div>
 
           <input
             type="text"
             value={statusValue}
             onChange={(event) => setStatusValue(event.target.value)}
-            placeholder="Ex: Focado na próxima temporada"
+            placeholder="Ex: Fé em Deus"
             maxLength={80}
             style={{
               height: 56,
@@ -917,7 +920,7 @@ function ProfileStatusCard({ statusValue, setStatusValue, canPersist, saveMessag
             }}
           >
             <span>{statusValue ? `${statusValue.length}/80` : "0/80"}</span>
-            <span>{canPersist ? "Pronto para salvar" : "Pré-visualização apenas"}</span>
+            <span>Mostre quem você é na Infinity</span>
           </div>
         </div>
 
@@ -932,15 +935,17 @@ function ProfileStatusCard({ statusValue, setStatusValue, canPersist, saveMessag
             lineHeight: 1.7,
           }}
         >
-          {canPersist
-            ? "Seu status pode ser salvo no perfil e refletido na comunidade."
-            : "No momento, este campo aparece só na tela. Assim que a integração estiver disponível, ele poderá ser salvo no perfil."}
+          {statusValue
+            ? "Esse é o seu status atual na comunidade."
+            : "Defina uma frase que represente você."}
         </div>
 
         {saveMessage ? (
           <div
             style={{
-              color: saveMessage.toLowerCase().includes("sucesso") ? "#86efac" : "#fca5a5",
+              color: saveMessage.toLowerCase().includes("sucesso")
+                ? "#86efac"
+                : "#fca5a5",
               fontSize: 13,
               fontWeight: 700,
             }}
@@ -953,21 +958,26 @@ function ProfileStatusCard({ statusValue, setStatusValue, canPersist, saveMessag
   );
 }
 
-function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, nextExpirationCountdown }) {
-  const preparedWins = profileSummary?.wins ?? profileSummary?.victories ?? 0;
-  const preparedMatches = profileSummary?.matchesPlayed ?? profileSummary?.matches ?? 0;
-  const preparedProfit = profileSummary?.mediatorProfitTotal ?? profileSummary?.valueEarned ?? null;
-  const preparedMediated = profileSummary?.mediatedMatchesCount ?? profileSummary?.moderatedMatchesCount ?? 0;
+function MetricsOverview({
+  loadingSummary,
+  profileSummary,
+  activeSubscriptions,
+  nextExpirationCountdown,
+}) {
+  const preparedWins = profileSummary?.wins ?? 0;
+  const preparedMatches = profileSummary?.matchesPlayed ?? 0;
+  const preparedProfit = profileSummary?.mediatorProfitTotal ?? 0;
+  const preparedMediated = profileSummary?.mediatedMatchesCount ?? 0;
   const bestDay = profileSummary?.bestMediatorDay || null;
 
   return (
     <SectionCard
-      title="Resumo da comunidade"
-      subtitle="Leitura rápida da sua atividade, acessos e impacto no hub."
+      title="Seu desempenho"
+      subtitle="Veja sua presença na org de forma rápida."
     >
       <div className="profile-metrics-grid">
         <StatCard
-          label="Assinaturas ativas"
+          label="Acessos ativos"
           value={loadingSummary ? "..." : activeSubscriptions.length}
           helpText="Planos válidos no momento."
           accent="success"
@@ -977,33 +987,33 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
         <StatCard
           label="Próximo vencimento"
           value={loadingSummary ? "..." : nextExpirationCountdown?.label || "—"}
-          helpText="Contagem regressiva da menor validade."
+          helpText="Contagem do acesso que vence primeiro."
           accent="cyan"
         />
 
         <StatCard
           label="Vitórias"
           value={loadingSummary ? "..." : formatNumber(preparedWins, "0")}
-          helpText="Somente campo confiável do resumo."
+          helpText="Vitórias registradas no seu perfil."
         />
 
         <StatCard
           label="Partidas"
           value={loadingSummary ? "..." : formatNumber(preparedMatches, "0")}
-          helpText="Total presente no contrato atual."
+          helpText="Partidas ligadas à sua conta."
         />
 
         <StatCard
           label="Partidas mediadas"
           value={loadingSummary ? "..." : formatNumber(preparedMediated, "0")}
-          helpText="Atuação como mediador, se disponível."
+          helpText="Vezes em que você atuou como mediador."
           accent="cyan"
         />
 
         <StatCard
-          label="Lucro do mediador"
-          value={loadingSummary ? "..." : formatCurrency(preparedProfit, "R$ 0,00")}
-          helpText="Campo exibido somente se enviado pela API."
+          label="Lucro como mediador"
+          value={loadingSummary ? "..." : formatCurrency(preparedProfit)}
+          helpText="Total acumulado mediando partidas."
           accent="success"
         />
       </div>
@@ -1034,7 +1044,7 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
               marginBottom: 10,
             }}
           >
-            Melhor dia registrado
+            Melhor dia
           </div>
 
           <div
@@ -1061,11 +1071,8 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
             }}
           >
             {bestDay?.amount
-              ? `R$ ${Number(bestDay.amount).toFixed(2)} no melhor desempenho.`.replace(
-                  ".",
-                  ","
-                )
-              : "Sem referência confiável para esse indicador."}
+              ? `${formatCurrency(bestDay.amount)} no seu melhor dia como mediador.`
+              : "Ainda não há um melhor dia registrado."}
           </div>
         </div>
 
@@ -1087,7 +1094,7 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
               marginBottom: 10,
             }}
           >
-            Leitura rápida
+            Visão rápida
           </div>
 
           <div style={{ display: "grid", gap: 10 }}>
@@ -1098,8 +1105,8 @@ function MetricsOverview({ loadingSummary, profileSummary, activeSubscriptions, 
             </div>
             <div style={{ color: "#c7d2fe", fontSize: 14, lineHeight: 1.7 }}>
               {nextExpirationCountdown?.label
-                ? `Validade mais próxima: ${nextExpirationCountdown.label}`
-                : "Não há vencimento futuro disponível para exibir."}
+                ? `Seu próximo vencimento é em ${nextExpirationCountdown.label}`
+                : "Sem vencimento próximo para mostrar agora."}
             </div>
           </div>
         </div>
@@ -1123,14 +1130,6 @@ export default function Profile() {
   const [discordMessage, setDiscordMessage] = useState("");
   const [customStatus, setCustomStatus] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
-
-  const hasDiscordSaveContract = true;
-  const hasStatusSaveContract = Boolean(
-    profileSummary?.canSaveStatus ||
-      profileSummary?.supportsStatus ||
-      profileSummary?.statusEditable ||
-      profileSummary?.statusEndpoint
-  );
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -1219,55 +1218,26 @@ export default function Profile() {
       }));
 
       setDiscordIdInput(savedDiscordId);
-      setDiscordMessage("ID do Discord vinculado com sucesso.");
+      setDiscordMessage("Discord vinculado com sucesso.");
     } catch (error) {
       setDiscordMessage(
         error?.response?.data?.message ||
-          "Não foi possível vincular o ID do Discord."
+          "Não foi possível vincular seu Discord."
       );
     } finally {
       setSavingDiscordId(false);
     }
   };
 
-  const handleSaveStatus = async (event) => {
-    event.preventDefault();
-    setStatusMessage("");
-
-    if (!hasStatusSaveContract) {
-      setStatusMessage(
-        "Status atualizado apenas na interface. Nenhum contrato seguro para persistência foi detectado."
-      );
-      return;
-    }
-
-    try {
-      const response = await api.patch("/profile/status", {
-        status: customStatus,
-      });
-
-      const savedStatus =
-        response?.profile?.status ||
-        response?.data?.profile?.status ||
-        customStatus;
-
-      setProfileSummary((current) => ({
-        ...(current || {}),
-        status: savedStatus,
-        customStatus: savedStatus,
-      }));
-
-      setCustomStatus(savedStatus);
-      setStatusMessage("Status atualizado com sucesso.");
-    } catch (error) {
-      setStatusMessage(
-        error?.response?.data?.message ||
-          "Não foi possível atualizar o status."
-      );
-    }
+  const handleSaveStatus = async () => {
+    setStatusMessage("Status atualizado na tela.");
   };
 
-  const displayStatus = profileSummary?.status || profileSummary?.customStatus || customStatus || "Sem status definido";
+  const displayStatus =
+    customStatus ||
+    profileSummary?.status ||
+    profileSummary?.customStatus ||
+    "Sem status definido";
 
   return (
     <div style={{ display: "grid", gap: 20 }}>
@@ -1366,7 +1336,7 @@ export default function Profile() {
                 textTransform: "uppercase",
               }}
             >
-              Seu perfil
+              Seu perfil na Infinity
             </div>
 
             <h1
@@ -1392,8 +1362,7 @@ export default function Profile() {
                 maxWidth: 720,
               }}
             >
-              Gerencie sua conta, acompanhe seus acessos, veja sua atividade e
-              conecte seu Discord com mais clareza.
+              Veja sua conta, seus acessos e seu momento dentro da comunidade.
             </p>
           </div>
 
@@ -1453,7 +1422,7 @@ export default function Profile() {
                   marginBottom: 6,
                 }}
               >
-                Próxima expiração
+                Próximo vencimento
               </div>
               <div
                 style={{
@@ -1474,10 +1443,10 @@ export default function Profile() {
       <div className="profile-top-grid">
         <AvatarPanel user={user} />
         <ProfileStatusCard
-          statusValue={displayStatus}
+          statusValue={customStatus}
           setStatusValue={setCustomStatus}
-          canPersist={hasStatusSaveContract}
           saveMessage={statusMessage}
+          onSave={handleSaveStatus}
         />
       </div>
 
@@ -1572,8 +1541,8 @@ export default function Profile() {
         </SectionCard>
 
         <SectionCard
-          title="Status da presença"
-          subtitle="Leitura rápida da sua identidade e atuação."
+          title="Seu momento"
+          subtitle="Um resumo rápido do seu perfil."
         >
           <div style={{ display: "grid", gap: 16 }}>
             <div
@@ -1614,8 +1583,7 @@ export default function Profile() {
                   lineHeight: 1.7,
                 }}
               >
-                O campo fica preparado visualmente para uma futura persistência,
-                sem alterar o contrato atual quando a rota segura não existe.
+                Uma frase curta para mostrar quem você é dentro da org.
               </div>
             </div>
 
@@ -1637,12 +1605,12 @@ export default function Profile() {
                   marginBottom: 10,
                 }}
               >
-                Disponibilidade
+                Discord
               </div>
               <div style={{ color: "#cffafe", fontSize: 14, lineHeight: 1.7 }}>
-                {hasStatusSaveContract
-                  ? "Persistência detectada pelo contrato atual."
-                  : "Somente UI preparada; nenhum caminho seguro para salvar foi confirmado em api.js/contexto de autenticação."}
+                {profileSummary?.discordId
+                  ? "Sua conta já está conectada ao Discord."
+                  : "Conecte seu Discord para completar sua presença na comunidade."}
               </div>
             </div>
           </div>
@@ -1650,8 +1618,8 @@ export default function Profile() {
       </div>
 
       <SectionCard
-        title="Vincular Discord"
-        subtitle="Pegue seu ID no canal do Discord e cole abaixo para conectar sua conta."
+        title="Conectar Discord"
+        subtitle="Cole seu ID para ligar sua conta ao servidor."
       >
         <div
           style={{
@@ -1769,8 +1737,7 @@ export default function Profile() {
                 lineHeight: 1.6,
               }}
             >
-              Vá ao canal criado no Discord, clique no botão para ver seu ID e
-              cole o número aqui.
+              Pegue seu ID no Discord e cole aqui para conectar sua conta.
             </div>
 
             <div
@@ -1792,7 +1759,7 @@ export default function Profile() {
                   fontWeight: 800,
                 }}
               >
-                ID vinculado: {profileSummary?.discordId || "não vinculado"}
+                ID conectado: {profileSummary?.discordId || "não conectado"}
               </div>
 
               {discordMessage ? (
@@ -1820,14 +1787,18 @@ export default function Profile() {
         nextExpirationCountdown={nextExpirationCountdown}
       />
 
-      <SectionCard title="Atividade" subtitle="Resumo real da sua atuação na org.">
+      <SectionCard title="Seus acessos" subtitle="Veja os planos ativos da sua conta.">
         <div style={{ display: "grid", gap: 16 }}>
           <div className="profile-access-grid">
             {loadingSubscriptions ? (
               <StatCard label="Assinaturas" value="..." helpText="Carregando dados." />
-            ) : subscriptions.length ? (
-              subscriptions.slice(0, 4).map((subscription, index) => (
-                <AccessCard key={`${getPlanName(subscription)}-${index}`} subscription={subscription} nowTs={nowTs} />
+            ) : activeSubscriptions.length ? (
+              activeSubscriptions.map((subscription, index) => (
+                <AccessCard
+                  key={`${getPlanName(subscription)}-${index}`}
+                  subscription={subscription}
+                  nowTs={nowTs}
+                />
               ))
             ) : (
               <div
@@ -1841,7 +1812,7 @@ export default function Profile() {
                   lineHeight: 1.7,
                 }}
               >
-                {subscriptionsError || "Nenhuma assinatura disponível para exibição."}
+                {subscriptionsError || "Você não tem nenhum acesso ativo agora."}
               </div>
             )}
           </div>

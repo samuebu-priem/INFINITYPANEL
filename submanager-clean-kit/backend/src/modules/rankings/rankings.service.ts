@@ -20,25 +20,26 @@ export const rankingsService = {
   publicWins: async (period: RankingPeriod) => {
     const startDate = startOfWindow(period);
 
-    const records = await prisma.supervisorMatchRecord.findMany({
-      where: startDate
-        ? {
-            createdAt: {
-              gte: startDate,
-            },
-          }
-        : undefined,
-      orderBy: {
-        createdAt: "desc",
+const whereClause = startDate
+  ? {
+      createdAt: {
+        gte: startDate,
       },
-      select: {
-        winner: true,
-        players: true,
-        createdAt: true,
-      },
-      take: 5000,
-    });
+    }
+  : {};
 
+const records = await prisma.supervisorMatchRecord.findMany({
+  where: whereClause,
+  orderBy: {
+    createdAt: "desc",
+  },
+  select: {
+    winner: true,
+    players: true,
+    createdAt: true,
+  },
+  take: 5000,
+});
     const winsMap = new Map<string, { discordId: string; wins: number; matches: number }>();
     const matchesMap = new Map<string, number>();
 
@@ -110,26 +111,28 @@ export const rankingsService = {
   },
 
   mediatorRanking: async (period: RankingPeriod) => {
-    const startDate = startOfWindow(period);
+   const startDate = startOfWindow(period);
 
-    const records = await prisma.supervisorMatchRecord.findMany({
-      where: startDate
-        ? {
-            createdAt: {
-              gte: startDate,
-            },
-          }
-        : undefined,
-      orderBy: {
-        createdAt: "desc",
+const whereClause = startDate
+  ? {
+      createdAt: {
+        gte: startDate,
       },
-      select: {
-        mediatorId: true,
-        mediatorName: true,
-        mediatorRevenue: true,
-      },
-      take: 5000,
-    });
+    }
+  : {};
+
+const records = await prisma.supervisorMatchRecord.findMany({
+  where: whereClause,
+  orderBy: {
+    createdAt: "desc",
+  },
+  select: {
+    winner: true,
+    players: true,
+    createdAt: true,
+  },
+  take: 5000,
+});
 
     const grouped = new Map<
       string,
