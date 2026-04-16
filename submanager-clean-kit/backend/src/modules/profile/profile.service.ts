@@ -94,7 +94,8 @@ export const profileService = {
       : [];
 
     const mediatorProfitTotal = mediatedRecords.reduce(
-      (acc: number, item: typeof mediatedRecords[number]) => acc + Number(item.mediatorRevenue || 0),
+      (acc: number, item: (typeof mediatedRecords)[number]) =>
+        acc + Number(item.mediatorRevenue || 0),
       0,
     );
 
@@ -126,15 +127,18 @@ export const profileService = {
         wins,
         matchesPlayed,
         latestWinAt: latestWin?.createdAt ?? null,
-        discordId: user.discordId,
+
+        discordId: user.discordId ?? null,
         discordUsername: user.discordUsername ?? null,
         discordGlobalName: user.discordGlobalName ?? null,
         discordAvatar: user.discordAvatar ?? null,
         discordGuildNick: user.discordGuildNick ?? null,
         discordConnectedAt: user.discordConnectedAt ?? null,
         discordDisplayName: getDiscordDisplayName(user),
+
         avatarUrl: user.avatarUrl ?? null,
         status: user.status ?? null,
+
         mediatorProfitTotal,
         mediatedMatchesCount,
         bestMediatorDay,

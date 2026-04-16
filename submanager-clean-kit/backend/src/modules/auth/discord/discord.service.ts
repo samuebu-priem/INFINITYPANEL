@@ -45,6 +45,15 @@ function getDiscordRedirectUri(): string {
   throw new Error("DISCORD_REDIRECT_URI ou BACKEND_URL não configurado");
 }
 
+function getFrontendProfileUrl(status: "connected" | "error"): string {
+  const frontendUrl =
+    normalizeText(process.env.FRONTEND_URL) ||
+    normalizeText(process.env.APP_URL) ||
+    "https://infinitypainel.com.br";
+
+  return `${frontendUrl.replace(/\/$/, "")}/profile?discord=${status}`;
+}
+
 function getDiscordClientConfig() {
   const clientId = normalizeText(process.env.DISCORD_CLIENT_ID);
   const clientSecret = normalizeText(process.env.DISCORD_CLIENT_SECRET);
@@ -54,6 +63,61 @@ function getDiscordClientConfig() {
   }
 
   return { clientId, clientSecret };
+}
+
+function getDiscordScope(): string {
+  return normalizeText(process.env.DISCORD_SCOPE) || "identify";
+}
+
+function getStateSecret(): string {
+  const secret = normalizeText(process.env.JWT_SECRET);
+
+  if (!secret) {
+    throw new ApiError(500, "JWT_SECRET is required to sign Discord OAuth state");
+  }
+
+  return secret;
+}
+
+function signStatePayload(payload: string): string {
+  return crypto
+    .createHmac("sha256", getStateSecret())
+    .update(payload)
+    .digest("hex");
+}
+
+function buildOAuthState(userId: string): string {
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const issuedAt = Date.now().toString();
+  const payload = `${userId}|${issuedAt}|${nonce}`;
+  const signature = signStatePayload(payload);
+
+  return Buffer.from(`${payload}|${signature}`, "utf8").toString("base64url");
+}
+
+function parseOAuthState(state: string): { userId: string } {
+  const raw = Buffer.from(String(state || ""), "base64url").toString("utf8");
+  const [userId, issuedAt, nonce, signature] = raw.split("|");
+
+  if (!userId || !issuedAt || !nonce || !signature) {
+    throw new ApiError(400, "Invalid Discord OAuth state");
+  }
+
+  const payload = `${userId}|${issuedAt}|${nonce}`;
+  const expectedSignature = signStatePayload(payload);
+
+  if (signature !== expectedSignature) {
+    throw new ApiError(400, "Invalid Discord OAuth state signature");
+  }
+
+  const ageMs = Date.now() - Number(issuedAt);
+  const maxAgeMs = 10 * 60 * 1000;
+
+  if (Number.isNaN(ageMs) || ageMs < 0 || ageMs > maxAgeMs) {
+    throw new ApiError(400, "Discord OAuth state expired");
+  }
+
+  return { userId };
 }
 
 async function exchangeCodeForToken(code: string) {
@@ -99,20 +163,19 @@ async function fetchDiscordMe(accessToken: string) {
   return (await response.json()) as DiscordUserResponse;
 }
 
-async function fetchDiscordGuildNick(accessToken: string): Promise<string | null> {
-  if (!env.DISCORD_GUILD_ID) {
+async function fetchDiscordGuildNick(discordUserId: string): Promise<string | null> {
+  if (!env.DISCORD_GUILD_ID || !env.DISCORD_BOT_TOKEN) {
     return null;
   }
 
-  if (!env.DISCORD_BOT_TOKEN) {
-    return null;
-  }
-
-  const response = await fetch(`https://discord.com/api/guilds/${env.DISCORD_GUILD_ID}/members/@me`, {
-    headers: {
-      Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+  const response = await fetch(
+    `https://discord.com/api/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}`,
+    {
+      headers: {
+        Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+      },
     },
-  });
+  );
 
   if (!response.ok) {
     return null;
@@ -123,7 +186,11 @@ async function fetchDiscordGuildNick(accessToken: string): Promise<string | null
   return normalizeText(payload.nick);
 }
 
-async function upsertDiscordProfile(userId: string, discordUser: DiscordUserResponse, guildNick: string | null) {
+async function upsertDiscordProfile(
+  userId: string,
+  discordUser: DiscordUserResponse,
+  guildNick: string | null,
+) {
   const discordId = normalizeDiscordId(discordUser.id);
 
   if (!discordId) {
@@ -172,11 +239,15 @@ async function upsertDiscordProfile(userId: string, discordUser: DiscordUserResp
 }
 
 export const discordAuthService = {
-  getAuthorizationUrl() {
+  getAuthorizationUrl(userId: string) {
+    if (!normalizeText(userId)) {
+      throw new ApiError(400, "userId is required");
+    }
+
     const { clientId } = getDiscordClientConfig();
     const redirectUri = getDiscordRedirectUri();
-    const state = crypto.randomBytes(24).toString("hex");
-    const scope = ["identify", "guilds.members.read"].join(" ");
+    const state = buildOAuthState(userId);
+    const scope = getDiscordScope();
 
     const url = new URL("https://discord.com/api/oauth2/authorize");
     url.searchParams.set("client_id", clientId);
@@ -199,7 +270,7 @@ export const discordAuthService = {
 
     const token = await exchangeCodeForToken(code);
     const discordUser = await fetchDiscordMe(token.access_token);
-    const guildNick = await fetchDiscordGuildNick(token.access_token);
+    const guildNick = await fetchDiscordGuildNick(discordUser.id);
 
     const profile = await upsertDiscordProfile(userId, discordUser, guildNick);
 
@@ -267,7 +338,25 @@ export const discordAuthService = {
     };
   },
 
-  async callback(userId: string, code: string) {
-    return this.connectFromCode(userId, code);
+  async callback(state: string, code: string) {
+    if (!normalizeText(code)) {
+      throw new ApiError(400, "code is required");
+    }
+
+    if (!normalizeText(state)) {
+      throw new ApiError(400, "state is required");
+    }
+
+    const { userId } = parseOAuthState(state);
+    const result = await this.connectFromCode(userId, code);
+
+    return {
+      ...result,
+      redirectTo: getFrontendProfileUrl("connected"),
+    };
+  },
+
+  getCallbackErrorRedirect() {
+    return getFrontendProfileUrl("error");
   },
 };
