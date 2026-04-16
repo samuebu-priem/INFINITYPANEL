@@ -6,5 +6,3 @@ export const discordAuthRouter = Router();
 
 discordAuthRouter.get("/url", requireAuth, discordAuthController.getUrl);
 discordAuthRouter.get("/callback", discordAuthController.callback);
-discordAuthRouter.post("/refresh", requireAuth, discordAuthController.refresh);
-discordAuthRouter.delete("/", requireAuth, discordAuthController.disconnect);
