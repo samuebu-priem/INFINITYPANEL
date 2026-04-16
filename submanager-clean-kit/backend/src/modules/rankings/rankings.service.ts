@@ -111,28 +111,29 @@ const records = await prisma.supervisorMatchRecord.findMany({
   },
 
   mediatorRanking: async (period: RankingPeriod) => {
-   const startDate = startOfWindow(period);
+    const startDate = startOfWindow(period);
 
-const whereClause = startDate
-  ? {
-      createdAt: {
-        gte: startDate,
+    const whereClause = startDate
+      ? {
+          createdAt: {
+            gte: startDate,
+          },
+        }
+      : undefined;
+
+    const records = await prisma.supervisorMatchRecord.findMany({
+      where: whereClause,
+      orderBy: {
+        createdAt: "desc",
       },
-    }
-  : {};
-
-const records = await prisma.supervisorMatchRecord.findMany({
-  where: whereClause,
-  orderBy: {
-    createdAt: "desc",
-  },
-  select: {
-    winner: true,
-    players: true,
-    createdAt: true,
-  },
-  take: 5000,
-});
+      select: {
+        mediatorId: true,
+        mediatorName: true,
+        mediatorRevenue: true,
+        createdAt: true,
+      },
+      take: 5000,
+    });
 
     const grouped = new Map<
       string,
