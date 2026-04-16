@@ -26,126 +26,135 @@ function getDiscordDisplayName(user: {
 
 export const profileService = {
   summary: async (userId: string) => {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        username: true,
-        discordId: true,
-        discordUsername: true,
-        discordGlobalName: true,
-        discordAvatar: true,
-        discordGuildNick: true,
-        discordConnectedAt: true,
-        avatarUrl: true,
-        status: true,
-      },
-    });
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      username: true,
+      discordId: true,
+      discordUsername: true,
+      discordGlobalName: true,
+      discordAvatar: true,
+      discordGuildNick: true,
+      discordConnectedAt: true,
+      avatarUrl: true,
+      status: true,
+    },
+  });
 
-    if (!user) {
-      throw new ApiError(404, "User not found");
-    }
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
 
-    const wins = user.discordId
-      ? await prisma.supervisorMatchRecord.count({
-          where: {
-            winner: user.discordId,
-          },
-        })
-      : 0;
+  const wins = user.discordId
+    ? await prisma.supervisorMatchRecord.count({
+        where: {
+          winner: user.discordId,
+        },
+      })
+    : 0;
 
-    const matchesPlayed = user.discordId
-      ? await prisma.supervisorMatchRecord.count({
-          where: {
-            players: {
-              array_contains: user.discordId,
-            } as any,
+  const matchesPlayed = user.discordId
+    ? await prisma.supervisorMatchRecord.count({
+        where: {
+          players: {
+            has: user.discordId,
           },
-        })
-      : 0;
+        },
+      })
+    : 0;
 
-    const latestWin = user.discordId
-      ? await prisma.supervisorMatchRecord.findFirst({
-          where: {
-            winner: user.discordId,
-          },
-          orderBy: {
-            createdAt: "desc",
-          },
-          select: {
-            createdAt: true,
-          },
-        })
+  const latestWin = user.discordId
+    ? await prisma.supervisorMatchRecord.findFirst({
+        where: {
+          winner: user.discordId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        select: {
+          createdAt: true,
+        },
+      })
+    : null;
+
+  const mediatedRecords = user.discordId
+    ? await prisma.supervisorMatchRecord.findMany({
+        where: {
+          mediatorId: user.discordId,
+        },
+        orderBy: {
+          createdAt: "asc",
+        },
+        select: {
+          mediatorRevenue: true,
+          createdAt: true,
+        },
+      })
+    : [];
+
+  const mediatorProfitTotal = mediatedRecords.reduce(
+    (acc: number, item: (typeof mediatedRecords)[number]) =>
+      acc + Number(item.mediatorRevenue || 0),
+    0,
+  );
+
+  const mediatedMatchesCount = mediatedRecords.length;
+
+  const groupedByDay = new Map<string, number>();
+
+  for (const item of mediatedRecords) {
+    if (!item?.createdAt) continue;
+
+    const createdAt =
+      item.createdAt instanceof Date
+        ? item.createdAt
+        : new Date(item.createdAt);
+
+    if (Number.isNaN(createdAt.getTime())) continue;
+
+    const day = createdAt.toISOString().slice(0, 10);
+    groupedByDay.set(day, (groupedByDay.get(day) || 0) + Number(item.mediatorRevenue || 0));
+  }
+
+  const mediatorSeries = [...groupedByDay.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([date, amount]) => ({
+      date,
+      amount,
+    }));
+
+  const bestMediatorDay =
+    mediatorSeries.length > 0
+      ? mediatorSeries.reduce((best, current) =>
+          current.amount > best.amount ? current : best,
+        )
       : null;
 
-    const mediatedRecords = user.discordId
-      ? await prisma.supervisorMatchRecord.findMany({
-          where: {
-            mediatorId: user.discordId,
-          },
-          orderBy: {
-            createdAt: "asc",
-          },
-          select: {
-            mediatorRevenue: true,
-            createdAt: true,
-          },
-        })
-      : [];
+  return {
+    summary: {
+      wins,
+      matchesPlayed,
+      latestWinAt: latestWin?.createdAt ?? null,
 
-    const mediatorProfitTotal = mediatedRecords.reduce(
-      (acc: number, item: (typeof mediatedRecords)[number]) =>
-        acc + Number(item.mediatorRevenue || 0),
-      0,
-    );
+      discordId: user.discordId ?? null,
+      discordUsername: user.discordUsername ?? null,
+      discordGlobalName: user.discordGlobalName ?? null,
+      discordAvatar: user.discordAvatar ?? null,
+      discordGuildNick: user.discordGuildNick ?? null,
+      discordConnectedAt: user.discordConnectedAt ?? null,
+      discordDisplayName: getDiscordDisplayName(user),
 
-    const mediatedMatchesCount = mediatedRecords.length;
+      avatarUrl: user.avatarUrl ?? null,
+      status: user.status ?? null,
 
-    const groupedByDay = new Map<string, number>();
-
-    for (const item of mediatedRecords) {
-      const day = item.createdAt.toISOString().slice(0, 10);
-      groupedByDay.set(day, (groupedByDay.get(day) || 0) + Number(item.mediatorRevenue || 0));
-    }
-
-    const mediatorSeries = [...groupedByDay.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, amount]) => ({
-        date,
-        amount,
-      }));
-
-    const bestMediatorDay =
-      mediatorSeries.length > 0
-        ? mediatorSeries.reduce((best, current) =>
-            current.amount > best.amount ? current : best,
-          )
-        : null;
-
-    return {
-      summary: {
-        wins,
-        matchesPlayed,
-        latestWinAt: latestWin?.createdAt ?? null,
-
-        discordId: user.discordId ?? null,
-        discordUsername: user.discordUsername ?? null,
-        discordGlobalName: user.discordGlobalName ?? null,
-        discordAvatar: user.discordAvatar ?? null,
-        discordGuildNick: user.discordGuildNick ?? null,
-        discordConnectedAt: user.discordConnectedAt ?? null,
-        discordDisplayName: getDiscordDisplayName(user),
-
-        avatarUrl: user.avatarUrl ?? null,
-        status: user.status ?? null,
-
-        mediatorProfitTotal,
-        mediatedMatchesCount,
-        bestMediatorDay,
-        mediatorSeries,
-      },
-    };
-  },
+      mediatorProfitTotal,
+      mediatedMatchesCount,
+      bestMediatorDay,
+      mediatorSeries,
+    },
+  };
+},
 
   updateDiscordId: async (userId: string, discordIdInput: unknown) => {
     const discordId = normalizeDiscordId(discordIdInput);
