@@ -723,7 +723,7 @@ export default function RankingPublic() {
                   maxWidth: 820,
                 }}
               >
-                Competição pública da Infinity
+                Ranking público da Infinity
               </h1>
 
               <p
@@ -735,8 +735,8 @@ export default function RankingPublic() {
                   maxWidth: 740,
                 }}
               >
-                Acompanhe o pódio, descubra quem está dominando o período e compare posição,
-                vitórias e participação em uma apresentação mais viva e competitiva.
+                Acompanhe o pódio, veja quem está dominando o período e compare posição,
+                vitórias e partidas em uma experiência clara e imersiva.
               </p>
             </div>
 
@@ -751,12 +751,29 @@ export default function RankingPublic() {
                 background: "rgba(255,255,255,0.03)",
               }}
             >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Destaques da comunidade
+              </div>
+              <div style={{ color: "#f8fafc", fontSize: 18, fontWeight: 900 }}>
+                Seu espaço para ver quem está no topo da Infinity.
+              </div>
+              <div style={{ color: "#94a3b8", fontSize: 14, lineHeight: 1.6 }}>
+                Posição, vitórias e partidas reunidos em uma visão rápida e elegante.
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <SectionCard title="Período" subtitle="Escolha a janela de tempo do ranking.">
+      <SectionCard title="Período" subtitle="Escolha o recorte que quer acompanhar.">
         <div className="ranking-periods">
           <PeriodButton active={period === "total"} onClick={() => setPeriod("total")}>
             Total
@@ -781,7 +798,7 @@ export default function RankingPublic() {
           <EmptyState
             title="Ranking sem dados"
             description="Ainda não há partidas suficientes para montar o pódio deste período."
-            hint="Assim que houver registros, os destaques aparecem aqui."
+            hint="Assim que houver movimentação, os destaques aparecem aqui."
           />
         ) : (
           <div className="ranking-top-grid">
@@ -932,7 +949,7 @@ export default function RankingPublic() {
                         width: "fit-content",
                       }}
                     >
-                      Valor ganho total: {formatCurrency(item.earnedValue)}
+                      Total acumulado: {formatCurrency(item.earnedValue)}
                     </div>
                   ) : (
                     <div
@@ -948,7 +965,7 @@ export default function RankingPublic() {
                         width: "fit-content",
                       }}
                     >
-                      Valor ganho total indisponível neste contrato
+                      Total acumulado não disponível neste momento
                     </div>
                   )}
                 </div>
@@ -960,8 +977,8 @@ export default function RankingPublic() {
 
       {selfOutsideTop99 ? (
         <SectionCard
-          title="Você"
-          subtitle="Seu destaque atual fora do Top 99."
+          title="Seu destaque"
+          subtitle="Sua posição atual fora do Top 99."
           style={{
             borderColor: "rgba(34,211,238,0.32)",
             boxShadow: "0 20px 60px rgba(34,211,238,0.08)",
@@ -971,7 +988,7 @@ export default function RankingPublic() {
         </SectionCard>
       ) : null}
 
-      <SectionCard title="Posições 4 a 99" subtitle="Lista detalhada em formato de cards, com melhor leitura e hierarquia.">
+      <SectionCard title="Posições 4 a 99" subtitle="Uma leitura mais clara, com mais destaque para quem segue firme no ranking.">
         {loading ? (
           <div className="ranking-list-grid">
             {[1, 2, 3, 4, 5].map((row) => (
@@ -981,8 +998,8 @@ export default function RankingPublic() {
         ) : ranking.length === 0 ? (
           <EmptyState
             title="Nenhum jogador ranqueado"
-            description="Não foi possível localizar registros para este período."
-            hint="Verifique outro período ou aguarde novas partidas."
+            description="Ainda não encontramos movimentação suficiente para este período."
+            hint="Tente outro recorte ou aguarde novas partidas."
           />
         ) : (
           <div className="ranking-list-wrap">

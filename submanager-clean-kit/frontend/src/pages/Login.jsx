@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -25,7 +24,7 @@ export default function Login() {
         password: form.password,
       });
 
-      toast.success("Login realizado.");
+      toast.success("Acesso realizado com sucesso.");
 
       const role = response?.user?.role;
 
@@ -66,10 +65,10 @@ export default function Login() {
             <div>
               <div className="auth-badge">InfinityPainel</div>
               <h1 className="auth-title">
-                Acesse sua conta e controle tudo em um só lugar.
+                Entre na sua conta e acompanhe tudo em um só lugar.
               </h1>
               <p className="auth-text">
-                Entre para gerenciar planos, assinaturas e acompanhar seu lucro.
+                Acesse seus planos, sua presença na comunidade e seu progresso.
               </p>
             </div>
           </div>

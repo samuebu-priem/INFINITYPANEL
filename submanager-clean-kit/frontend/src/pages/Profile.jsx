@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../services/api.js";
 import { useAuth } from "../context/auth.jsx";
 
@@ -556,6 +556,35 @@ function DiscordIcon() {
 
 function AvatarPanel({ user }) {
   const [photoHover, setPhotoHover] = useState(false);
+  const fileInputRef = useRef(null);
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarMessage, setAvatarMessage] = useState("");
+
+  const currentAvatar = avatarPreview || user?.avatar || user?.photoUrl || user?.imageUrl || "";
+  const avatarLabel = user?.username || "Usuário";
+  const avatarInitials = getAvatarText(user);
+
+  const handlePickAvatar = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setAvatarMessage("Escolha uma imagem para o seu avatar.");
+      event.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAvatarPreview(String(reader.result || ""));
+      setAvatarMessage("Avatar atualizado só nesta tela.");
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div
@@ -666,52 +695,69 @@ function AvatarPanel({ user }) {
             flexWrap: "wrap",
           }}
         >
-          <div
-            style={{
-              width: 122,
-              height: 122,
-              borderRadius: 36,
-              padding: 4,
-              background:
-                "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
-              boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
-            }}
-          >
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: 32,
-                border: "1px solid rgba(255,255,255,0.08)",
-                background:
-                  "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%), linear-gradient(180deg, rgba(17,24,39,0.98), rgba(11,15,20,0.98))",
-                display: "grid",
-                placeItems: "center",
-                color: "#a5f3fc",
-                fontSize: 34,
-                fontWeight: 900,
-                letterSpacing: "-0.06em",
-                position: "relative",
-                overflow: "hidden",
-              }}
-              onMouseEnter={() => setPhotoHover(true)}
-              onMouseLeave={() => setPhotoHover(false)}
-            >
-              <span
+              <div
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: photoHover
-                    ? "radial-gradient(circle at center, rgba(34,211,238,0.12), transparent 48%)"
-                    : "radial-gradient(circle at center, rgba(99,102,241,0.08), transparent 48%)",
-                  transition: "opacity 180ms ease",
+                  width: 122,
+                  height: 122,
+                  borderRadius: 36,
+                  padding: 4,
+                  background:
+                    "linear-gradient(135deg, rgba(34,211,238,0.75), rgba(99,102,241,0.9))",
+                  boxShadow: "0 18px 44px rgba(34,211,238,0.12)",
+                  cursor: "pointer",
                 }}
-              />
-              <span style={{ position: "relative", zIndex: 1 }}>
-                {getAvatarText(user)}
-              </span>
-            </div>
-          </div>
+                onClick={handlePickAvatar}
+              >
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 32,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    background:
+                      "radial-gradient(circle at top, rgba(255,255,255,0.08), transparent 55%), linear-gradient(180deg, rgba(17,24,39,0.98), rgba(11,15,20,0.98))",
+                    display: "grid",
+                    placeItems: "center",
+                    color: "#a5f3fc",
+                    fontSize: 34,
+                    fontWeight: 900,
+                    letterSpacing: "-0.06em",
+                    position: "relative",
+                    overflow: "hidden",
+                  }}
+                  onMouseEnter={() => setPhotoHover(true)}
+                  onMouseLeave={() => setPhotoHover(false)}
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      background: photoHover
+                        ? "radial-gradient(circle at center, rgba(34,211,238,0.12), transparent 48%)"
+                        : "radial-gradient(circle at center, rgba(99,102,241,0.08), transparent 48%)",
+                      transition: "opacity 180ms ease",
+                    }}
+                  />
+                  {currentAvatar ? (
+                    <img
+                      src={currentAvatar}
+                      alt={avatarLabel}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        borderRadius: 28,
+                        position: "relative",
+                        zIndex: 1,
+                      }}
+                    />
+                  ) : (
+                    <span style={{ position: "relative", zIndex: 1 }}>
+                      {avatarInitials}
+                    </span>
+                  )}
+                </div>
+              </div>
 
           <div style={{ display: "grid", gap: 12, flex: 1, minWidth: 220 }}>
             <div
@@ -779,10 +825,32 @@ function AvatarPanel({ user }) {
                 cursor: "pointer",
                 boxShadow: "0 0 22px rgba(34,211,238,0.10)",
               }}
-              onClick={(event) => event.preventDefault()}
+              onClick={handlePickAvatar}
             >
-              Alterar foto
+              Trocar avatar
             </button>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              style={{ display: "none" }}
+            />
+
+            {avatarMessage ? (
+              <div
+                style={{
+                  color: avatarMessage.toLowerCase().includes("atualizado")
+                    ? "#86efac"
+                    : "#fca5a5",
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                {avatarMessage}
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -865,8 +933,8 @@ function ProfileStatusCard({ statusValue, setStatusValue, canPersist, saveMessag
           }}
         >
           {canPersist
-            ? "O status pode ser sincronizado com o perfil usando o contrato existente."
-            : "Nenhum contrato seguro de persistência foi encontrado. A interface está pronta, mas este campo permanece apenas visual nesta versão."}
+            ? "Seu status pode ser salvo no perfil e refletido na comunidade."
+            : "No momento, este campo aparece só na tela. Assim que a integração estiver disponível, ele poderá ser salvo no perfil."}
         </div>
 
         {saveMessage ? (
