@@ -123,27 +123,27 @@ function buildCountdown(endsAt, nowTs) {
   };
 }
 
-function SectionCard({ title, subtitle, children, action }) {
+function SectionCard({ title, subtitle, children, action, flush = false }) {
   return (
     <section
       style={{
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid rgba(99,102,241,0.14)",
-        borderRadius: 28,
-        padding: 22,
-        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
-        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+        border: "1px solid rgba(99,102,241,0.16)",
+        borderRadius: 30,
+        padding: 24,
+        boxShadow: "0 14px 44px rgba(0,0,0,0.24)",
+        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "0 18px 48px rgba(0,0,0,0.28)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.24)";
+        event.currentTarget.style.transform = "translateY(-3px)";
+        event.currentTarget.style.boxShadow = "0 22px 60px rgba(0,0,0,0.30)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.28)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.22)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.14)";
+        event.currentTarget.style.boxShadow = "0 14px 44px rgba(0,0,0,0.24)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.16)";
       }}
     >
       {(title || subtitle || action) && (
@@ -153,7 +153,7 @@ function SectionCard({ title, subtitle, children, action }) {
             justifyContent: "space-between",
             gap: 16,
             alignItems: "flex-start",
-            marginBottom: 18,
+            marginBottom: flush ? 14 : 20,
             flexWrap: "wrap",
           }}
         >
@@ -165,7 +165,7 @@ function SectionCard({ title, subtitle, children, action }) {
                   fontSize: 22,
                   fontWeight: 900,
                   color: "#f3f4f6",
-                  letterSpacing: "-0.02em",
+                  letterSpacing: "-0.03em",
                 }}
               >
                 {title}
@@ -195,17 +195,19 @@ function SectionCard({ title, subtitle, children, action }) {
   );
 }
 
-function StatCard({ label, value, helpText, accent = "primary" }) {
+function StatCard({ label, value, helpText, accent = "primary", highlight = false }) {
   const accents = {
     primary: {
       value: "#f3f4f6",
       border: "rgba(99,102,241,0.16)",
       bg: "rgba(255,255,255,0.02)",
+      glow: "rgba(99,102,241,0.10)",
     },
     success: {
       value: "#86efac",
       border: "rgba(34,197,94,0.18)",
       bg: "rgba(34,197,94,0.05)",
+      glow: "rgba(34,197,94,0.10)",
     },
   };
 
@@ -214,30 +216,45 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
   return (
     <div
       style={{
+        position: "relative",
+        overflow: "hidden",
         border: `1px solid ${theme.border}`,
-        borderRadius: 22,
+        borderRadius: 24,
         background: theme.bg,
-        padding: 18,
-        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+        padding: 20,
+        minHeight: 152,
+        boxShadow: highlight ? `0 18px 40px ${theme.glow}` : "none",
+        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "0 16px 34px rgba(0,0,0,0.16)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.22)";
+        event.currentTarget.style.transform = "translateY(-3px)";
+        event.currentTarget.style.boxShadow = `0 22px 50px ${theme.glow}`;
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.boxShadow = highlight ? `0 18px 40px ${theme.glow}` : "none";
         event.currentTarget.style.borderColor = theme.border;
       }}
     >
       <div
         style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.06), transparent 38%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
           color: "#9ca3af",
           fontSize: 12,
           fontWeight: 800,
           textTransform: "uppercase",
-          letterSpacing: "0.12em",
+          letterSpacing: "0.14em",
           marginBottom: 10,
         }}
       >
@@ -246,11 +263,13 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
 
       <div
         style={{
+          position: "relative",
+          zIndex: 1,
           color: theme.value,
-          fontSize: 34,
+          fontSize: 36,
           lineHeight: 1.05,
           fontWeight: 900,
-          letterSpacing: "-0.03em",
+          letterSpacing: "-0.04em",
         }}
       >
         {value}
@@ -258,6 +277,8 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
 
       <div
         style={{
+          position: "relative",
+          zIndex: 1,
           marginTop: 8,
           color: "#9ca3af",
           fontSize: 14,
@@ -274,27 +295,39 @@ function EmptyState({ title, description, hint }) {
   return (
     <div
       style={{
-        border: "1px dashed rgba(99, 102, 241, 0.22)",
-        borderRadius: 24,
-        padding: 28,
+        position: "relative",
+        overflow: "hidden",
+        border: "1px solid rgba(99,102,241,0.18)",
+        borderRadius: 28,
+        padding: 34,
         textAlign: "center",
         background:
-          "linear-gradient(180deg, rgba(99,102,241,0.05) 0%, rgba(11,15,20,0.4) 100%)",
+          "linear-gradient(180deg, rgba(99,102,241,0.08) 0%, rgba(11,15,20,0.42) 100%)",
         boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
       }}
     >
       <div
         style={{
-          width: 58,
-          height: 58,
-          borderRadius: 18,
-          margin: "0 auto 14px",
-          background: "rgba(99, 102, 241, 0.12)",
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: "radial-gradient(circle at top, rgba(99,102,241,0.12), transparent 42%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          width: 66,
+          height: 66,
+          borderRadius: 22,
+          margin: "0 auto 16px",
+          background: "rgba(99, 102, 241, 0.14)",
           display: "grid",
           placeItems: "center",
-          fontSize: 24,
+          fontSize: 26,
           color: "#c7d2fe",
-          boxShadow: "0 0 30px rgba(99,102,241,0.18)",
+          boxShadow: "0 0 36px rgba(99,102,241,0.22)",
         }}
       >
         ✦
@@ -302,9 +335,10 @@ function EmptyState({ title, description, hint }) {
 
       <h3
         style={{
+          position: "relative",
           margin: 0,
           color: "#f3f4f6",
-          fontSize: 18,
+          fontSize: 19,
           fontWeight: 900,
           letterSpacing: "-0.02em",
         }}
@@ -314,11 +348,12 @@ function EmptyState({ title, description, hint }) {
 
       <p
         style={{
+          position: "relative",
           margin: "10px auto 0",
-          maxWidth: 480,
+          maxWidth: 500,
           color: "#9ca3af",
           fontSize: 14,
-          lineHeight: 1.6,
+          lineHeight: 1.7,
         }}
       >
         {description}
@@ -327,15 +362,16 @@ function EmptyState({ title, description, hint }) {
       {hint ? (
         <div
           style={{
-            marginTop: 14,
+            position: "relative",
+            marginTop: 16,
             display: "inline-flex",
             alignItems: "center",
             gap: 8,
-            padding: "8px 12px",
+            padding: "9px 14px",
             borderRadius: 999,
             color: "#c7d2fe",
-            background: "rgba(99,102,241,0.10)",
-            border: "1px solid rgba(99,102,241,0.16)",
+            background: "rgba(99,102,241,0.12)",
+            border: "1px solid rgba(99,102,241,0.18)",
             fontSize: 12,
             fontWeight: 800,
           }}
@@ -355,29 +391,43 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
   return (
     <div
       style={{
-        border: "1px solid rgba(34,197,94,0.16)",
-        borderRadius: 24,
+        position: "relative",
+        overflow: "hidden",
+        border: "1px solid rgba(34,197,94,0.18)",
+        borderRadius: 28,
         background:
-          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
-        padding: 20,
-        boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+        padding: 22,
+        boxShadow: "0 18px 42px rgba(0,0,0,0.24)",
         display: "grid",
-        gap: 14,
-        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+        gap: 16,
+        transition: "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-3px)";
-        event.currentTarget.style.boxShadow = "0 18px 40px rgba(0,0,0,0.24)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.22)";
+        event.currentTarget.style.transform = "translateY(-4px)";
+        event.currentTarget.style.boxShadow = "0 24px 52px rgba(0,0,0,0.30)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 12px 32px rgba(0,0,0,0.16)";
-        event.currentTarget.style.borderColor = "rgba(34,197,94,0.16)";
+        event.currentTarget.style.boxShadow = "0 18px 42px rgba(0,0,0,0.24)";
+        event.currentTarget.style.borderColor = "rgba(34,197,94,0.18)";
       }}
     >
       <div
         style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: active
+            ? "radial-gradient(circle at top right, rgba(34,197,94,0.12), transparent 36%)"
+            : "radial-gradient(circle at top right, rgba(239,68,68,0.10), transparent 36%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
           display: "flex",
           justifyContent: "space-between",
           gap: 12,
@@ -388,11 +438,31 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
         <div>
           <div
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid rgba(34,197,94,0.16)",
+              background: "rgba(34,197,94,0.06)",
+              color: "#86efac",
+              fontSize: 11,
+              fontWeight: 900,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: 12,
+            }}
+          >
+            Assinatura ativa
+          </div>
+
+          <div
+            style={{
               color: "#f3f4f6",
-              fontSize: 18,
-              fontWeight: 800,
-              lineHeight: 1.25,
-              letterSpacing: "-0.02em",
+              fontSize: 20,
+              fontWeight: 900,
+              lineHeight: 1.2,
+              letterSpacing: "-0.03em",
             }}
           >
             {getPlanName(subscription)}
@@ -404,9 +474,10 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
               color: "#9ca3af",
               fontSize: 14,
               lineHeight: 1.6,
+              maxWidth: 360,
             }}
           >
-            Acesso liberado por assinatura individual deste plano.
+            Acesso vinculado à sua conta com validade individual e atualização em tempo real.
           </div>
         </div>
 
@@ -416,7 +487,7 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
             alignItems: "center",
             gap: 8,
             width: "fit-content",
-            padding: "6px 10px",
+            padding: "8px 12px",
             borderRadius: 999,
             fontSize: 11,
             fontWeight: 900,
@@ -438,8 +509,8 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
               borderRadius: "50%",
               background: active ? "#22c55e" : "#ef4444",
               boxShadow: active
-                ? "0 0 12px rgba(34,197,94,0.75)"
-                : "0 0 10px rgba(239,68,68,0.45)",
+                ? "0 0 14px rgba(34,197,94,0.8)"
+                : "0 0 12px rgba(239,68,68,0.5)",
             }}
           />
           {active ? "Ativo" : "Expirado"}
@@ -448,6 +519,7 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
 
       <div
         style={{
+          position: "relative",
           display: "grid",
           gap: 14,
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -455,10 +527,10 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
       >
         <div
           style={{
-            borderRadius: 18,
+            borderRadius: 20,
             border: "1px solid rgba(34,197,94,0.18)",
-            background: "rgba(34,197,94,0.05)",
-            padding: "14px 16px",
+            background: "rgba(34,197,94,0.06)",
+            padding: "16px 18px",
           }}
         >
           <div
@@ -477,7 +549,7 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
           <div
             style={{
               color: active ? "#86efac" : "#fca5a5",
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: 900,
               lineHeight: 1.2,
             }}
@@ -488,10 +560,10 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
 
         <div
           style={{
-            borderRadius: 18,
+            borderRadius: 20,
             border: "1px solid #1f2937",
-            background: "rgba(255,255,255,0.02)",
-            padding: "14px 16px",
+            background: "rgba(255,255,255,0.03)",
+            padding: "16px 18px",
           }}
         >
           <div
@@ -512,7 +584,7 @@ function ActiveSubscriptionCard({ subscription, nowTs }) {
               color: "#f3f4f6",
               fontSize: 15,
               fontWeight: 800,
-              lineHeight: 1.5,
+              lineHeight: 1.55,
             }}
           >
             {endsAt ? new Date(endsAt).toLocaleString("pt-BR") : "—"}
@@ -641,12 +713,12 @@ export default function UserHome() {
         style={{
           position: "relative",
           overflow: "hidden",
-          borderRadius: 30,
-          padding: 28,
-          border: "1px solid rgba(99, 102, 241, 0.18)",
+          borderRadius: 34,
+          padding: 30,
+          border: "1px solid rgba(99, 102, 241, 0.22)",
           background:
-            "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-          boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
+            "linear-gradient(135deg, rgba(17,24,39,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+          boxShadow: "0 22px 72px rgba(0,0,0,0.30)",
           transition: "transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease",
         }}
         onMouseEnter={(event) => {

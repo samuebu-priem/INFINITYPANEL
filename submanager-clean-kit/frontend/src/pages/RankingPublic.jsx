@@ -13,36 +13,66 @@ function SectionCard({ title, subtitle, children }) {
   return (
     <section
       style={{
+        position: "relative",
+        overflow: "hidden",
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid rgba(99,102,241,0.14)",
-        borderRadius: 28,
-        padding: 22,
-        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
-        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+        border: "1px solid rgba(99,102,241,0.16)",
+        borderRadius: 30,
+        padding: 24,
+        boxShadow: "0 14px 44px rgba(0,0,0,0.24)",
+        transition:
+          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "0 18px 48px rgba(0,0,0,0.28)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.24)";
+        event.currentTarget.style.transform = "translateY(-3px)";
+        event.currentTarget.style.boxShadow = "0 22px 60px rgba(0,0,0,0.30)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.28)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.22)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.14)";
+        event.currentTarget.style.boxShadow = "0 14px 44px rgba(0,0,0,0.24)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.16)";
       }}
     >
-      <div style={{ marginBottom: 18 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: "#f3f4f6", letterSpacing: "-0.02em" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at top right, rgba(99,102,241,0.10), transparent 35%)",
+        }}
+      />
+
+      <div style={{ position: "relative", zIndex: 1, marginBottom: 18 }}>
+        <h2
+          style={{
+            margin: 0,
+            fontSize: 22,
+            fontWeight: 900,
+            color: "#f3f4f6",
+            letterSpacing: "-0.03em",
+          }}
+        >
           {title}
         </h2>
+
         {subtitle ? (
-          <p style={{ margin: "8px 0 0", color: "#9ca3af", fontSize: 14, lineHeight: 1.6 }}>
+          <p
+            style={{
+              margin: "8px 0 0",
+              color: "#9ca3af",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
             {subtitle}
           </p>
         ) : null}
       </div>
-      {children}
+
+      <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
     </section>
   );
 }
@@ -56,21 +86,20 @@ function PeriodButton({ active, children, onClick }) {
         height: 44,
         padding: "0 16px",
         borderRadius: 14,
-        border: active
-          ? "1px solid rgba(99,102,241,0.45)"
-          : "1px solid #1f2937",
-        background: active
-          ? "rgba(99,102,241,0.14)"
-          : "rgba(255,255,255,0.03)",
+        border: active ? "1px solid rgba(99,102,241,0.45)" : "1px solid #1f2937",
+        background: active ? "rgba(99,102,241,0.14)" : "rgba(255,255,255,0.03)",
         color: active ? "#c7d2fe" : "#e5e7eb",
         fontSize: 14,
         fontWeight: 800,
         cursor: "pointer",
-        transition: "transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease",
+        transition:
+          "transform 160ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease",
       }}
       onMouseEnter={(event) => {
         event.currentTarget.style.transform = "translateY(-1px)";
-        event.currentTarget.style.boxShadow = active ? "0 10px 24px rgba(99,102,241,0.16)" : "0 10px 24px rgba(0,0,0,0.16)";
+        event.currentTarget.style.boxShadow = active
+          ? "0 10px 24px rgba(99,102,241,0.16)"
+          : "0 10px 24px rgba(0,0,0,0.16)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
@@ -79,6 +108,99 @@ function PeriodButton({ active, children, onClick }) {
     >
       {children}
     </button>
+  );
+}
+
+function EmptyState({ title, description, hint }) {
+  return (
+    <div
+      style={{
+        position: "relative",
+        overflow: "hidden",
+        border: "1px solid rgba(99,102,241,0.18)",
+        borderRadius: 28,
+        padding: 34,
+        textAlign: "center",
+        background:
+          "linear-gradient(180deg, rgba(99,102,241,0.08) 0%, rgba(11,15,20,0.42) 100%)",
+        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.02)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at top, rgba(99,102,241,0.12), transparent 42%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          width: 66,
+          height: 66,
+          borderRadius: 22,
+          margin: "0 auto 16px",
+          background: "rgba(99,102,241,0.14)",
+          display: "grid",
+          placeItems: "center",
+          fontSize: 26,
+          color: "#c7d2fe",
+          boxShadow: "0 0 36px rgba(99,102,241,0.22)",
+        }}
+      >
+        ✦
+      </div>
+
+      <h3
+        style={{
+          position: "relative",
+          margin: 0,
+          color: "#f3f4f6",
+          fontSize: 19,
+          fontWeight: 900,
+          letterSpacing: "-0.02em",
+        }}
+      >
+        {title}
+      </h3>
+
+      <p
+        style={{
+          position: "relative",
+          margin: "10px auto 0",
+          maxWidth: 500,
+          color: "#9ca3af",
+          fontSize: 14,
+          lineHeight: 1.7,
+        }}
+      >
+        {description}
+      </p>
+
+      {hint ? (
+        <div
+          style={{
+            position: "relative",
+            marginTop: 16,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "9px 14px",
+            borderRadius: 999,
+            color: "#c7d2fe",
+            background: "rgba(99,102,241,0.12)",
+            border: "1px solid rgba(99,102,241,0.18)",
+            fontSize: 12,
+            fontWeight: 800,
+          }}
+        >
+          {hint}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -107,21 +229,18 @@ export default function RankingPublic() {
 
   const podiumMeta = [
     {
-      rank: 1,
       border: "rgba(251,191,36,0.32)",
       bg: "linear-gradient(180deg, rgba(251,191,36,0.12) 0%, rgba(11,15,20,0.98) 100%)",
       accent: "#fbbf24",
       glow: "rgba(251,191,36,0.20)",
     },
     {
-      rank: 2,
       border: "rgba(148,163,184,0.28)",
       bg: "linear-gradient(180deg, rgba(148,163,184,0.10) 0%, rgba(11,15,20,0.98) 100%)",
       accent: "#cbd5e1",
       glow: "rgba(148,163,184,0.18)",
     },
     {
-      rank: 3,
       border: "rgba(180,83,9,0.28)",
       bg: "linear-gradient(180deg, rgba(180,83,9,0.10) 0%, rgba(11,15,20,0.98) 100%)",
       accent: "#fdba74",
@@ -160,23 +279,12 @@ export default function RankingPublic() {
         style={{
           position: "relative",
           overflow: "hidden",
-          borderRadius: 30,
-          padding: 28,
-          border: "1px solid rgba(99, 102, 241, 0.18)",
+          borderRadius: 34,
+          padding: 30,
+          border: "1px solid rgba(99, 102, 241, 0.22)",
           background:
-            "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-          boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
-          transition: "transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease",
-        }}
-        onMouseEnter={(event) => {
-          event.currentTarget.style.transform = "translateY(-2px)";
-          event.currentTarget.style.boxShadow = "0 22px 72px rgba(0,0,0,0.30)";
-          event.currentTarget.style.borderColor = "rgba(99,102,241,0.28)";
-        }}
-        onMouseLeave={(event) => {
-          event.currentTarget.style.transform = "translateY(0)";
-          event.currentTarget.style.boxShadow = "0 18px 60px rgba(0,0,0,0.25)";
-          event.currentTarget.style.borderColor = "rgba(99,102,241,0.18)";
+            "linear-gradient(135deg, rgba(17,24,39,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+          boxShadow: "0 22px 72px rgba(0,0,0,0.30)",
         }}
       >
         <div
@@ -214,10 +322,11 @@ export default function RankingPublic() {
             style={{
               margin: 0,
               color: "#f3f4f6",
-              fontSize: 36,
-              lineHeight: 1.05,
+              fontSize: 40,
+              lineHeight: 1.02,
               fontWeight: 900,
-              letterSpacing: -0.5,
+              letterSpacing: -0.7,
+              maxWidth: 780,
             }}
           >
             Ranking de vitórias
@@ -225,7 +334,7 @@ export default function RankingPublic() {
 
           <p
             style={{
-              margin: "12px 0 0",
+              margin: "14px 0 0",
               color: "#9ca3af",
               fontSize: 15,
               lineHeight: 1.7,
@@ -290,7 +399,8 @@ export default function RankingPublic() {
                     boxShadow: `0 18px 40px ${podium.glow}`,
                     display: "grid",
                     gap: 10,
-                    transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+                    transition:
+                      "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
                   }}
                   onMouseEnter={(event) => {
                     event.currentTarget.style.transform = "translateY(-3px)";
@@ -373,12 +483,14 @@ export default function RankingPublic() {
                   gap: 16,
                   flexWrap: "wrap",
                   alignItems: "center",
-                  transition: "transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease",
+                  transition:
+                    "transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease",
                 }}
                 onMouseEnter={(event) => {
                   event.currentTarget.style.transform = "translateY(-2px)";
                   event.currentTarget.style.borderColor = "rgba(99,102,241,0.20)";
-                  event.currentTarget.style.boxShadow = "0 14px 28px rgba(0,0,0,0.18)";
+                  event.currentTarget.style.boxShadow =
+                    "0 14px 28px rgba(0,0,0,0.18)";
                 }}
                 onMouseLeave={(event) => {
                   event.currentTarget.style.transform = "translateY(0)";

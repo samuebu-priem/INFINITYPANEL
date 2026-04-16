@@ -91,32 +91,59 @@ function formatDate(value) {
   });
 }
 
-function SectionCard({ title, subtitle, children, action }) {
+function SectionCard({ title, subtitle, children, action, flush = false }) {
   return (
     <section
       style={{
+        position: "relative",
+        overflow: "hidden",
         background:
           "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-        border: "1px solid rgba(99,102,241,0.14)",
-        borderRadius: 28,
-        padding: 22,
-        boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
-        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+        border: "1px solid rgba(99,102,241,0.16)",
+        borderRadius: 30,
+        padding: 24,
+        boxShadow: "0 14px 44px rgba(0,0,0,0.24)",
+        transition:
+          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "0 18px 48px rgba(0,0,0,0.28)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.24)";
+        event.currentTarget.style.transform = "translateY(-3px)";
+        event.currentTarget.style.boxShadow = "0 22px 60px rgba(0,0,0,0.30)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.28)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "0 12px 40px rgba(0,0,0,0.22)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.14)";
+        event.currentTarget.style.boxShadow = "0 14px 44px rgba(0,0,0,0.24)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.16)";
       }}
     >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at top right, rgba(99,102,241,0.10), transparent 35%)",
+        }}
+      />
+
       {(title || subtitle || action) && (
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
+        <div
+          style={{
+            marginBottom: flush ? 14 : 20,
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 16,
+              alignItems: "flex-start",
+              flexWrap: "wrap",
+            }}
+          >
             <div>
               <h2
                 style={{
@@ -124,7 +151,7 @@ function SectionCard({ title, subtitle, children, action }) {
                   fontSize: 22,
                   fontWeight: 900,
                   color: "#f3f4f6",
-                  letterSpacing: "-0.02em",
+                  letterSpacing: "-0.03em",
                 }}
               >
                 {title}
@@ -149,22 +176,24 @@ function SectionCard({ title, subtitle, children, action }) {
         </div>
       )}
 
-      {children}
+      <div style={{ position: "relative", zIndex: 1 }}>{children}</div>
     </section>
   );
 }
 
-function StatCard({ label, value, helpText, accent = "primary" }) {
+function StatCard({ label, value, helpText, accent = "primary", highlight = false }) {
   const accents = {
     primary: {
       value: "#f3f4f6",
       border: "rgba(99,102,241,0.16)",
       bg: "rgba(255,255,255,0.02)",
+      glow: "rgba(99,102,241,0.10)",
     },
     success: {
       value: "#86efac",
       border: "rgba(34,197,94,0.18)",
-      bg: "rgba(34,197,94,0.05)",
+      bg: "rgba(34,197,94,0.06)",
+      glow: "rgba(34,197,94,0.16)",
     },
   };
 
@@ -173,30 +202,48 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
   return (
     <div
       style={{
+        position: "relative",
+        overflow: "hidden",
         border: `1px solid ${theme.border}`,
-        borderRadius: 22,
+        borderRadius: 26,
         background: theme.bg,
-        padding: 18,
-        transition: "transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease",
+        padding: 20,
+        minHeight: 150,
+        boxShadow: highlight ? `0 18px 40px ${theme.glow}` : "none",
+        transition:
+          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
       }}
       onMouseEnter={(event) => {
-        event.currentTarget.style.transform = "translateY(-2px)";
-        event.currentTarget.style.boxShadow = "0 16px 34px rgba(0,0,0,0.16)";
-        event.currentTarget.style.borderColor = "rgba(99,102,241,0.22)";
+        event.currentTarget.style.transform = "translateY(-3px)";
+        event.currentTarget.style.boxShadow = `0 22px 50px ${theme.glow}`;
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
       }}
       onMouseLeave={(event) => {
         event.currentTarget.style.transform = "translateY(0)";
-        event.currentTarget.style.boxShadow = "none";
+        event.currentTarget.style.boxShadow = highlight
+          ? `0 18px 40px ${theme.glow}`
+          : "none";
         event.currentTarget.style.borderColor = theme.border;
       }}
     >
       <div
         style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: "linear-gradient(135deg, rgba(99,102,241,0.08), transparent 42%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
+          zIndex: 1,
           color: "#9ca3af",
           fontSize: 12,
           fontWeight: 800,
           textTransform: "uppercase",
-          letterSpacing: "0.12em",
+          letterSpacing: "0.14em",
           marginBottom: 10,
         }}
       >
@@ -205,11 +252,13 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
 
       <div
         style={{
+          position: "relative",
+          zIndex: 1,
           color: theme.value,
-          fontSize: 32,
+          fontSize: 36,
           lineHeight: 1.05,
           fontWeight: 900,
-          letterSpacing: "-0.03em",
+          letterSpacing: "-0.04em",
         }}
       >
         {value}
@@ -217,6 +266,8 @@ function StatCard({ label, value, helpText, accent = "primary" }) {
 
       <div
         style={{
+          position: "relative",
+          zIndex: 1,
           marginTop: 8,
           color: "#9ca3af",
           fontSize: 14,
@@ -236,18 +287,44 @@ function AccessCard({ subscription, nowTs }) {
   return (
     <div
       style={{
-        border: "1px solid #1f2937",
-        borderRadius: 24,
+        position: "relative",
+        overflow: "hidden",
+        border: "1px solid rgba(34,197,94,0.18)",
+        borderRadius: 28,
         background:
-          "linear-gradient(180deg, rgba(18,24,33,0.96) 0%, rgba(11,15,20,0.98) 100%)",
-        padding: 20,
-        boxShadow: "0 12px 32px rgba(0,0,0,0.16)",
+          "linear-gradient(180deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.99) 100%)",
+        padding: 22,
+        boxShadow: "0 18px 42px rgba(0,0,0,0.24)",
         display: "grid",
-        gap: 14,
+        gap: 16,
+        transition:
+          "transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease",
+      }}
+      onMouseEnter={(event) => {
+        event.currentTarget.style.transform = "translateY(-4px)";
+        event.currentTarget.style.boxShadow = "0 24px 52px rgba(0,0,0,0.30)";
+        event.currentTarget.style.borderColor = "rgba(99,102,241,0.26)";
+      }}
+      onMouseLeave={(event) => {
+        event.currentTarget.style.transform = "translateY(0)";
+        event.currentTarget.style.boxShadow = "0 18px 42px rgba(0,0,0,0.24)";
+        event.currentTarget.style.borderColor = "rgba(34,197,94,0.18)";
       }}
     >
       <div
         style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: active
+            ? "radial-gradient(circle at top right, rgba(34,197,94,0.12), transparent 36%)"
+            : "radial-gradient(circle at top right, rgba(239,68,68,0.10), transparent 36%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "relative",
           display: "flex",
           justifyContent: "space-between",
           gap: 12,
@@ -258,10 +335,31 @@ function AccessCard({ subscription, nowTs }) {
         <div>
           <div
             style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "1px solid rgba(34,197,94,0.16)",
+              background: "rgba(34,197,94,0.06)",
+              color: "#86efac",
+              fontSize: 11,
+              fontWeight: 900,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              marginBottom: 12,
+            }}
+          >
+            Assinatura ativa
+          </div>
+
+          <div
+            style={{
               color: "#f3f4f6",
-              fontSize: 18,
-              fontWeight: 800,
-              lineHeight: 1.25,
+              fontSize: 20,
+              fontWeight: 900,
+              lineHeight: 1.2,
+              letterSpacing: "-0.03em",
             }}
           >
             {getPlanName(subscription)}
@@ -273,9 +371,10 @@ function AccessCard({ subscription, nowTs }) {
               color: "#9ca3af",
               fontSize: 14,
               lineHeight: 1.6,
+              maxWidth: 360,
             }}
           >
-            Acesso ativo vinculado à sua conta.
+            Acesso vinculado à sua conta com validade individual e atualização em tempo real.
           </div>
         </div>
 
@@ -285,7 +384,7 @@ function AccessCard({ subscription, nowTs }) {
             alignItems: "center",
             gap: 8,
             width: "fit-content",
-            padding: "6px 10px",
+            padding: "8px 12px",
             borderRadius: 999,
             fontSize: 11,
             fontWeight: 900,
@@ -300,12 +399,24 @@ function AccessCard({ subscription, nowTs }) {
               : "1px solid rgba(239,68,68,0.18)",
           }}
         >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: active ? "#22c55e" : "#ef4444",
+              boxShadow: active
+                ? "0 0 14px rgba(34,197,94,0.8)"
+                : "0 0 12px rgba(239,68,68,0.5)",
+            }}
+          />
           {active ? "Ativo" : "Expirado"}
         </div>
       </div>
 
       <div
         style={{
+          position: "relative",
           display: "grid",
           gap: 14,
           gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
@@ -313,10 +424,10 @@ function AccessCard({ subscription, nowTs }) {
       >
         <div
           style={{
-            borderRadius: 18,
+            borderRadius: 20,
             border: "1px solid rgba(34,197,94,0.18)",
-            background: "rgba(34,197,94,0.05)",
-            padding: "14px 16px",
+            background: "rgba(34,197,94,0.06)",
+            padding: "16px 18px",
           }}
         >
           <div
@@ -335,7 +446,7 @@ function AccessCard({ subscription, nowTs }) {
           <div
             style={{
               color: active ? "#86efac" : "#fca5a5",
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: 900,
               lineHeight: 1.2,
             }}
@@ -346,10 +457,10 @@ function AccessCard({ subscription, nowTs }) {
 
         <div
           style={{
-            borderRadius: 18,
+            borderRadius: 20,
             border: "1px solid #1f2937",
-            background: "rgba(255,255,255,0.02)",
-            padding: "14px 16px",
+            background: "rgba(255,255,255,0.03)",
+            padding: "16px 18px",
           }}
         >
           <div
@@ -370,10 +481,10 @@ function AccessCard({ subscription, nowTs }) {
               color: "#f3f4f6",
               fontSize: 15,
               fontWeight: 800,
-              lineHeight: 1.5,
+              lineHeight: 1.55,
             }}
           >
-            {formatDate(getEndsAt(subscription))}
+            {endsAt ? new Date(endsAt).toLocaleString("pt-BR") : "—"}
           </div>
         </div>
       </div>
@@ -552,12 +663,12 @@ export default function Profile() {
         style={{
           position: "relative",
           overflow: "hidden",
-          borderRadius: 30,
-          padding: 28,
-          border: "1px solid rgba(99, 102, 241, 0.18)",
+          borderRadius: 34,
+          padding: 30,
+          border: "1px solid rgba(99, 102, 241, 0.22)",
           background:
-            "linear-gradient(135deg, rgba(18,24,33,0.98) 0%, rgba(11,15,20,0.98) 100%)",
-          boxShadow: "0 18px 60px rgba(0,0,0,0.25)",
+            "linear-gradient(135deg, rgba(17,24,39,0.98) 0%, rgba(11,15,20,0.98) 100%)",
+          boxShadow: "0 22px 72px rgba(0,0,0,0.30)",
         }}
       >
         <div
@@ -606,10 +717,11 @@ export default function Profile() {
               style={{
                 margin: 0,
                 color: "#f3f4f6",
-                fontSize: 38,
-                lineHeight: 1.05,
+                fontSize: 40,
+                lineHeight: 1.02,
                 fontWeight: 900,
-                letterSpacing: -0.5,
+                letterSpacing: -0.7,
+                maxWidth: 780,
               }}
             >
               {user?.username || "Usuário"}
@@ -621,10 +733,11 @@ export default function Profile() {
                 color: "#9ca3af",
                 fontSize: 15,
                 lineHeight: 1.7,
-                maxWidth: 680,
+                maxWidth: 720,
               }}
             >
-              Gerencie sua conta, acompanhe seus acessos e vincule seu Discord.
+              Gerencie sua conta, acompanhe seus acessos, veja sua atividade e
+              conecte seu Discord com mais clareza.
             </p>
           </div>
 
@@ -716,7 +829,16 @@ export default function Profile() {
                 padding: "14px 16px",
               }}
             >
-              <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: 8,
+                }}
+              >
                 Nome de usuário
               </div>
               <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800 }}>
@@ -732,10 +854,26 @@ export default function Profile() {
                 padding: "14px 16px",
               }}
             >
-              <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: 8,
+                }}
+              >
                 E-mail
               </div>
-              <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800, wordBreak: "break-word" }}>
+              <div
+                style={{
+                  color: "#f3f4f6",
+                  fontSize: 16,
+                  fontWeight: 800,
+                  wordBreak: "break-word",
+                }}
+              >
                 {user?.email || "—"}
               </div>
             </div>
@@ -748,7 +886,16 @@ export default function Profile() {
                 padding: "14px 16px",
               }}
             >
-              <div style={{ color: "#9ca3af", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+              <div
+                style={{
+                  color: "#9ca3af",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.1em",
+                  marginBottom: 8,
+                }}
+              >
                 Conta criada em
               </div>
               <div style={{ color: "#f3f4f6", fontSize: 16, fontWeight: 800 }}>
@@ -768,6 +915,7 @@ export default function Profile() {
               value={loadingSubscriptions ? "..." : activeSubscriptions.length}
               helpText="Planos válidos no momento."
               accent="success"
+              highlight
             />
 
             <StatCard
@@ -793,35 +941,49 @@ export default function Profile() {
       >
         <div
           style={{
-            border: "1px solid rgba(88, 101, 242, 0.28)",
+            position: "relative",
+            overflow: "hidden",
+            border: "1px solid rgba(88,101,242,0.30)",
             background:
-              "linear-gradient(180deg, rgba(88,101,242,0.12) 0%, rgba(17,24,39,0.35) 100%)",
-            borderRadius: 24,
-            padding: 20,
-            boxShadow: "0 0 28px rgba(88,101,242,0.12)",
+              "linear-gradient(180deg, rgba(88,101,242,0.16) 0%, rgba(17,24,39,0.45) 100%)",
+            borderRadius: 28,
+            padding: 22,
+            boxShadow: "0 18px 36px rgba(88,101,242,0.12)",
           }}
         >
           <div
             style={{
-              display: "inline-flex",
+              position: "absolute",
+              inset: 0,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(circle at top right, rgba(88,101,242,0.24), transparent 36%)",
+            }}
+          />
+
+          <div
+            style={{
+              position: "relative",
+              display: "flex",
               alignItems: "center",
-              gap: 10,
-              marginBottom: 16,
-              color: "#c7d2fe",
-              fontWeight: 800,
+              gap: 12,
+              marginBottom: 18,
+              color: "#e0e7ff",
+              fontWeight: 900,
               fontSize: 16,
             }}
           >
             <span
               style={{
-                width: 42,
-                height: 42,
-                borderRadius: 14,
+                width: 46,
+                height: 46,
+                borderRadius: 16,
                 display: "grid",
                 placeItems: "center",
                 background: "rgba(88,101,242,0.18)",
                 border: "1px solid rgba(88,101,242,0.28)",
-                color: "#5865F2",
+                color: "#8ea0ff",
+                boxShadow: "0 0 24px rgba(88,101,242,0.18)",
               }}
             >
               <DiscordIcon />
@@ -829,7 +991,10 @@ export default function Profile() {
             Discord
           </div>
 
-          <form onSubmit={handleSaveDiscordId} style={{ display: "grid", gap: 14 }}>
+          <form
+            onSubmit={handleSaveDiscordId}
+            style={{ position: "relative", display: "grid", gap: 14 }}
+          >
             <div className="profile-discord-grid">
               <label style={{ display: "grid", gap: 8 }}>
                 <span
@@ -849,14 +1014,14 @@ export default function Profile() {
                   onChange={(event) => setDiscordIdInput(event.target.value)}
                   placeholder="Ex: 123456789012345678"
                   style={{
-                    height: 52,
+                    height: 54,
                     borderRadius: 16,
-                    border: "1px solid rgba(88,101,242,0.30)",
-                    background: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(88,101,242,0.35)",
+                    background: "rgba(255,255,255,0.04)",
                     color: "#f3f4f6",
                     padding: "0 14px",
                     outline: "none",
-                    boxShadow: "0 0 20px rgba(88,101,242,0.06)",
+                    boxShadow: "0 0 20px rgba(88,101,242,0.08)",
                   }}
                 />
               </label>
@@ -865,18 +1030,18 @@ export default function Profile() {
                 type="submit"
                 disabled={savingDiscordId}
                 style={{
-                  height: 52,
+                  height: 54,
                   padding: "0 18px",
                   borderRadius: 16,
-                  border: "1px solid rgba(88,101,242,0.50)",
+                  border: "1px solid rgba(88,101,242,0.55)",
                   background:
                     "linear-gradient(135deg, #5865F2 0%, #4752C4 100%)",
                   color: "#ffffff",
                   fontSize: 14,
                   fontWeight: 800,
                   cursor: savingDiscordId ? "not-allowed" : "pointer",
-                  opacity: savingDiscordId ? 0.7 : 1,
-                  boxShadow: "0 0 28px rgba(88,101,242,0.18)",
+                  opacity: savingDiscordId ? 0.72 : 1,
+                  boxShadow: "0 12px 30px rgba(88,101,242,0.20)",
                 }}
               >
                 {savingDiscordId ? "Salvando..." : "Salvar ID"}
@@ -934,61 +1099,62 @@ export default function Profile() {
         </div>
       </SectionCard>
 
-     <SectionCard
-  title="Atividade"
-  subtitle="Resumo real da sua atuação na org."
->
-  <div className="profile-stats-grid">
-    <StatCard
-      label="Vitórias"
-      value={loadingSummary ? "..." : profileSummary?.wins ?? 0}
-      helpText="Vitórias registradas pelo supervisor."
-      accent="success"
-    />
+      <SectionCard title="Atividade" subtitle="Resumo real da sua atuação na org.">
+        <div className="profile-stats-grid">
+          <StatCard
+            label="Vitórias"
+            value={loadingSummary ? "..." : profileSummary?.wins ?? 0}
+            helpText="Vitórias registradas pelo supervisor."
+            accent="success"
+          />
 
-    <StatCard
-      label="Partidas"
-      value={loadingSummary ? "..." : profileSummary?.matchesPlayed ?? 0}
-      helpText="Partidas em que sua conta apareceu no registro."
-    />
+          <StatCard
+            label="Partidas"
+            value={loadingSummary ? "..." : profileSummary?.matchesPlayed ?? 0}
+            helpText="Partidas em que sua conta apareceu no registro."
+          />
 
-    <StatCard
-      label="Lucro como mediador"
-      value={
-        loadingSummary
-          ? "..."
-          : `R$ ${Number(profileSummary?.mediatorProfitTotal || 0).toFixed(2)}`
-      }
-      helpText="Total acumulado mediando partidas."
-      accent="success"
-    />
+          <StatCard
+            label="Lucro como mediador"
+            value={
+              loadingSummary
+                ? "..."
+                : `R$ ${Number(profileSummary?.mediatorProfitTotal || 0).toFixed(2)}`
+            }
+            helpText="Total acumulado mediando partidas."
+            accent="success"
+          />
 
-    <StatCard
-      label="Partidas mediadas"
-      value={loadingSummary ? "..." : profileSummary?.mediatedMatchesCount ?? 0}
-      helpText="Quantidade de partidas em que você mediou."
-    />
-  </div>
+          <StatCard
+            label="Partidas mediadas"
+            value={loadingSummary ? "..." : profileSummary?.mediatedMatchesCount ?? 0}
+            helpText="Quantidade de partidas em que você mediou."
+          />
+        </div>
 
-  <div style={{ marginTop: 16 }}>
-    <StatCard
-      label="Dia com mais lucro"
-      value={
-        loadingSummary
-          ? "..."
-          : profileSummary?.bestMediatorDay?.date
-          ? new Date(`${profileSummary.bestMediatorDay.date}T00:00:00`).toLocaleDateString("pt-BR")
-          : "—"
-      }
-      helpText={
-        profileSummary?.bestMediatorDay?.amount
-          ? `R$ ${Number(profileSummary.bestMediatorDay.amount).toFixed(2)} no melhor dia`
-          : "Sem lucro como mediador registrado."
-      }
-      accent="success"
-    />
-  </div>
-</SectionCard>
+        <div style={{ marginTop: 16 }}>
+          <StatCard
+            label="Dia com mais lucro"
+            value={
+              loadingSummary
+                ? "..."
+                : profileSummary?.bestMediatorDay?.date
+                ? new Date(
+                    `${profileSummary.bestMediatorDay.date}T00:00:00`
+                  ).toLocaleDateString("pt-BR")
+                : "—"
+            }
+            helpText={
+              profileSummary?.bestMediatorDay?.amount
+                ? `R$ ${Number(profileSummary.bestMediatorDay.amount).toFixed(
+                    2
+                  )} no melhor dia`
+                : "Sem lucro como mediador registrado."
+            }
+            accent="success"
+          />
+        </div>
+      </SectionCard>
     </div>
   );
 }
