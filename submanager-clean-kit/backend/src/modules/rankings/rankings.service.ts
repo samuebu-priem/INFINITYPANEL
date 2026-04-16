@@ -22,6 +22,18 @@ function startOfWindow(period: RankingPeriod): Date | null {
   return null;
 }
 
+function buildDiscordAvatarUrl(discordId: string | null, discordAvatar: string | null) {
+  if (!discordId) return null;
+
+  if (discordAvatar) {
+    const isAnimated = String(discordAvatar).startsWith("a_");
+    const ext = isAnimated ? "gif" : "png";
+    return `https://cdn.discordapp.com/avatars/${discordId}/${discordAvatar}.${ext}?size=128`;
+  }
+
+  return `https://cdn.discordapp.com/embed/avatars/${Number(discordId) % 5}.png`;
+}
+
 export const rankingsService = {
   publicWins: async (period: RankingPeriod) => {
     const startDate = startOfWindow(period);
@@ -86,22 +98,23 @@ export const rankingsService = {
           select: {
             username: true,
             discordId: true,
-            avatarUrl: true,
+            discordAvatar: true,
             status: true,
           },
         })
       : [];
-const usersMap = new Map<string, RankedUser>();
 
-for (const user of users) {
-  if (!user.discordId) continue;
+    const usersMap = new Map<string, RankedUser>();
 
-  usersMap.set(user.discordId, {
-    username: user.username || "Usuário",
-    avatarUrl: user.avatarUrl ?? null,
-    status: user.status ?? null,
-  });
-}
+    for (const user of users) {
+      if (!user.discordId) continue;
+
+      usersMap.set(user.discordId, {
+        username: user.username || "Usuário",
+        avatarUrl: buildDiscordAvatarUrl(user.discordId, user.discordAvatar ?? null),
+        status: user.status ?? null,
+      });
+    }
 
     const ranking = [...winsMap.values()]
       .map((item) => {
