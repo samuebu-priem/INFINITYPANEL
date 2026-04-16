@@ -78,17 +78,23 @@ export const rankingsService = {
         })
       : [];
 
-    const usersMap = new Map(users.map((user: { username: string | null; discordId: string | null }) => [user.discordId || "", user.username || "Usuário"]));
+    const usersMap = new Map(
+      users.map((user: { username: string | null; discordId: string | null }) => [
+        user.discordId || "",
+        user.username || "Usuário",
+      ])
+    );
 
     const ranking = [...winsMap.values()]
+      .filter((item) => usersMap.has(item.discordId))
       .map((item) => ({
         discordId: item.discordId,
-        username: usersMap.get(item.discordId) || `Discord ${item.discordId}`,
+        username: usersMap.get(item.discordId) || "Usuário",
         wins: item.wins,
         matches: matchesMap.get(item.discordId) || item.wins,
       }))
       .sort((a, b) => b.wins - a.wins)
-      .slice(0, 50)
+      .slice(0, 99)
       .map((item, index) => ({
         position: index + 1,
         ...item,
